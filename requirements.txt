@@ -1,0 +1,17 @@
+Django>=4.2
+djangorestframework
+django-celery-beat>=2.7
+mysqlclient
+netmiko
+pysnmp
+requests
+openpyxl
+django-environ
+gunicorn
+celery
+redis
+python-dotenv
+pytest
+pytest-django
+pandas
+django-crontab

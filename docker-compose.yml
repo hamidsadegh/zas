@@ -1,0 +1,92 @@
+# Docker Compose configuration file
+services:
+  db:
+    image: mariadb:10.11
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: zas
+      MYSQL_USER: zasuser
+      MYSQL_PASSWORD: zas_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db_init:/docker-entrypoint-initdb.d
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  web:
+    user: root
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_HOST: db
+      DATABASE_NAME: zas
+      DATABASE_USER: zasuser
+      DATABASE_PASSWORD: zas_pass
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    volumes:
+      - .:/code
+      - ./staticfiles:/code/staticfiles   # shared with nginx
+    depends_on:
+      - db
+      - redis
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./staticfiles:/code/staticfiles   # same volume as web
+    depends_on:
+      - web
+  celery:
+    build: .
+    command: celery -A zas_project worker -l info
+    environment:
+      DATABASE_HOST: db
+      DATABASE_NAME: zas
+      DATABASE_USER: zasuser
+      DATABASE_PASSWORD: zas_pass
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    volumes:
+      - .:/code
+    depends_on:
+      - db
+      - redis
+      - web
+
+  celery-beat:
+    build: .
+    command: celery -A zas_project beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler --schedule=/code/celerybeat/celerybeat-schedule
+    environment:
+      DATABASE_HOST: db
+      DATABASE_NAME: zas
+      DATABASE_USER: zasuser
+      DATABASE_PASSWORD: zas_pass
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    volumes:
+      - .:/code
+      - ./celerybeat:/code/celerybeat
+    depends_on:
+      - redis
+      - db
+      - web
+      - celery
+
+
+volumes:
+  db_data:
+  redis_data:

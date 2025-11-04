@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-3">Device List</h2>
+
+    <!-- Search and pagination form -->
+    <form method="get" class="form-inline mb-3 d-flex">
+        <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Search..." class="form-control me-2" style="max-width: 250px;">
+        <select name="paginate_by" class="form-select me-2" style="width: auto;" onchange="this.form.submit()">
+            <option value="10" {% if request.GET.paginate_by == '10' %}selected{% endif %}>Show 10</option>
+            <option value="25" {% if request.GET.paginate_by == '25' %}selected{% endif %}>Show 25</option>
+            <option value="50" {% if request.GET.paginate_by == '50' %}selected{% endif %}>Show 50</option>
+            <option value="100" {% if request.GET.paginate_by == '100' %}selected{% endif %}>Show 100</option>
+        </select>
+        <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+
+    <!-- Device table -->
+    <table class="table table-hover table-bordered align-middle">
+        <thead class="table-light">
+            <tr>
+                <th><a href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort=name">Device Name</a></th>
+                <th><a href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort=management_ip">IP Address</a></th>
+                <th>Ping</th>
+                <th>SNMP</th>
+                <th><a href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort=status">Status</a></th>
+                <th><a href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort=device_type__model">Device Type</a></th>
+                <th><a href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort=serial_number">Serial Number</a></th>
+                <th><a href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort=area__name">Location</a></th>
+                <th><a href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort=image_version">Image Version</a></th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for device in devices %}
+            <tr>
+                <td><a href="{% url 'device_detail' device.id %}">{{ device.name }}</a></td>
+                <td>{{ device.management_ip }}</td>
+                <!-- Reachability -->
+                <td>
+                    {% if device.reachable_ping %}
+                        ✅
+                    {% else %}
+                        ❌
+                    {% endif %}
+                </td>
+                <td>
+                    {% if device.reachable_snmp %}
+                        ✅
+                    {% else %}
+                        ❌
+                    {% endif %}
+                </td>
+                <td>
+                    {% if device.status == 'active' %}
+                        <span class="badge bg-success">{{ device.status }}</span>
+                    {% elif device.status == 'inactive' %}
+                        <span class="badge bg-secondary">{{ device.status }}</span>
+                    {% elif device.status == 'maintenance' %}
+                        <span class="badge bg-warning text-dark">{{ device.status }}</span>
+                    {% else %}
+                        <span class="badge bg-light text-dark">{{ device.status }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if device.device_type %}
+                        {{ device.device_type.model }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td>{{ device.serial_number }}</td>
+                <td>
+                    {% if device.area %}
+                        {{ device.area }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td>{{ device.image_version }}</td>
+                <td>
+                    <a href="{% url 'device_detail' device.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="10" class="text-center">No devices found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <div>
+            Showing {{ devices.start_index }}–{{ devices.end_index }} of {{ devices.paginator.count }} devices
+        </div>
+        <nav>
+            <ul class="pagination mb-0">
+                {% if devices.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort={{ request.GET.sort }}&page={{ devices.previous_page_number }}&paginate_by={{ request.GET.paginate_by }}">Previous</a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                {% endif %}
+
+                {% for num in devices.paginator.page_range %}
+                    {% if devices.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > devices.number|add:-3 and num < devices.number|add:3 %}
+                        <li class="page-item"><a class="page-link" href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort={{ request.GET.sort }}&page={{ num }}&paginate_by={{ request.GET.paginate_by }}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if devices.has_next %}
+                    <li class="page-item"><a class="page-link" href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort={{ request.GET.sort }}&page={{ devices.next_page_number }}&paginate_by={{ request.GET.paginate_by }}">Next</a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Next</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</div>
+{% endblock %}

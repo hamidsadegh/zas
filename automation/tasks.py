@@ -1,0 +1,36 @@
+import logging
+from django.utils import timezone
+from devices.models import Device
+from automation.models import AutomationJob, JobRun
+from devices.services.telemetry_service import TelemetryService
+from automation.services.job_runner import execute_job
+
+from celery import shared_task
+from devices.services.reachability_service import ReachabilityService
+
+logger = logging.getLogger(__name__)
+
+@shared_task
+def check_devices_reachability():
+    ReachabilityService.update_device_status()
+
+def collect_all_telemetry():
+    """Poll all devices for telemetry data."""
+    telemetry = TelemetryService()
+    devices = Device.objects.all()
+    for device in devices:
+        try:
+            telemetry.collect(device)
+            logger.info(f"{timezone.now()}: telemetry collected for {device.name}")
+        except Exception as e:
+            logger.error(f"Telemetry failed for {device.name}: {e}")
+
+
+def run_scheduled_backups():
+    """Run all jobs of type 'backup' that are marked as scheduled."""
+    backup_jobs = AutomationJob.objects.filter(job_type='backup')
+    for job in backup_jobs:
+        job_run = JobRun.objects.create(job=job)
+        job_run.devices.set(Device.objects.all())  # optionally filter by org/site
+        execute_job(job_run)
+        logger.info(f"{timezone.now()}: backup job {job.name} executed.")

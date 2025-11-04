@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}ZAS Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <h1 class="mb-4">Welcome to ZAS Dashboard</h1>
+  <p class="lead">Centralized Administration & Automation System</p>
+
+  <div class="row mt-4">
+    <div class="col-md-4">
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h5 class="card-title">Devices</h5>
+          <p class="card-text">Manage all network devices, configurations, and status.</p>
+          <a href="{% url 'device_list' %}" class="btn btn-primary btn-sm">View Devices</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h5 class="card-title">Areas & Sites</h5>
+          <p class="card-text">View and organize your network by global areas and locations.</p>
+          <a href="{% url 'area_list' %}" class="btn btn-primary btn-sm">View Areas</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h5 class="card-title">Racks</h5>
+          <p class="card-text">Access rack inventory and related devices.</p>
+          <a href="{% url 'rack_list' %}" class="btn btn-primary btn-sm">View Racks</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
