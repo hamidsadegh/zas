@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from django.views.generic import ListView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import Q, Count
 from rest_framework import viewsets, filters
 from rest_framework.permissions import IsAuthenticated
 from .models import Device, Area, Rack, DeviceRole, Vendor, DeviceType, Interface, DeviceConfiguration
@@ -192,5 +192,42 @@ class DeviceConfigurationViewSet(viewsets.ModelViewSet):
 # -----------------------
 @login_required
 def home(request):
-    """Home dashboard page"""
-    return render(request, 'devices/home.html')
+    """Home dashboard page with quick health metrics"""
+    device_stats = Device.objects.aggregate(
+        total=Count("id"),
+        active=Count("id", filter=Q(status="active")),
+        inactive=Count("id", filter=Q(status="inactive")),
+        maintenance=Count("id", filter=Q(status="maintenance")),
+        unknown=Count("id", filter=Q(status="unknown")),
+    )
+
+    interface_stats = Interface.objects.aggregate(
+        total=Count("id"),
+        up=Count("id", filter=Q(status="up")),
+        down=Count("id", filter=Q(status="down")),
+        disabled=Count("id", filter=Q(status="disabled")),
+    )
+
+    recent_devices = (
+        Device.objects.select_related("area", "vendor", "device_type")
+        .order_by("-created_at")[:5]
+    )
+
+    recent_checks = (
+        Device.objects.exclude(last_check__isnull=True)
+        .order_by("-last_check")[:5]
+    )
+
+    top_vendors = (
+        Vendor.objects.annotate(device_count=Count("devices"))
+        .order_by("-device_count")[:5]
+    )
+
+    context = {
+        "device_stats": device_stats,
+        "interface_stats": interface_stats,
+        "recent_devices": recent_devices,
+        "recent_checks": recent_checks,
+        "top_vendors": top_vendors,
+    }
+    return render(request, "devices/home.html", context)

@@ -163,17 +163,41 @@ for name, web in vendor_data:
 print("All vendors created.")
 
 # Device Types
-device_types_data = {
-    "Cisco": ["C9300-48P", "iosxe", "Cisco Catalyst 9300 Series Switches"],
-    "Cisco": ["C9600-LC-24C", "iosxe", "Cisco Catalyst 9600 Series Switches"],
-    "Cisco": ["C9500-48Y4C", "iosxe", "Cisco Catalyst 9500 Series Switches"],
-    "Cisco": ["C93108TC-FX", "nxos", "Cisco Nexus 9000 Series Switches"],
-    "Cisco": ["C93180YC-FX", "nxos", "Cisco Nexus 9000 Series Switches"],
-    "Cisco": ["C9336C-FX2", "nxos", "Cisco Nexus 9000 Series Switches"],
-}
+device_types_data = [
+    # ---------- IOS-XE ----------
+    ["C9300-48P", "iosxe", "Cisco Catalyst 9300 Series Switches"],
+    ["C9606R", "iosxe", "Cisco Catalyst 9600 Series Routers"],
+    ["C9600-LC-24C", "iosxe", "Cisco Catalyst 9600 Series Switches"],
+    ["C9500-48Y4C", "iosxe", "Cisco Catalyst 9500 Series Switches"],
+    ["C9200L-48T-4X", "iosxe", "Cisco Catalyst 9200 Series Switches"],
+    ["C9300-48T", "iosxe", "Cisco Catalyst 9300 Series Switches"],
+    ["WS-C3850-48P", "iosxe", "Cisco Catalyst 3850 Series Switches"],
+    ["ASR-920-24SZ-IM", "iosxe", "Cisco ASR 920 Routers"],
+    ["WS-C3750X-24", "iosxe", "Cisco Catalyst 3750-X Series Switches"],
+    ["C9500-32QC", "iosxe", "Cisco Catalyst 9500 Series Switches"],
+    ["C9300-24T", "iosxe", "Cisco Catalyst 9300 Series Switches"],
+    ["C9200CX-12P-2X2G", "iosxe", "Cisco Catalyst 9200-CX Series Switches"],
+    ["C9300-48UB", "iosxe", "Cisco Catalyst 9300 Series Switches"],
 
-for vendor_name, model, category, discription in device_types_data.items():
-    vendor = Vendor.objects.get(name=vendor_name)
+    # ---------- NX-OS ----------
+    ["C93108TC-FX", "nxos", "Cisco Nexus 9000 Series Switches"],
+    ["C93180YC-FX", "nxos", "Cisco Nexus 9000 Series Switches"],
+    ["C9336C-FX2", "nxos", "Cisco Nexus 9000 Series Switches"],
+    ["N9K-C93600CD-GX", "nxos", "Cisco Nexus 9300 Switches"],
+    ["C93180YC-EX", "nxos", "Cisco Nexus 9300 Switches"],
+
+    # ---------- IOS ----------
+    ["WS-C2960XR-48LPD-I", "ios", "Cisco Catalyst 2960-X Series Switches"],
+    ["WS-C2960-24TC-L", "ios", "Cisco Catalyst 2960 Series Switches"],
+    ["WS-C4948E", "ios", "Cisco Catalyst 4948 Switches"],
+    ["WS-C2960XR-48TD-I", "ios", "Cisco Catalyst 2960-X Series Switches"],
+    ["WS-C3560CX-12PC-S", "ios", "Cisco Catalyst 3560-CX Series Switches"],
+    ["WS-C2960XR-48LPS-I", "ios", "Cisco Catalyst 2960-X Series Switches"],
+    ["C7009", "ios", "Cisco 7000 Series Chassis"],
+    ["WS-C2960G-24TC-L", "ios", "Cisco Catalyst 2960-G Series Switches"],
+]
+for model, category, discription in device_types_data:
+    vendor = Vendor.objects.get(name="Cisco")
     DeviceType.objects.get_or_create(vendor=vendor, model=model, category=category, description=discription)
 
 # # -----------------------------
