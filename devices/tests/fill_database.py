@@ -164,16 +164,17 @@ print("All vendors created.")
 
 # Device Types
 device_types_data = {
-    "Cisco": ["Catalyst 9300", "ISR 4451"],
-    "Juniper": ["EX4300", "SRX300"],
-    "Arista": ["7050X", "7280R"],
-    "Dell": ["PowerSwitch N1548", "PowerEdge R740"]
+    "Cisco": ["C9300-48P", "iosxe", "Cisco Catalyst 9300 Series Switches"],
+    "Cisco": ["C9600-LC-24C", "iosxe", "Cisco Catalyst 9600 Series Switches"],
+    "Cisco": ["C9500-48Y4C", "iosxe", "Cisco Catalyst 9500 Series Switches"],
+    "Cisco": ["C93108TC-FX", "nxos", "Cisco Nexus 9000 Series Switches"],
+    "Cisco": ["C93180YC-FX", "nxos", "Cisco Nexus 9000 Series Switches"],
+    "Cisco": ["C9336C-FX2", "nxos", "Cisco Nexus 9000 Series Switches"],
 }
 
-for vendor_name, models in device_types_data.items():
+for vendor_name, model, category, discription in device_types_data.items():
     vendor = Vendor.objects.get(name=vendor_name)
-    for model in models:
-        DeviceType.objects.create(vendor=vendor, model=model, category="other")
+    DeviceType.objects.get_or_create(vendor=vendor, model=model, category=category, description=discription)
 
 # # -----------------------------
 # # Module Types

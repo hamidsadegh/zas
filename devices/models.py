@@ -3,8 +3,9 @@ from django.utils import timezone
 
 # Device categories for DeviceType
 DEVICE_TYPE_CHOICES = [
-    ('catalyst', 'Catalyst Switch'),
-    ('nexus', 'Nexus Switch'),
+    ('ios', 'Cisco IOS Switch'),
+    ('iosxe', 'Cisco IOS-XE Switch'),
+    ('nxos', 'Cisco NX-OS Switch'),
     ('router', 'Router'),
     ('firewall', 'Firewall'),
     ('ap', 'Access Point'),
@@ -86,7 +87,7 @@ class Vendor(models.Model):
 class DeviceType(models.Model):
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name='device_types')
     model = models.CharField(max_length=100)
-    category = models.CharField(max_length=50, choices=DEVICE_TYPE_CHOICES, default='catalyst')
+    category = models.CharField(max_length=50, choices=DEVICE_TYPE_CHOICES, default='iosxe')
     description = models.TextField(blank=True, null=True)
 
     class Meta:
