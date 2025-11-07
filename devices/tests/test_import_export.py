@@ -2,7 +2,7 @@ import io
 import pytest # pyright: ignore[reportMissingImports]
 from django.utils import timezone
 from django.contrib.admin.sites import AdminSite
-from devices.models import Device, Organization, Vendor, DeviceType, Platform, DeviceRole, Area
+from devices.models import Device, Organization, Vendor, DeviceType, DeviceRole, Area
 from devices.admin import DeviceAdmin, export_devices_to_excel
 
 @pytest.mark.django_db
@@ -17,7 +17,6 @@ class TestExport:
         area = Area.objects.create(name="TestArea", organization=org)
         vendor = Vendor.objects.create(name="Cisco")
         device_type = DeviceType.objects.create(model="C9300-48P", vendor=vendor)
-        platform = Platform.objects.create(name="IOS-XE", vendor=vendor)
         role = DeviceRole.objects.create(name="Access Switch")
 
         # Create a device
@@ -28,7 +27,6 @@ class TestExport:
             area=area,
             vendor=vendor,
             device_type=device_type,
-            platform=platform,
             role=role,
             status="active",
             image_version="17.06.06",

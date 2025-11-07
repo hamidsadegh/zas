@@ -5,7 +5,6 @@ from .models import (
     Rack,
     DeviceRole,
     Vendor,
-    Platform,
     DeviceType,
     Interface,
     DeviceConfiguration,
@@ -65,17 +64,6 @@ class VendorSerializer(serializers.ModelSerializer):
 
 
 # -----------------------
-# Platform Serializer
-# -----------------------
-class PlatformSerializer(serializers.ModelSerializer):
-    vendor_name = serializers.CharField(source="vendor.name", read_only=True)
-
-    class Meta:
-        model = Platform
-        fields = ["id", "name", "vendor", "vendor_name", "description"]
-
-
-# -----------------------
 # DeviceType Serializer
 # -----------------------
 class DeviceTypeSerializer(serializers.ModelSerializer):
@@ -126,7 +114,6 @@ class DeviceSerializer(serializers.ModelSerializer):
     area_name = serializers.CharField(source="area.name", read_only=True)
     vendor_name = serializers.CharField(source="vendor.name", read_only=True)
     device_type_name = serializers.CharField(source="device_type.model", read_only=True)
-    platform_name = serializers.CharField(source="platform.name", read_only=True)
     role_name = serializers.CharField(source="role.name", read_only=True)
 
     class Meta:
@@ -145,8 +132,6 @@ class DeviceSerializer(serializers.ModelSerializer):
             "vendor_name",
             "device_type",
             "device_type_name",
-            "platform",
-            "platform_name",
             "role",
             "role_name",
             "image_version",

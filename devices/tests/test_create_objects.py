@@ -3,7 +3,7 @@ from django.test import TestCase
 
 # Create your tests here.
 from devices.models import (
-    Organization, Area, Rack, DeviceRole, Vendor, Platform, DeviceType,
+    Organization, Area, Rack, DeviceRole, Vendor, DeviceType,
     ModuleType, Device, DeviceConfiguration, Interface
 )
 from django.utils import timezone
@@ -49,18 +49,6 @@ def test_create_object(django_db_blocker):
             vendors.append(Vendor.objects.create(name=v))
 
         # -----------------------------
-        # 6️⃣ Platforms
-        # -----------------------------
-        platforms_data = [
-            ("Cisco", "IOS"), ("Cisco", "NX-OS"),
-            ("Juniper", "Junos"), ("Arista", "EOS"), ("Dell", "ESXi")
-        ]
-
-        for vendor_name, platform_name in platforms_data:
-            vendor = Vendor.objects.get(name=vendor_name)
-            Platform.objects.create(vendor=vendor, name=platform_name)
-
-        # -----------------------------
         # 7️⃣ Device Types
         # -----------------------------
         device_types_data = {
@@ -92,14 +80,12 @@ def test_create_object(django_db_blocker):
         # 9️⃣ Devices
         # -----------------------------
         all_device_types = list(DeviceType.objects.all())
-        all_platforms = list(Platform.objects.all())
         all_racks = list(Rack.objects.all())
         all_roles = list(DeviceRole.objects.all())
         all_orgs = list(Organization.objects.all())
 
         for i in range(1, 11):
             dt = random.choice(all_device_types)
-            platform = random.choice(all_platforms)
             rack = random.choice(all_racks)
             role = random.choice(all_roles)
             org = random.choice(all_orgs)
@@ -113,7 +99,6 @@ def test_create_object(django_db_blocker):
                 area=rack.site,
                 vendor=dt.vendor,
                 device_type=dt,
-                platform=platform,
                 role=role,
                 image_version="v1.0",
                 status=random.choice(['active', 'inactive', 'maintenance', 'unknown']),
@@ -121,7 +106,7 @@ def test_create_object(django_db_blocker):
             )
 
             # -----------------------------
-            # 10️⃣ Device Configuration
+            # Device Configuration
             # -----------------------------
             DeviceConfiguration.objects.create(
                 device=device,
@@ -130,7 +115,7 @@ def test_create_object(django_db_blocker):
             )
 
             # -----------------------------
-            # 11️⃣ Interfaces
+            # Interfaces
             # -----------------------------
             for j in range(1, 5):
                 Interface.objects.create(

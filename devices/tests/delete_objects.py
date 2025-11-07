@@ -1,6 +1,6 @@
 from devices.models import (
     Device, DeviceConfiguration, Interface, DeviceType, ModuleType,
-    Platform, Vendor, DeviceRole, Rack, Area, Organization
+    Vendor, DeviceRole, Rack, Area, Organization
 )
 
 # Delete in order to respect ForeignKey dependencies
@@ -10,7 +10,6 @@ Device.objects.all().delete()                # delete devices
 
 ModuleType.objects.all().delete()
 DeviceType.objects.all().delete()
-Platform.objects.all().delete()
 DeviceRole.objects.all().delete()
 Rack.objects.all().delete()
 Area.objects.all().delete()

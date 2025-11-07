@@ -5,14 +5,13 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from rest_framework import viewsets, filters
 from rest_framework.permissions import IsAuthenticated
-from .models import Device, Area, Rack, DeviceRole, Vendor, Platform, DeviceType, Interface, DeviceConfiguration
+from .models import Device, Area, Rack, DeviceRole, Vendor, DeviceType, Interface, DeviceConfiguration
 from .serializers import (
     DeviceSerializer,
     AreaSerializer,
     RackSerializer,
     DeviceRoleSerializer,
     VendorSerializer,
-    PlatformSerializer,
     DeviceTypeSerializer,
     InterfaceSerializer,
     DeviceConfigurationSerializer
@@ -169,11 +168,6 @@ class VendorViewSet(viewsets.ModelViewSet):
     serializer_class = VendorSerializer
     permission_classes = [IsAuthenticated]
 
-
-class PlatformViewSet(viewsets.ModelViewSet):
-    queryset = Platform.objects.all()
-    serializer_class = PlatformSerializer
-    permission_classes = [IsAuthenticated]
 
 
 class DeviceTypeViewSet(viewsets.ModelViewSet):

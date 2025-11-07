@@ -8,6 +8,7 @@ DEVICE_TYPE_CHOICES = [
     ('router', 'Router'),
     ('firewall', 'Firewall'),
     ('ap', 'Access Point'),
+    ('server', 'Server'),
     ('other', 'Other'),
 ]
 
@@ -82,18 +83,6 @@ class Vendor(models.Model):
         return self.name
 
 
-class Platform(models.Model):
-    name = models.CharField(max_length=100)
-    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name='platforms')
-    description = models.TextField(blank=True, null=True)
-
-    class Meta:
-        unique_together = ('vendor', 'name')
-
-    def __str__(self):
-        return f"{self.vendor.name} {self.name}"
-
-
 class DeviceType(models.Model):
     vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name='device_types')
     model = models.CharField(max_length=100)
@@ -129,7 +118,6 @@ class Device(models.Model):
     area = models.ForeignKey(Area, on_delete=models.SET_NULL, null=True, blank=True, related_name='devices')
     vendor = models.ForeignKey(Vendor, on_delete=models.SET_NULL, null=True, blank=True, related_name='devices')
     device_type = models.ForeignKey(DeviceType, on_delete=models.SET_NULL, null=True, blank=True, related_name='devices')
-    platform = models.ForeignKey(Platform, on_delete=models.SET_NULL, null=True, blank=True, related_name='devices')
     role = models.ForeignKey(DeviceRole, on_delete=models.SET_NULL, null=True, blank=True, related_name='devices')
 
     # Software / operational

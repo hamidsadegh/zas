@@ -1,7 +1,7 @@
 import pytest # pyright: ignore[reportMissingImports]
 from django.utils import timezone
 from devices.models import (
-    Organization, Area, Vendor, Platform, DeviceType, DeviceRole, Device
+    Organization, Area, Vendor, DeviceType, DeviceRole, Device
 )
 
 @pytest.mark.django_db
@@ -10,7 +10,6 @@ def test_device_creation():
     organization = Organization.objects.create(name="TestOrg")
     area = Area.objects.create(name="Berlin", organization=organization)
     vendor = Vendor.objects.create(name="Cisco")
-    platform = Platform.objects.create(name="IOS-XE", vendor=vendor)
     device_type = DeviceType.objects.create(vendor=vendor, model="C9300-48P", category="catalyst")
     role = DeviceRole.objects.create(name="Access Switch")
 
@@ -21,7 +20,6 @@ def test_device_creation():
         organization=organization,
         area=area,
         vendor=vendor,
-        platform=platform,
         device_type=device_type,
         role=role,
         status="active",

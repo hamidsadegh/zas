@@ -10,7 +10,6 @@ from .models import (
     Rack,
     DeviceRole,
     Vendor,
-    Platform,
     DeviceType,
     Device,
     DeviceConfiguration,
@@ -65,15 +64,6 @@ class VendorAdmin(admin.ModelAdmin):
     list_display = ("name", "website", "created_at")
     search_fields = ("name",)
 
-
-# -----------------------
-# Platform Admin
-# -----------------------
-@admin.register(Platform)
-class PlatformAdmin(admin.ModelAdmin):
-    list_display = ("name", "vendor", "description")
-    list_filter = ("vendor",)
-    search_fields = ("name",)
 
 
 # -----------------------
@@ -134,7 +124,6 @@ def export_devices_to_excel(modeladmin, request, queryset):
             "Area": str(device.area) if device.area else "-",
             "Vendor": device.vendor.name if device.vendor else "-",
             "Device Type": device.device_type.model if device.device_type else "-",
-            "Platform": device.platform.name if device.platform else "-",
             "Role": device.role.name if device.role else "-",
             "Status": device.status,
             "Image Version": device.image_version,
