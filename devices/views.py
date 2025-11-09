@@ -1,11 +1,23 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView
+from django.views import View
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count
 from rest_framework import viewsets, filters
 from rest_framework.permissions import IsAuthenticated
-from .models import Device, Area, Rack, DeviceRole, Vendor, DeviceType, Interface, DeviceConfiguration
+from .models import (
+    Device,
+    Area,
+    Rack,
+    DeviceRole,
+    Vendor,
+    DeviceType,
+    Interface,
+    DeviceConfiguration,
+    SystemSettings,
+)
 from .serializers import (
     DeviceSerializer,
     AreaSerializer,
@@ -16,6 +28,7 @@ from .serializers import (
     InterfaceSerializer,
     DeviceConfigurationSerializer
 )
+from .forms import SystemSettingsForm
 
 # -----------------------
 # HTML Views
@@ -231,3 +244,25 @@ def home(request):
         "top_vendors": top_vendors,
     }
     return render(request, "devices/home.html", context)
+
+
+class SystemSettingsView(LoginRequiredMixin, View):
+    template_name = "devices/system_settings.html"
+
+    def get_settings(self):
+        settings_obj, _ = SystemSettings.objects.get_or_create(pk=1)
+        return settings_obj
+
+    def get(self, request):
+        form = SystemSettingsForm(instance=self.get_settings())
+        return render(request, self.template_name, {"form": form})
+
+    def post(self, request):
+        settings_obj = self.get_settings()
+        form = SystemSettingsForm(request.POST, instance=settings_obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "TACACS+ settings saved.")
+            return redirect("system_settings")
+        messages.error(request, "Please fix the highlighted errors.")
+        return render(request, self.template_name, {"form": form})

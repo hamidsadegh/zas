@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings{% endblock %}
+
+{% block styles %}
+.settings-wrapper {
+    background: var(--surface);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: var(--shadow);
+}
+
+.tag {
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: #eef2ff;
+    color: var(--primary);
+    display: inline-flex;
+}
+
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.settings-header h1 {
+    margin: 0;
+}
+
+.settings-form {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.2rem;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    background: #f8faff;
+    padding: 1rem;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+}
+
+.form-field label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 0.25rem;
+}
+
+.form-field input[type="text"],
+.form-field input[type="number"] {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.6rem 0.8rem;
+    font-size: 1rem;
+}
+
+.toggle-field {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: #f0f5ff;
+    padding: 1rem;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.btn {
+    border: none;
+    border-radius: 999px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: #fff;
+}
+
+.btn-secondary {
+    background: #fff;
+    border: 1px solid var(--border);
+    color: var(--text);
+}
+
+.field-error {
+    color: #c53030;
+    font-size: 0.85rem;
+    margin-top: 0.3rem;
+}
+{% endblock %}
+
+{% block content %}
+<section class="settings-wrapper">
+    <div class="settings-header">
+        <div>
+            <p class="tag">Configuration</p>
+            <h1>System Settings</h1>
+            <p style="color: var(--muted); margin-bottom: 0;">Manage TACACS+ connectivity details.</p>
+        </div>
+        <a class="btn btn-secondary" href="{% url 'home' %}">← Back to Dashboard</a>
+    </div>
+
+    <form method="post" class="settings-form">
+        {% csrf_token %}
+        <div class="toggle-field">
+            {{ form.tacacs_enabled }}
+            <div>
+                <strong>TACACS+ Authentication</strong>
+                <p style="margin: 0; color: var(--muted); font-size: 0.9rem;">Toggle centralized authentication workflow.</p>
+            </div>
+        </div>
+        {% if form.tacacs_enabled.errors %}
+            <div class="field-error">{{ form.tacacs_enabled.errors.0 }}</div>
+        {% endif %}
+
+        <div class="form-grid">
+            {% for field in form %}
+                {% if field.name != 'tacacs_enabled' %}
+                    <div class="form-field">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                            <small style="color: var(--muted);">{{ field.help_text }}</small>
+                        {% endif %}
+                        {% for error in field.errors %}
+                            <div class="field-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <div class="form-actions">
+            <a class="btn btn-secondary" href="{% url 'home' %}">Cancel</a>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

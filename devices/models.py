@@ -175,3 +175,23 @@ class Interface(models.Model):
 
     def __str__(self):
         return f"{self.device.name} - {self.name}"
+
+
+class SystemSettings(models.Model):
+    tacacs_enabled = models.BooleanField(default=False)
+    tacacs_server_ip = models.GenericIPAddressField(protocol='IPv4', blank=True, null=True)
+    tacacs_port = models.PositiveIntegerField(default=49)
+    tacacs_key = models.CharField(max_length=255, blank=True, null=True)
+    tacacs_authorization_service = models.CharField(
+        max_length=100, blank=True, null=True
+    )
+    tacacs_retries = models.PositiveSmallIntegerField(default=3)
+    tacacs_session_timeout = models.PositiveIntegerField(default=60)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "System Settings"
+        verbose_name_plural = "System Settings"
+
+    def __str__(self):
+        return "System Settings"

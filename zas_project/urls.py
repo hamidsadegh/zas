@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.shortcuts import redirect
+from django.contrib.auth import views as auth_views
 from devices import views as device_views
 from rest_framework import routers
 
@@ -28,6 +29,7 @@ html_patterns = [
     path("areas/<int:pk>/", device_views.AreaDetailView.as_view(), name="area_detail"),
     path("racks/", device_views.RackListView.as_view(), name="rack_list"),
     path("areas/<int:area_id>/devices/", device_views.devices_by_area, name="devices_by_area"),
+    path("system-settings/", device_views.SystemSettingsView.as_view(), name="system_settings"),
     path('', device_views.home, name='home'),
 ]
 
@@ -36,6 +38,7 @@ html_patterns = [
 # -----------------------
 urlpatterns = [
     path("", lambda request: redirect("device_list"), name="home"),
+    path("logout/", auth_views.LogoutView.as_view(next_page="/admin/login/"), name="logout"),
     path("admin/", admin.site.urls),            # /admin/login/ is default login
     path("api/", include(router.urls)),         # DRF API
     path("", include(html_patterns)),           # HTML views

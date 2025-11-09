@@ -2,141 +2,254 @@
 
 {% block title %}Device {{ device.name }}{% endblock %}
 
+{% block styles %}
+.device-detail-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.detail-card {
+    background: var(--surface);
+    border-radius: 22px;
+    padding: 2rem;
+    box-shadow: var(--shadow);
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.info-block {
+    background: #f8faff;
+    border-radius: 18px;
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+}
+
+.info-block h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+    font-size: 0.95rem;
+}
+
+.info-item span:first-child {
+    color: var(--muted);
+}
+
+.config-box {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 1.5rem;
+    border-radius: 18px;
+    overflow-x: auto;
+    font-family: "Fira Code", "SFMono-Regular", Menlo, monospace;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.interfaces-card table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 0.7rem;
+}
+
+.interfaces-card thead th {
+    text-align: left;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-bottom: 0.2rem;
+}
+
+.interface-row {
+    background: #f8faff;
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+}
+
+.interface-row td {
+    padding: 0.9rem 1rem;
+}
+
+.interface-row td:first-child {
+    border-top-left-radius: 14px;
+    border-bottom-left-radius: 14px;
+}
+
+.interface-row td:last-child {
+    border-top-right-radius: 14px;
+    border-bottom-right-radius: 14px;
+}
+
+.detail-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.back-link {
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    padding: 0.6rem 1.4rem;
+    font-weight: 600;
+}
+
+.filter-form {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.filter-form input,
+.filter-form select {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem 0.85rem;
+}
+
+.filter-form button {
+    border-radius: 999px;
+    border: none;
+    padding: 0.55rem 1.2rem;
+    font-weight: 600;
+    background: var(--primary);
+    color: #fff;
+    box-shadow: var(--shadow);
+}
+
+.tag {
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: #eef2ff;
+    color: var(--primary);
+}
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-
-  <!-- Top Row: Basic Info & Vendor / Platform / Role -->
-  <div class="row mb-4">
-    <div class="col-md-6">
-      <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white">Basic Information</div>
-        <div class="card-body">
-          <p><strong>Name:</strong> {{ device.name }}</p>
-          <p><strong>Management IP:</strong> {{ device.management_ip }}</p>
-          <p><strong>MAC Address:</strong> {{ device.mac_address|default:"-" }}</p>
-          <p><strong>Serial Number:</strong> {{ device.serial_number|default:"-" }}</p>
-          <p><strong>Inventory Number:</strong> {{ device.inventory_number|default:"-" }}</p>
-          <p><strong>Status:</strong> {{ device.status|default:"unknown" }}</p>
-          <p><strong>Uptime:</strong> {{ device.uptime|default:"-" }}</p>
-          <p><strong>Area:</strong> {% if device.area %}{{ device.area }}{% else %}-{% endif %}</p>
+<section class="device-detail-wrapper">
+    <div class="detail-card">
+        <div class="detail-actions">
+            <div>
+                <p class="tag">Device Profile</p>
+                <h1 style="margin: 0;">{{ device.name }}</h1>
+                <p style="margin: 0; color: var(--muted);">{{ device.management_ip }}</p>
+            </div>
+            <a href="{% url 'device_list' %}" class="back-link">← Back to device list</a>
         </div>
-      </div>
-    </div>
 
-    <div class="col-md-6">
-      <div class="card shadow-sm">
-        <div class="card-header bg-secondary text-white">Vendor / Platform / Role</div>
-        <div class="card-body">
-          <p><strong>Vendor:</strong> {% if device.vendor %}{{ device.vendor.name }}{% else %}-{% endif %}</p>
-          <p><strong>Platform:</strong> {% if device.platform %}{{ device.platform.name }}{% else %}-{% endif %}</p>
-          <p><strong>Device Type:</strong> {% if device.device_type %}{{ device.device_type.model }}{% else %}-{% endif %}</p>
-          <p><strong>Role:</strong> {% if device.role %}{{ device.role.name }}{% else %}-{% endif %}</p>
-          <p><strong>Image Version:</strong> {{ device.image_version|default:"-" }}</p>
+        <div class="detail-grid" style="margin-top: 1.5rem;">
+            <div class="info-block">
+                <h3>Basic Information</h3>
+                <div class="info-item"><span>MAC Address</span><span>{{ device.mac_address|default:"—" }}</span></div>
+                <div class="info-item"><span>Serial Number</span><span>{{ device.serial_number|default:"—" }}</span></div>
+                <div class="info-item"><span>Inventory #</span><span>{{ device.inventory_number|default:"—" }}</span></div>
+                <div class="info-item"><span>Status</span><span>{{ device.status|default:"unknown" }}</span></div>
+                <div class="info-item"><span>Uptime</span><span>{{ device.uptime|default:"—" }}</span></div>
+                <div class="info-item"><span>Area</span><span>{{ device.area|default:"—" }}</span></div>
+            </div>
+            <div class="info-block">
+                <h3>Platform</h3>
+                <div class="info-item"><span>Vendor</span><span>{{ device.vendor|default:"—" }}</span></div>
+                <div class="info-item"><span>Device Type</span><span>{{ device.device_type|default:"—" }}</span></div>
+                <div class="info-item"><span>Role</span><span>{{ device.role|default:"—" }}</span></div>
+                <div class="info-item"><span>Image Version</span><span>{{ device.image_version|default:"—" }}</span></div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
 
-  <!-- Device Configuration -->
-  <div class="card mb-4 shadow-sm">
-    <div class="card-header bg-info text-white">Configuration</div>
-    <div class="card-body">
-      <pre>{{ device.configuration|default:"No configuration available." }}</pre>
-    </div>
-  </div>
-
-  <!-- Interfaces -->
-  <div class="card mb-4 shadow-sm">
-    <div class="card-header bg-success text-white">Interfaces</div>
-    <div class="card-body">
-      <form method="get" class="mb-3">
-        <div class="input-group mb-2">
-          <input type="text" name="search" class="form-control" placeholder="Search interfaces..." value="{{ search_query }}">
-            <select name="paginate_by" class="form-select" style="max-width:100px;">
-                <option value="10" {% if paginate_by|stringformat:"s" == "10" %}selected{% endif %}>10</option>
-                <option value="25" {% if paginate_by|stringformat:"s" == "25" %}selected{% endif %}>25</option>
-                <option value="50" {% if paginate_by|stringformat:"s" == "50" %}selected{% endif %}>50</option>
-                <option value="100" {% if paginate_by|stringformat:"s" == "100" %}selected{% endif %}>100</option>
-            </select>
-
-          <button class="btn btn-primary" type="submit">Apply</button>
+    <div class="detail-card">
+        <h3 style="margin-top: 0;">Configuration</h3>
+        <div class="config-box">
+            {{ device.configuration.config_text|linebreaksbr|default:"No configuration available." }}
         </div>
-      </form>
-
-      {% if interfaces %}
-      <table class="table table-striped table-hover align-middle">
-        <thead class="table-light">
-          <tr>
-            <th><a href="?sort=name{% if search_query %}&search={{ search_query }}{% endif %}">Name</a></th>
-            <th><a href="?sort=description{% if search_query %}&search={{ search_query }}{% endif %}">Description</a></th>
-            <th><a href="?sort=ip_address{% if search_query %}&search={{ search_query }}{% endif %}">IP Address</a></th>
-            <th><a href="?sort=mac_address{% if search_query %}&search={{ search_query }}{% endif %}">MAC Address</a></th>
-            <th><a href="?sort=status{% if search_query %}&search={{ search_query }}{% endif %}">Status</a></th>
-            <th><a href="?sort=endpoint{% if search_query %}&search={{ search_query }}{% endif %}">Endpoint</a></th>
-            <th><a href="?sort=speed{% if search_query %}&search={{ search_query }}{% endif %}">Speed (Mbps)</a></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for interface in interfaces %}
-          <tr>
-            <td>{{ interface.name }}</td>
-            <td>{{ interface.description|default:"-" }}</td>
-            <td>{{ interface.ip_address|default:"-" }}</td>
-            <td>{{ interface.mac_address|default:"-" }}</td>
-            <td>
-              {% if interface.status == 'up' %}
-                <span class="badge bg-success">{{ interface.status }}</span>
-              {% elif interface.status == 'down' %}
-                <span class="badge bg-secondary">{{ interface.status }}</span>
-              {% elif interface.status == 'disabled' %}
-                <span class="badge bg-warning text-dark">{{ interface.status }}</span>
-              {% else %}
-                <span class="badge bg-light text-dark">{{ interface.status }}</span>
-              {% endif %}
-            </td>
-            <td>{{ interface.endpoint|default:"-" }}</td>
-            <td>{{ interface.speed|default:"-" }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-
-      <!-- Pagination controls -->
-      <nav aria-label="Interface pagination">
-        <ul class="pagination justify-content-center">
-          {% if interfaces.has_previous %}
-            <li class="page-item">
-              <a class="page-link" href="?page={{ interfaces.previous_page_number }}&search={{ search_query }}&paginate_by={{ paginate_by }}">Previous</a>
-            </li>
-          {% else %}
-            <li class="page-item disabled"><span class="page-link">Previous</span></li>
-          {% endif %}
-
-          {% for num in interfaces.paginator.page_range %}
-            {% if interfaces.number == num %}
-              <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-            {% else %}
-              <li class="page-item">
-                <a class="page-link" href="?page={{ num }}&search={{ search_query }}&paginate_by={{ paginate_by }}">{{ num }}</a>
-              </li>
-            {% endif %}
-          {% endfor %}
-
-          {% if interfaces.has_next %}
-            <li class="page-item">
-              <a class="page-link" href="?page={{ interfaces.next_page_number }}&search={{ search_query }}&paginate_by={{ paginate_by }}">Next</a>
-            </li>
-          {% else %}
-            <li class="page-item disabled"><span class="page-link">Next</span></li>
-          {% endif %}
-        </ul>
-      </nav>
-      {% else %}
-        <p>No interfaces found.</p>
-      {% endif %}
     </div>
-  </div>
 
-  <a href="{% url 'device_list' %}" class="btn btn-secondary mb-4">Back to Device List</a>
-</div>
+    <div class="detail-card interfaces-card">
+        <div class="detail-actions" style="margin-bottom: 1.2rem;">
+            <h3 style="margin: 0;">Interfaces</h3>
+            <form method="get" class="filter-form">
+                <input type="text" name="search" placeholder="Search interfaces…" value="{{ search_query }}">
+                <select name="paginate_by">
+                    <option value="10" {% if paginate_by|stringformat:"s" == "10" %}selected{% endif %}>10</option>
+                    <option value="25" {% if paginate_by|stringformat:"s" == "25" %}selected{% endif %}>25</option>
+                    <option value="50" {% if paginate_by|stringformat:"s" == "50" %}selected{% endif %}>50</option>
+                    <option value="100" {% if paginate_by|stringformat:"s" == "100" %}selected{% endif %}>100</option>
+                </select>
+                <button type="submit">Apply</button>
+            </form>
+        </div>
+        {% if interfaces %}
+        <table>
+            <thead>
+                <tr>
+                    <th><a href="?sort=name{% if search_query %}&search={{ search_query }}{% endif %}">Name</a></th>
+                    <th><a href="?sort=description{% if search_query %}&search={{ search_query }}{% endif %}">Description</a></th>
+                    <th><a href="?sort=ip_address{% if search_query %}&search={{ search_query }}{% endif %}">IP Address</a></th>
+                    <th><a href="?sort=mac_address{% if search_query %}&search={{ search_query }}{% endif %}">MAC Address</a></th>
+                    <th><a href="?sort=status{% if search_query %}&search={{ search_query }}{% endif %}">Status</a></th>
+                    <th><a href="?sort=endpoint{% if search_query %}&search={{ search_query }}{% endif %}">Endpoint</a></th>
+                    <th><a href="?sort=speed{% if search_query %}&search={{ search_query }}{% endif %}">Speed</a></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for interface in interfaces %}
+                <tr class="interface-row">
+                    <td>{{ interface.name }}</td>
+                    <td>{{ interface.description|default:"—" }}</td>
+                    <td>{{ interface.ip_address|default:"—" }}</td>
+                    <td>{{ interface.mac_address|default:"—" }}</td>
+                    <td>{{ interface.status|title }}</td>
+                    <td>{{ interface.endpoint|default:"—" }}</td>
+                    <td>{{ interface.speed|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="pagination-wrapper">
+            <div class="range-info">
+                Showing {{ interfaces.start_index }}–{{ interfaces.end_index }} of {{ interfaces.paginator.count }} interfaces
+            </div>
+            <ul class="pagination">
+                {% if interfaces.has_previous %}
+                    <li><a href="?page={{ interfaces.previous_page_number }}&search={{ search_query }}&paginate_by={{ paginate_by }}">Previous</a></li>
+                {% else %}
+                    <li><span>Previous</span></li>
+                {% endif %}
+
+                {% for num in interfaces.paginator.page_range %}
+                    {% if interfaces.number == num %}
+                        <li class="active"><span>{{ num }}</span></li>
+                    {% elif num > interfaces.number|add:-3 and num < interfaces.number|add:3 %}
+                        <li><a href="?page={{ num }}&search={{ search_query }}&paginate_by={{ paginate_by }}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if interfaces.has_next %}
+                    <li><a href="?page={{ interfaces.next_page_number }}&search={{ search_query }}&paginate_by={{ paginate_by }}">Next</a></li>
+                {% else %}
+                    <li><span>Next</span></li>
+                {% endif %}
+            </ul>
+        </div>
+        {% else %}
+            <p>No interfaces found.</p>
+        {% endif %}
+    </div>
+</section>
 {% endblock %}

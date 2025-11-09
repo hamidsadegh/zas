@@ -59,8 +59,13 @@
             text-transform: uppercase;
         }
 
+        nav {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
         nav a {
-            margin-left: 1rem;
             font-weight: 500;
             color: var(--muted);
         }
@@ -74,6 +79,64 @@
             padding: 2.5rem 2rem 3rem;
             max-width: 1200px;
             margin: 0 auto;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .logout-form {
+            margin: 0;
+        }
+
+        .logout-btn {
+            border: none;
+            background: #fff;
+            color: var(--primary);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 0.45rem 1.3rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+        }
+
+        .logout-btn:hover {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .flash-container {
+            max-width: 1200px;
+            margin: 1rem auto 0;
+            padding: 0 2rem;
+        }
+
+        .flash {
+            padding: 0.9rem 1.2rem;
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
+            font-weight: 500;
+        }
+
+        .flash-success {
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #34d399;
+        }
+
+        .flash-error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #f87171;
+        }
+
+        .flash-info {
+            background: #eff6ff;
+            color: #1e3a8a;
+            border: 1px solid #60a5fa;
         }
 
         @media (max-width: 768px) {
@@ -98,14 +161,32 @@
         <span>ZAS Platform</span>
         <span>Network Automation</span>
     </div>
-    <nav>
-        <a href="{% url 'home' %}">Dashboard</a>
-        <a href="{% url 'device_list' %}">Devices</a>
-        <a href="{% url 'area_list' %}">Areas</a>
-        <a href="{% url 'rack_list' %}">Racks</a>
-        <a href="/admin/">Admin</a>
-    </nav>
+    <div class="nav-actions">
+        <nav>
+            <a href="{% url 'home' %}">Dashboard</a>
+            <a href="{% url 'device_list' %}">Devices</a>
+            <a href="{% url 'area_list' %}">Areas</a>
+            <a href="{% url 'rack_list' %}">Racks</a>
+            <a href="{% url 'system_settings' %}">System Settings</a>
+            <a href="/admin/">Admin</a>
+        </nav>
+        {% if user.is_authenticated %}
+        <form method="post" action="{% url 'logout' %}" class="logout-form">
+            {% csrf_token %}
+            <button type="submit" class="logout-btn">Logout</button>
+        </form>
+        {% endif %}
+    </div>
 </header>
+{% if messages %}
+<div class="flash-container">
+    {% for message in messages %}
+        <div class="flash flash-{{ message.tags|default:'info' }}">
+            {{ message }}
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
 <main>
     {% block content %}{% endblock %}
 </main>

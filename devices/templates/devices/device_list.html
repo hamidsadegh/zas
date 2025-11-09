@@ -1,123 +1,242 @@
 {% extends "base.html" %}
-{% load static %}
+
+{% block title %}Devices{% endblock %}
+
+{% block styles %}
+.devices-wrapper {
+    background: var(--surface);
+    border-radius: 22px;
+    padding: 2rem;
+    box-shadow: var(--shadow);
+}
+
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.list-header h1 {
+    margin: 0;
+}
+
+.filters {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+}
+
+.filters input,
+.filters select {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.55rem 0.8rem;
+    font-size: 0.95rem;
+}
+
+.filters button {
+    border-radius: 999px;
+    border: none;
+    padding: 0.55rem 1.3rem;
+    font-weight: 600;
+    background: var(--primary);
+    color: #fff;
+    box-shadow: var(--shadow);
+}
+
+.device-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 0.8rem;
+}
+
+.device-table thead th {
+    text-align: left;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    padding-bottom: 0.3rem;
+}
+
+.device-row {
+    background: #f8faff;
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+}
+
+.device-row td {
+    padding: 1rem 1.2rem;
+    border-top: 1px solid var(--border);
+}
+
+.device-row td:first-child {
+    border-top-left-radius: 16px;
+}
+
+.device-row td:last-child {
+    border-top-right-radius: 16px;
+}
+
+.status-pill {
+    padding: 0.25rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.status-active { background: #def7ec; color: #03543f; }
+.status-inactive { background: #e5e7eb; color: #374151; }
+.status-maintenance { background: #fef3c7; color: #92400e; }
+.status-unknown { background: #f3f4f6; color: #4b5563; }
+
+.table-actions a {
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    padding: 0.4rem 1rem;
+    font-weight: 600;
+}
+
+.pagination-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.range-info {
+    font-weight: 500;
+    color: var(--muted);
+}
+
+.pagination {
+    list-style: none;
+    display: flex;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+}
+
+.pagination a,
+.pagination span {
+    border-radius: 10px;
+    padding: 0.45rem 0.85rem;
+    border: 1px solid var(--border);
+    color: var(--text);
+}
+
+.pagination .active span {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2 class="mb-3">Device List</h2>
+<section class="devices-wrapper">
+    <div class="list-header">
+        <div>
+            <p class="tag">Inventory</p>
+            <h1>Devices</h1>
+        </div>
+        <form method="get" class="filters">
+            <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Search devices…">
+            <select name="paginate_by" onchange="this.form.submit()">
+                <option value="10" {% if request.GET.paginate_by == '10' %}selected{% endif %}>Show 10</option>
+                <option value="25" {% if request.GET.paginate_by == '25' %}selected{% endif %}>Show 25</option>
+                <option value="50" {% if request.GET.paginate_by == '50' %}selected{% endif %}>Show 50</option>
+                <option value="100" {% if request.GET.paginate_by == '100' %}selected{% endif %}>Show 100</option>
+            </select>
+            <button type="submit">Search</button>
+        </form>
+    </div>
 
-    <!-- Search and pagination form -->
-    <form method="get" class="form-inline mb-3 d-flex">
-        <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Search..." class="form-control me-2" style="max-width: 250px;">
-        <select name="paginate_by" class="form-select me-2" style="width: auto;" onchange="this.form.submit()">
-            <option value="10" {% if request.GET.paginate_by == '10' %}selected{% endif %}>Show 10</option>
-            <option value="25" {% if request.GET.paginate_by == '25' %}selected{% endif %}>Show 25</option>
-            <option value="50" {% if request.GET.paginate_by == '50' %}selected{% endif %}>Show 50</option>
-            <option value="100" {% if request.GET.paginate_by == '100' %}selected{% endif %}>Show 100</option>
-        </select>
-        <button type="submit" class="btn btn-primary">Search</button>
-    </form>
-
-    <!-- Device table -->
-    <table class="table table-hover table-bordered align-middle">
-        <thead class="table-light">
+    <table class="device-table">
+        <thead>
             <tr>
-                <th><a href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort=name">Device Name</a></th>
-                <th><a href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort=management_ip">IP Address</a></th>
-                <th>Ping</th>
-                <th>SNMP</th>
-                <th><a href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort=status">Status</a></th>
-                <th><a href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort=device_type__model">Device Type</a></th>
-                <th><a href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort=serial_number">Serial Number</a></th>
-                <th><a href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort=area__name">Location</a></th>
-                <th><a href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort=image_version">Image Version</a></th>
-                <th>Actions</th>
+                <th>Device</th>
+                <th>IP</th>
+                <th>Reachability</th>
+                <th>Status</th>
+                <th>Type</th>
+                <th>Serial</th>
+                <th>Location</th>
+                <th>Image</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
             {% for device in devices %}
-            <tr>
-                <td><a href="{% url 'device_detail' device.id %}">{{ device.name }}</a></td>
+            <tr class="device-row">
+                <td>
+                    <strong><a href="{% url 'device_detail' device.id %}">{{ device.name }}</a></strong><br>
+                    <small style="color: var(--muted);">{{ device.vendor|default:"Unknown vendor" }}</small>
+                </td>
                 <td>{{ device.management_ip }}</td>
-                <!-- Reachability -->
                 <td>
-                    {% if device.reachable_ping %}
-                        ✅
-                    {% else %}
-                        ❌
-                    {% endif %}
+                    <div style="display: flex; gap: 0.5rem;">
+                        <span title="Ping">
+                            {% if device.reachable_ping %}✅{% else %}❌{% endif %}
+                        </span>
+                        <span title="SNMP">
+                            {% if device.reachable_snmp %}✅{% else %}❌{% endif %}
+                        </span>
+                    </div>
                 </td>
                 <td>
-                    {% if device.reachable_snmp %}
-                        ✅
-                    {% else %}
-                        ❌
-                    {% endif %}
+                    <span class="status-pill status-{{ device.status|default:'unknown' }}">
+                        {{ device.status|default:"unknown" }}
+                    </span>
                 </td>
-                <td>
-                    {% if device.status == 'active' %}
-                        <span class="badge bg-success">{{ device.status }}</span>
-                    {% elif device.status == 'inactive' %}
-                        <span class="badge bg-secondary">{{ device.status }}</span>
-                    {% elif device.status == 'maintenance' %}
-                        <span class="badge bg-warning text-dark">{{ device.status }}</span>
-                    {% else %}
-                        <span class="badge bg-light text-dark">{{ device.status }}</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if device.device_type %}
-                        {{ device.device_type.model }}
-                    {% else %}
-                        —
-                    {% endif %}
-                </td>
-                <td>{{ device.serial_number }}</td>
-                <td>
-                    {% if device.area %}
-                        {{ device.area }}
-                    {% else %}
-                        —
-                    {% endif %}
-                </td>
-                <td>{{ device.image_version }}</td>
-                <td>
-                    <a href="{% url 'device_detail' device.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                <td>{{ device.device_type|default:"—" }}</td>
+                <td>{{ device.serial_number|default:"—" }}</td>
+                <td>{{ device.area|default:"—" }}</td>
+                <td>{{ device.image_version|default:"—" }}</td>
+                <td class="table-actions">
+                    <a href="{% url 'device_detail' device.id %}">View</a>
                 </td>
             </tr>
             {% empty %}
-            <tr><td colspan="10" class="text-center">No devices found.</td></tr>
+            <tr>
+                <td colspan="9" style="text-align: center; padding: 2rem; color: var(--muted);">
+                    No devices found.
+                </td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>
 
-    <!-- Pagination -->
-    <div class="d-flex justify-content-between align-items-center mt-3">
-        <div>
+    <div class="pagination-wrapper">
+        <div class="range-info">
             Showing {{ devices.start_index }}–{{ devices.end_index }} of {{ devices.paginator.count }} devices
         </div>
-        <nav>
-            <ul class="pagination mb-0">
-                {% if devices.has_previous %}
-                    <li class="page-item"><a class="page-link" href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort={{ request.GET.sort }}&page={{ devices.previous_page_number }}&paginate_by={{ request.GET.paginate_by }}">Previous</a></li>
-                {% else %}
-                    <li class="page-item disabled"><span class="page-link">Previous</span></li>
-                {% endif %}
+        <ul class="pagination">
+            {% if devices.has_previous %}
+                <li><a href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort={{ request.GET.sort }}&page={{ devices.previous_page_number }}&paginate_by={{ request.GET.paginate_by }}">Previous</a></li>
+            {% else %}
+                <li><span>Previous</span></li>
+            {% endif %}
 
-                {% for num in devices.paginator.page_range %}
-                    {% if devices.number == num %}
-                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                    {% elif num > devices.number|add:-3 and num < devices.number|add:3 %}
-                        <li class="page-item"><a class="page-link" href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort={{ request.GET.sort }}&page={{ num }}&paginate_by={{ request.GET.paginate_by }}">{{ num }}</a></li>
-                    {% endif %}
-                {% endfor %}
-
-                {% if devices.has_next %}
-                    <li class="page-item"><a class="page-link" href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort={{ request.GET.sort }}&page={{ devices.next_page_number }}&paginate_by={{ request.GET.paginate_by }}">Next</a></li>
-                {% else %}
-                    <li class="page-item disabled"><span class="page-link">Next</span></li>
+            {% for num in devices.paginator.page_range %}
+                {% if devices.number == num %}
+                    <li class="active"><span>{{ num }}</span></li>
+                {% elif num > devices.number|add:-3 and num < devices.number|add:3 %}
+                    <li><a href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort={{ request.GET.sort }}&page={{ num }}&paginate_by={{ request.GET.paginate_by }}">{{ num }}</a></li>
                 {% endif %}
-            </ul>
-        </nav>
+            {% endfor %}
+
+            {% if devices.has_next %}
+                <li><a href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort={{ request.GET.sort }}&page={{ devices.next_page_number }}&paginate_by={{ request.GET.paginate_by }}">Next</a></li>
+            {% else %}
+                <li><span>Next</span></li>
+            {% endif %}
+        </ul>
     </div>
-</div>
+</section>
 {% endblock %}
