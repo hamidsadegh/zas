@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}{% if form.instance.pk %}Edit VLAN{% else %}Add VLAN{% endif %}{% endblock %}
+
+{% block styles %}
+.form-shell {
+    width: 60%;
+    max-width: 900px;
+    margin: 0 auto;
+    background: var(--surface);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: var(--shadow);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-field label {
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 0.25rem;
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.6rem 0.8rem;
+}
+
+.form-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.8rem;
+}
+
+.btn {
+    border-radius: 999px;
+    border: none;
+    padding: 0.6rem 1.4rem;
+    font-weight: 600;
+}
+
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-secondary { background: #fff; border: 1px solid var(--border); color: var(--text); }
+{% endblock %}
+
+{% block content %}
+<section class="form-shell">
+    <h1 style="margin-top:0;">{% if form.instance.pk %}Edit VLAN{% else %}Add VLAN{% endif %}</h1>
+    <form method="post" class="form-grid">
+        {% csrf_token %}
+        {% for field in form %}
+            <div class="form-field">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <small style="color:#c53030;">{{ field.errors|striptags }}</small>
+                {% endif %}
+            </div>
+        {% endfor %}
+        <div class="form-actions" style="grid-column: 1 / -1;">
+            <a href="{% url 'vlan_list' %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

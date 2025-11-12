@@ -42,6 +42,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),            # /admin/login/ is default login
     path("api/", include(router.urls)),         # DRF API
     path("", include(html_patterns)),           # HTML views
+    path("vlans/", include("vlans.urls")),
     path("api-auth/", include("rest_framework.urls")),  # DRF login/logout for browsable API
     path("api/automation/", include("automation.urls")),
 

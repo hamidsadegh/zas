@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}VLANs{% endblock %}
+
+{% block styles %}
+.vlan-wrapper {
+    width: 95%;
+    margin: 0 auto;
+    background: var(--surface);
+    border-radius: 22px;
+    padding: 1.5rem 2rem;
+    box-shadow: var(--shadow);
+    font-size: 0.85rem;
+}
+
+.vlan-header {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+}
+
+.filter-bar {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.filter-bar select,
+.filter-bar input {
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.4rem 0.9rem;
+    min-width: 150px;
+}
+
+.filter-bar button,
+.action-btn {
+    border-radius: 999px;
+    border: none;
+    padding: 0.45rem 1.2rem;
+    font-weight: 600;
+    background: var(--primary);
+    color: #fff;
+    box-shadow: var(--shadow);
+}
+
+.action-btn.secondary {
+    background: #fff;
+    color: var(--primary);
+    border: 1px solid var(--border);
+}
+
+.vlan-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.vlan-table th {
+    text-align: left;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0.6rem 0.8rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.vlan-table td {
+    padding: 0.75rem 0.8rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.table-actions a {
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    padding: 0.35rem 0.9rem;
+    font-weight: 600;
+    font-size: 0.8rem;
+    margin-right: 0.4rem;
+}
+
+.pagination-wrapper {
+    margin-top: 1.2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    font-size: 0.8rem;
+}
+
+.pagination {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 0.3rem;
+}
+
+.pagination a,
+.pagination span {
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    padding: 0.3rem 0.8rem;
+    color: var(--text);
+}
+
+.pagination .active span {
+    background: var(--primary);
+    color: #fff;
+}
+
+main {
+    max-width: none;
+    width: 95vw;
+    margin: 0 auto;
+}
+{% endblock %}
+
+{% block content %}
+<section class="vlan-wrapper">
+    <div class="vlan-header">
+        <div>
+            <p class="tag">Inventory</p>
+            <h1 style="margin: 0;">VLANs</h1>
+        </div>
+        <div class="filter-bar">
+            <form method="get" class="filter-bar" style="margin:0;">
+                <select name="site" onchange="this.form.submit()">
+                    {% for key, label in site_choices %}
+                        <option value="{{ key }}" {% if site_filter == key %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <input type="text" name="q" placeholder="Search VLANs..." value="{{ search_query }}">
+                <select name="paginate_by" onchange="this.form.submit()">
+                    {% for option in per_page_options %}
+                        <option value="{{ option }}" {% if paginate_by_value == option %}selected{% endif %}>Show {{ option }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit">Search</button>
+            </form>
+            <a href="{% url 'vlan_add' %}" class="action-btn">Add VLAN</a>
+            <a href="{% url 'vlan_export' %}?site={{ site_filter }}" class="action-btn secondary">Export</a>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="vlan-table">
+            <thead>
+                <tr>
+                    <th>VLAN ID</th>
+                    <th>Name</th>
+                    <th>Subnet</th>
+                    <th>Gateway</th>
+                    <th>Usage Area</th>
+                    <th>Description</th>
+                    <th>Site</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for vlan in vlans %}
+                <tr>
+                    <td>{{ vlan.vlan_id }}</td>
+                    <td>{{ vlan.name }}</td>
+                    <td>{{ vlan.subnet }}</td>
+                    <td>{{ vlan.gateway|default:"—" }}</td>
+                    <td>{{ vlan.usage_area }}</td>
+                    <td>{{ vlan.description|default:"—" }}</td>
+                    <td>{{ vlan.site }}</td>
+                    <td class="table-actions">
+                        <a href="{% url 'vlan_edit' vlan.pk %}">Edit</a>
+                        <a href="{% url 'vlan_delete' vlan.pk %}">Delete</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" style="text-align:center; padding: 2rem; color: var(--muted);">
+                        No VLANs found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination-wrapper">
+        <div>
+            {% if is_paginated and page_obj %}
+                {% if page_obj.paginator.count %}
+                    Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} VLANs
+                {% else %}
+                    Showing 0 VLANs
+                {% endif %}
+            {% else %}
+                Showing {{ vlans|length }} VLAN{{ vlans|length|pluralize }}
+            {% endif %}
+        </div>
+        {% if is_paginated and page_obj %}
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+                <li><a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}site={{ site_filter }}&paginate_by={{ paginate_by_value }}&page={{ page_obj.previous_page_number }}">Previous</a></li>
+            {% else %}
+                <li><span>Previous</span></li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="active"><span>{{ num }}</span></li>
+                {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+                    <li><a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}site={{ site_filter }}&paginate_by={{ paginate_by_value }}&page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <li><a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}site={{ site_filter }}&paginate_by={{ paginate_by_value }}&page={{ page_obj.next_page_number }}">Next</a></li>
+            {% else %}
+                <li><span>Next</span></li>
+            {% endif %}
+        </ul>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

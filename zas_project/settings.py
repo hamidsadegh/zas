@@ -59,6 +59,7 @@ INSTALLED_APPS = [
 
     # Local apps
     'accounts',
+    'vlans',
     'devices',
     'automation',
     'django_crontab',
