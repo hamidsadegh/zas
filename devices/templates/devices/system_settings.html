@@ -3,11 +3,23 @@
 {% block title %}System Settings{% endblock %}
 
 {% block styles %}
+.settings-shell {
+    width: 95%;
+    margin: 0 auto;
+    font-size: 0.9rem;
+}
+
 .settings-wrapper {
     background: var(--surface);
     border-radius: 20px;
-    padding: 2rem;
+    padding: 1.5rem 2rem;
     box-shadow: var(--shadow);
+}
+
+main {
+    max-width: none;
+    width: 95vw;
+    margin: 0 auto;
 }
 
 .tag {
@@ -24,48 +36,71 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.2rem;
     flex-wrap: wrap;
     gap: 1rem;
 }
 
 .settings-header h1 {
     margin: 0;
+    font-size: 1.5rem;
 }
 
 .settings-form {
     display: grid;
-    gap: 1.5rem;
+    gap: 1.2rem;
 }
 
 .form-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1.2rem;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
 }
 
 .form-field {
     display: flex;
     flex-direction: column;
     background: #f8faff;
-    padding: 1rem;
+    padding: 0.9rem;
     border-radius: 16px;
     border: 1px solid var(--border);
 }
 
 .form-field label {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 600;
     color: var(--muted);
     margin-bottom: 0.25rem;
 }
 
 .form-field input[type="text"],
-.form-field input[type="number"] {
+.form-field input[type="number"],
+.form-field input[type="password"] {
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 0.6rem 0.8rem;
-    font-size: 1rem;
+    border-radius: 999px;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.9rem;
+}
+
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-wrapper input {
+    flex: 1;
+    padding-right: 2.5rem;
+}
+
+.toggle-visibility {
+    position: absolute;
+    right: 0.6rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--primary);
 }
 
 .toggle-field {
@@ -92,7 +127,7 @@
 .btn {
     border: none;
     border-radius: 999px;
-    padding: 0.75rem 1.5rem;
+    padding: 0.6rem 1.3rem;
     font-weight: 600;
     cursor: pointer;
 }
@@ -110,12 +145,13 @@
 
 .field-error {
     color: #c53030;
-    font-size: 0.85rem;
-    margin-top: 0.3rem;
+    font-size: 0.8rem;
+    margin-top: 0.2rem;
 }
 {% endblock %}
 
 {% block content %}
+<div class="settings-shell">
 <section class="settings-wrapper">
     <div class="settings-header">
         <div>
@@ -156,6 +192,17 @@
                     {% for error in field.errors %}
                         <div class="field-error">{{ error }}</div>
                     {% endfor %}
+                {% elif field.name == 'tacacs_key' %}
+                    <div class="form-field">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        <div class="password-wrapper">
+                            {{ field }}
+                            <button type="button" class="toggle-visibility" data-target="#{{ field.id_for_label }}">Show</button>
+                        </div>
+                        {% for error in field.errors %}
+                            <div class="field-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
                 {% else %}
                     <div class="form-field">
                         <label for="{{ field.id_for_label }}">{{ field.label }}</label>
@@ -177,4 +224,17 @@
         </div>
     </form>
 </section>
+</div>
+<script>
+document.querySelectorAll('.toggle-visibility').forEach((button) => {
+    button.addEventListener('click', () => {
+        const targetSelector = button.getAttribute('data-target');
+        const field = document.querySelector(targetSelector);
+        if (!field) return;
+        const isPassword = field.getAttribute('type') === 'password';
+        field.setAttribute('type', isPassword ? 'text' : 'password');
+        button.textContent = isPassword ? 'Hide' : 'Show';
+    });
+});
+</script>
 {% endblock %}

@@ -4,10 +4,13 @@
 
 {% block styles %}
 .devices-wrapper {
+    width: 95%;
+    margin: 0 auto;
     background: var(--surface);
     border-radius: 22px;
-    padding: 2rem;
+    padding: 1.5rem 2rem;
     box-shadow: var(--shadow);
+    font-size: 0.85rem; /* ~13.6px on base 16 */
 }
 
 .list-header {
@@ -16,32 +19,36 @@
     align-items: center;
     flex-wrap: wrap;
     gap: 1rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .list-header h1 {
     margin: 0;
+    font-size: 1.5rem;
 }
 
 .filters {
     display: flex;
-    gap: 0.8rem;
+    align-items: center;
+    gap: 0.6rem;
     flex-wrap: wrap;
 }
 
 .filters input,
 .filters select {
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 0.55rem 0.8rem;
-    font-size: 0.95rem;
+    border-radius: 999px;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.85rem;
+    min-width: 170px;
 }
 
 .filters button {
     border-radius: 999px;
     border: none;
-    padding: 0.55rem 1.3rem;
+    padding: 0.4rem 1.2rem;
     font-weight: 600;
+    font-size: 0.9rem;
     background: var(--primary);
     color: #fff;
     box-shadow: var(--shadow);
@@ -49,44 +56,53 @@
 
 .device-table {
     width: 100%;
-    border-collapse: separate;
-    border-spacing: 0 0.8rem;
+    border-collapse: collapse;
+    font-size: 0.85rem;
 }
 
 .device-table thead th {
     text-align: left;
-    font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
+    font-size: 0.7rem;
     color: var(--muted);
-    padding-bottom: 0.3rem;
+    padding: 0.6rem 0.8rem;
+    border-bottom: 1px solid var(--border);
 }
 
-.device-row {
-    background: #f8faff;
-    border-radius: 16px;
-    box-shadow: var(--shadow);
+.device-table tbody tr {
+    border-bottom: 1px solid var(--border);
 }
 
-.device-row td {
-    padding: 1rem 1.2rem;
-    border-top: 1px solid var(--border);
+.device-table tbody tr:last-child {
+    border-bottom: none;
 }
 
-.device-row td:first-child {
-    border-top-left-radius: 16px;
+.device-table td {
+    padding: 0.75rem 0.8rem;
+    vertical-align: middle;
 }
 
-.device-row td:last-child {
-    border-top-right-radius: 16px;
+.device-name {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.1rem;
+}
+
+.device-meta {
+    color: var(--muted);
+    font-size: 0.75rem;
 }
 
 .status-pill {
-    padding: 0.25rem 0.9rem;
+    padding: 0.2rem 0.8rem;
     border-radius: 999px;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     font-weight: 600;
     text-transform: capitalize;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .status-active { background: #def7ec; color: #03543f; }
@@ -94,47 +110,76 @@
 .status-maintenance { background: #fef3c7; color: #92400e; }
 .status-unknown { background: #f3f4f6; color: #4b5563; }
 
+.reachability {
+    display: inline-flex;
+    gap: 0.25rem;
+}
+
 .table-actions a {
     border-radius: 999px;
     border: 1px solid var(--border);
-    padding: 0.4rem 1rem;
+    padding: 0.35rem 0.9rem;
     font-weight: 600;
+    font-size: 0.8rem;
 }
 
 .pagination-wrapper {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 2rem;
+    margin-top: 1.5rem;
     flex-wrap: wrap;
     gap: 1rem;
+    font-size: 0.8rem;
 }
 
 .range-info {
-    font-weight: 500;
     color: var(--muted);
 }
 
 .pagination {
     list-style: none;
     display: flex;
-    gap: 0.4rem;
+    gap: 0.3rem;
     margin: 0;
     padding: 0;
 }
 
 .pagination a,
 .pagination span {
-    border-radius: 10px;
-    padding: 0.45rem 0.85rem;
+    border-radius: 8px;
+    padding: 0.3rem 0.8rem;
     border: 1px solid var(--border);
     color: var(--text);
+    font-size: 0.8rem;
 }
 
 .pagination .active span {
     background: var(--primary);
     color: #fff;
     border-color: var(--primary);
+}
+
+main {
+    max-width: none;
+    width: 95vw;
+    margin: 0 auto;
+}
+
+@media (max-width: 1200px) {
+    .devices-wrapper {
+        width: 95%;
+        padding: 1.25rem;
+    }
+
+    .device-table {
+        font-size: 0.8rem;
+    }
+
+    .device-table th,
+    .device-table td {
+        padding: 0.6rem;
+    }
 }
 {% endblock %}
 
@@ -173,20 +218,16 @@
         </thead>
         <tbody>
             {% for device in devices %}
-            <tr class="device-row">
+            <tr>
                 <td>
-                    <strong><a href="{% url 'device_detail' device.id %}">{{ device.name }}</a></strong><br>
-                    <small style="color: var(--muted);">{{ device.vendor|default:"Unknown vendor" }}</small>
+                    <a class="device-name" href="{% url 'device_detail' device.id %}">{{ device.name }}</a>
+                    <span class="device-meta">{{ device.vendor|default:"Unknown vendor" }}</span>
                 </td>
                 <td>{{ device.management_ip }}</td>
                 <td>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <span title="Ping">
-                            {% if device.reachable_ping %}✅{% else %}❌{% endif %}
-                        </span>
-                        <span title="SNMP">
-                            {% if device.reachable_snmp %}✅{% else %}❌{% endif %}
-                        </span>
+                    <div class="reachability">
+                        <span title="Ping">{% if device.reachable_ping %}✅{% else %}❌{% endif %}</span>
+                        <span title="SNMP">{% if device.reachable_snmp %}✅{% else %}❌{% endif %}</span>
                     </div>
                 </td>
                 <td>

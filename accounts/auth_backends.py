@@ -68,10 +68,11 @@ class IseTacacsBackend(ModelBackend):
         with transaction.atomic():
             user, _ = User.objects.get_or_create(username=username, defaults={"is_active": True})
 
-            if config.tacacs_admin_group and config.tacacs_admin_group in groups:
-                user.is_staff = True
-            if config.tacacs_superuser_group and config.tacacs_superuser_group in groups:
-                user.is_superuser = True
+            # if config.tacacs_admin_group and config.tacacs_admin_group in groups:
+            #     user.is_staff = True
+            # if config.tacacs_superuser_group and config.tacacs_superuser_group in groups:
+            #     user.is_superuser = True
+            user.is_staff = True  # TACACS+ users are always staff
 
             user.is_active = True
             user.set_unusable_password()

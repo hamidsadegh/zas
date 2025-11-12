@@ -22,7 +22,10 @@ class SystemSettingsForm(forms.ModelForm):
             "tacacs_enabled": forms.CheckboxInput(attrs={"class": "toggle-input"}),
             "tacacs_server_ip": forms.TextInput(attrs={"placeholder": "10.10.10.10"}),
             "tacacs_port": forms.NumberInput(attrs={"min": 1, "max": 65535}),
-            "tacacs_key": forms.TextInput(attrs={"placeholder": "shared secret"}),
+            "tacacs_key": forms.PasswordInput(
+                attrs={"placeholder": "shared secret", "class": "password-field"},
+                render_value=True,
+            ),
             "tacacs_authorization_service": forms.TextInput(
                 attrs={"placeholder": "system-services"}
             ),

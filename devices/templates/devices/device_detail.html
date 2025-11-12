@@ -6,39 +6,52 @@
 .device-detail-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1.5rem;
+    width: 100%;
+    font-size: 0.85rem;
 }
 
+.device-detail-wrapper main,
+main {
+    max-width: none;
+    width: 95vw;
+    margin: 0 auto;
+}
+
+.device-detail-wrapper {
+    width: 95%;
+    margin: 0 auto;
+}
 .detail-card {
     background: var(--surface);
-    border-radius: 22px;
-    padding: 2rem;
+    border-radius: 20px;
+    padding: 1.5rem;
     box-shadow: var(--shadow);
 }
 
 .detail-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.5rem;
+    gap: 1rem;
 }
 
 .info-block {
     background: #f8faff;
-    border-radius: 18px;
-    padding: 1.5rem;
+    border-radius: 16px;
+    padding: 1.2rem;
     border: 1px solid var(--border);
 }
 
 .info-block h3 {
     margin-top: 0;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
 }
 
 .info-item {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 0.6rem;
-    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
 }
 
 .info-item span:first-child {
@@ -48,47 +61,63 @@
 .config-box {
     background: #0f172a;
     color: #e2e8f0;
-    padding: 1.5rem;
-    border-radius: 18px;
-    overflow-x: auto;
+    padding: 1.25rem;
+    border-radius: 16px;
+    overflow: auto;
+    max-height: 40rem;
+    min-height: 15rem;
+    width: 90%;
+    margin: 0 auto;
     font-family: "Fira Code", "SFMono-Regular", Menlo, monospace;
-    font-size: 0.9rem;
-    line-height: 1.6;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+}
+
+.config-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.8rem;
+    gap: 1rem;
+}
+
+.copy-btn {
+    border: none;
+    border-radius: 999px;
+    padding: 0.45rem 1rem;
+    background: var(--primary);
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    box-shadow: var(--shadow);
 }
 
 .interfaces-card table {
     width: 100%;
-    border-collapse: separate;
-    border-spacing: 0 0.7rem;
+    border-collapse: collapse;
+    font-size: 0.85rem;
 }
 
 .interfaces-card thead th {
     text-align: left;
-    font-size: 0.75rem;
-    letter-spacing: 0.08em;
+    font-size: 0.7rem;
     text-transform: uppercase;
+    letter-spacing: 0.08em;
     color: var(--muted);
-    padding-bottom: 0.2rem;
+    padding: 0.5rem 0.8rem;
+    border-bottom: 1px solid var(--border);
 }
 
-.interface-row {
-    background: #f8faff;
-    border-radius: 14px;
-    box-shadow: var(--shadow);
+.interfaces-card tbody tr {
+    border-bottom: 1px solid var(--border);
 }
 
-.interface-row td {
-    padding: 0.9rem 1rem;
-}
-
-.interface-row td:first-child {
-    border-top-left-radius: 14px;
-    border-bottom-left-radius: 14px;
-}
-
-.interface-row td:last-child {
-    border-top-right-radius: 14px;
-    border-bottom-right-radius: 14px;
+.interfaces-card td {
+    padding: 0.8rem 0.8rem;
 }
 
 .detail-actions {
@@ -102,13 +131,13 @@
 .back-link {
     border-radius: 999px;
     border: 1px solid var(--border);
-    padding: 0.6rem 1.4rem;
+    padding: 0.5rem 1.2rem;
     font-weight: 600;
 }
 
 .filter-form {
     display: flex;
-    gap: 0.8rem;
+    gap: 0.6rem;
     flex-wrap: wrap;
     align-items: center;
 }
@@ -116,14 +145,15 @@
 .filter-form input,
 .filter-form select {
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 0.5rem 0.85rem;
+    border-radius: 999px;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.85rem;
 }
 
 .filter-form button {
     border-radius: 999px;
     border: none;
-    padding: 0.55rem 1.2rem;
+    padding: 0.45rem 1.2rem;
     font-weight: 600;
     background: var(--primary);
     color: #fff;
@@ -173,9 +203,14 @@
     </div>
 
     <div class="detail-card">
-        <h3 style="margin-top: 0;">Configuration</h3>
-        <div class="config-box">
-            {{ device.configuration.config_text|linebreaksbr|default:"No configuration available." }}
+        <div class="config-toolbar">
+            <h3 style="margin: 0;">Configuration</h3>
+            <button type="button" class="copy-btn" data-copy-target="#device-config">
+                ⧉ Copy
+            </button>
+        </div>
+        <div class="config-box" id="device-config">
+            {{ device.configuration.config_text|default:"No configuration available." }}
         </div>
     </div>
 
@@ -251,5 +286,53 @@
             <p>No interfaces found.</p>
         {% endif %}
     </div>
+<script>
+(function () {
+    const copyButton = document.querySelector('[data-copy-target]');
+    if (!copyButton) {
+        return;
+    }
+
+    copyButton.addEventListener('click', () => {
+        const targetSelector = copyButton.getAttribute('data-copy-target');
+        const target = document.querySelector(targetSelector);
+        if (!target) {
+            return;
+        }
+        const text = target.textContent || '';
+
+        const handleSuccess = () => {
+            copyButton.textContent = 'Copied!';
+            setTimeout(() => (copyButton.textContent = '⧉ Copy'), 1500);
+        };
+
+        const handleFailure = () => {
+            copyButton.textContent = 'Copy failed';
+            setTimeout(() => (copyButton.textContent = '⧉ Copy'), 1500);
+        };
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(handleSuccess).catch(handleFailure);
+        } else {
+            // Fallback for HTTP / older browsers
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                handleSuccess();
+            } catch (err) {
+                handleFailure();
+            } finally {
+                document.body.removeChild(textarea);
+            }
+        }
+    });
+})();
+</script>
 </section>
 {% endblock %}
