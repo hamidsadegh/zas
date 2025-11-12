@@ -78,6 +78,10 @@
     border: 1px solid var(--border);
 }
 
+.toggle-field.secondary {
+    grid-column: 1 / -1;
+}
+
 .form-actions {
     display: flex;
     justify-content: flex-end;
@@ -137,7 +141,22 @@
 
         <div class="form-grid">
             {% for field in form %}
-                {% if field.name != 'tacacs_enabled' %}
+                {% if field.name == 'tacacs_enabled' %}
+                    {# already rendered #}
+                {% elif field.name == 'allow_local_superusers' %}
+                    <div class="toggle-field secondary">
+                        {{ field }}
+                        <div>
+                            <strong>{{ field.label }}</strong>
+                            <p style="margin: 0; color: var(--muted); font-size: 0.9rem;">
+                                Keep local superusers as emergency access when TACACS+ denies requests.
+                            </p>
+                        </div>
+                    </div>
+                    {% for error in field.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                {% else %}
                     <div class="form-field">
                         <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                         {{ field }}

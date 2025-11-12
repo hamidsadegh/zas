@@ -16,7 +16,6 @@ from .models import (
     DeviceType,
     Interface,
     DeviceConfiguration,
-    SystemSettings,
 )
 from .serializers import (
     DeviceSerializer,
@@ -28,6 +27,7 @@ from .serializers import (
     InterfaceSerializer,
     DeviceConfigurationSerializer
 )
+from accounts.models import SystemSettings
 from .forms import SystemSettingsForm
 
 # -----------------------
@@ -250,8 +250,7 @@ class SystemSettingsView(LoginRequiredMixin, View):
     template_name = "devices/system_settings.html"
 
     def get_settings(self):
-        settings_obj, _ = SystemSettings.objects.get_or_create(pk=1)
-        return settings_obj
+        return SystemSettings.get()
 
     def get(self, request):
         form = SystemSettingsForm(instance=self.get_settings())

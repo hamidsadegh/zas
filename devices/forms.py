@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import SystemSettings
+from accounts.models import SystemSettings
 
 
 class SystemSettingsForm(forms.ModelForm):
@@ -14,6 +14,9 @@ class SystemSettingsForm(forms.ModelForm):
             "tacacs_authorization_service",
             "tacacs_retries",
             "tacacs_session_timeout",
+            "tacacs_admin_group",
+            "tacacs_superuser_group",
+            "allow_local_superusers",
         ]
         widgets = {
             "tacacs_enabled": forms.CheckboxInput(attrs={"class": "toggle-input"}),
@@ -25,4 +28,7 @@ class SystemSettingsForm(forms.ModelForm):
             ),
             "tacacs_retries": forms.NumberInput(attrs={"min": 0, "max": 10}),
             "tacacs_session_timeout": forms.NumberInput(attrs={"min": 10, "max": 3600}),
+            "tacacs_admin_group": forms.TextInput(attrs={"placeholder": "ise-admins"}),
+            "tacacs_superuser_group": forms.TextInput(attrs={"placeholder": "ise-superusers"}),
+            "allow_local_superusers": forms.CheckboxInput(),
         }

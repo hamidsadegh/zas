@@ -20,6 +20,27 @@ SECRET_KEY = 'django-insecure-axas6dz8ha_v$3(xxk3h4&6736=(%yb_bws(9+!ad!64$0ltf&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
+# Logging Configuration
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "loggers": {
+        "accounts.auth_backends": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+        },
+        "tacacs_plus": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+        },
+    },
+}
+
 ALLOWED_HOSTS = ['*']
 
 
@@ -32,11 +53,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-     
+
     # Third-party apps
     'rest_framework',
 
     # Local apps
+    'accounts',
     'devices',
     'automation',
     'django_crontab',
@@ -68,6 +90,11 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',  # require login for all API views
     ],
 }
+
+AUTHENTICATION_BACKENDS = [
+    'accounts.auth_backends.IseTacacsBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
 
 
 MIDDLEWARE = [
