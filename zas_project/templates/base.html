@@ -5,6 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}ZAS — Network Administration System{% endblock %}</title>
+    <!-- <link rel="icon" href="{% static 'img/favicon-32.png' %}" sizes="32x32" type="image/png"> -->
+    <link rel="icon" href="{% static 'img/favicon32.png' %}" sizes="32x32" type="image/png">
+    <link rel="apple-touch-icon" href="{% static 'img/favicon.png' %}">
     <style>
         :root {
             --bg: #f6f8fb;
@@ -168,7 +171,7 @@
             <a href="{% url 'vlan_list' %}">VLANs</a>
             <!-- <a href="{% url 'area_list' %}">Areas</a>
             <a href="{% url 'rack_list' %}">Racks</a> -->
-            <a href="{% url 'system_settings' %}">System Settings</a>
+            <a href="{% url 'system_settings' %}">Settings</a>
             <a href="/admin/">Admin</a>
         </nav>
         {% if user.is_authenticated %}
