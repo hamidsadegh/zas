@@ -38,11 +38,29 @@ class DeviceListView(LoginRequiredMixin, ListView):
     template_name = "devices/device_list.html"
     context_object_name = "devices"
     paginate_by = 25
+    per_page_options = (10, 25, 50, 100)
+
+    def get_paginate_by(self, queryset):
+        per_page = self.request.GET.get("paginate_by")
+        if per_page and per_page.isdigit():
+            per_page = int(per_page)
+            if per_page in self.per_page_options:
+                self.current_paginate_by = per_page
+                return per_page
+        self.current_paginate_by = self.paginate_by
+        return self.paginate_by
     
     def get_queryset(self):
         queryset = Device.objects.select_related(
             "vendor", "device_type", "area"
         ).order_by("name")
+
+        site = self.request.GET.get("site", Device.SITE_CHOICES[0][0])
+        site_choices = dict(Device.SITE_CHOICES)
+        if site not in site_choices:
+            site = Device.SITE_CHOICES[0][0]
+        self.current_site_filter = site
+        queryset = queryset.filter(site=site)
 
         search = self.request.GET.get("search", "").strip()
         if search:
@@ -75,7 +93,10 @@ class DeviceListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['search_query'] = self.request.GET.get('search', '')
         context['sort_field'] = self.request.GET.get('sort', 'name')
-        context['paginate_by'] = int(self.request.GET.get('paginate_by', self.paginate_by))
+        context['paginate_by'] = getattr(self, "current_paginate_by", self.paginate_by)
+        context['site_choices'] = Device.SITE_CHOICES
+        context['site_filter'] = getattr(self, "current_site_filter", Device.SITE_CHOICES[0][0])
+        context['per_page_options'] = self.per_page_options
         return context
 
 class DeviceDetailView(LoginRequiredMixin, DetailView):
@@ -148,7 +169,7 @@ class DeviceViewSet(viewsets.ModelViewSet):
     serializer_class = DeviceSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ["name", "management_ip", "serial_number", "inventory_number"]
+    search_fields = ["name", "management_ip", "serial_number", "inventory_number", "site"]
     ordering_fields = ["name", "management_ip", "created_at"]
 
 

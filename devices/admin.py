@@ -127,6 +127,7 @@ def export_devices_to_excel(modeladmin, request, queryset):
             "Role": device.role.name if device.role else "-",
             "Status": device.status,
             "Image Version": device.image_version,
+            "Site": device.site,
             "Created At": localtime(device.created_at).replace(tzinfo=None) if device.created_at else "-",
             "Updated At": localtime(device.updated_at).replace(tzinfo=None) if device.updated_at else "-",
 
@@ -152,6 +153,7 @@ class DeviceAdmin(admin.ModelAdmin):
         "name",
         "management_ip",
         "status",
+        "site",
         "device_type",
         "serial_number",
         "organization",
@@ -167,8 +169,9 @@ class DeviceAdmin(admin.ModelAdmin):
         "vendor__name",
         "area__name",
         "organization__name",
+        "site",
     )
-    list_filter = ("status", "device_type", "vendor", "organization", "area")
+    list_filter = ("status", "site", "device_type", "vendor", "organization", "area")
     actions = [export_devices_to_excel]
     inlines = [DeviceConfigurationInline]
 

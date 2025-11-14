@@ -126,6 +126,7 @@ class DeviceSerializer(serializers.ModelSerializer):
             "serial_number",
             "inventory_number",
             "organization",
+            "site",
             "area",
             "area_name",
             "vendor",

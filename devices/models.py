@@ -13,6 +13,11 @@ DEVICE_TYPE_CHOICES = [
     ('other', 'Other'),
 ]
 
+DEVICE_SITE_CHOICES = [
+    ('Berlin', 'Berlin'),
+    ('Bonn', 'Bonn'),
+    ('Gemeinsam', 'Gemeinsam'),
+]
 
 class Organization(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -107,6 +112,7 @@ class ModuleType(models.Model):
 
 
 class Device(models.Model):
+    SITE_CHOICES = DEVICE_SITE_CHOICES
     # Basic info
     name = models.CharField(max_length=100)
     management_ip = models.GenericIPAddressField(protocol='IPv4', unique=True)
@@ -120,6 +126,7 @@ class Device(models.Model):
     vendor = models.ForeignKey(Vendor, on_delete=models.SET_NULL, null=True, blank=True, related_name='devices')
     device_type = models.ForeignKey(DeviceType, on_delete=models.SET_NULL, null=True, blank=True, related_name='devices')
     role = models.ForeignKey(DeviceRole, on_delete=models.SET_NULL, null=True, blank=True, related_name='devices')
+    site = models.CharField(max_length=50, choices=SITE_CHOICES, default='Gemeinsam')
 
     # Software / operational
     image_version = models.CharField(max_length=100, blank=True, null=True)
@@ -175,4 +182,3 @@ class Interface(models.Model):
 
     def __str__(self):
         return f"{self.device.name} - {self.name}"
-

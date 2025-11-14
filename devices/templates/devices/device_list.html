@@ -191,13 +191,18 @@ main {
             <h1>Devices</h1>
         </div>
         <form method="get" class="filters">
-            <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Search devices…">
-            <select name="paginate_by" onchange="this.form.submit()">
-                <option value="10" {% if request.GET.paginate_by == '10' %}selected{% endif %}>Show 10</option>
-                <option value="25" {% if request.GET.paginate_by == '25' %}selected{% endif %}>Show 25</option>
-                <option value="50" {% if request.GET.paginate_by == '50' %}selected{% endif %}>Show 50</option>
-                <option value="100" {% if request.GET.paginate_by == '100' %}selected{% endif %}>Show 100</option>
+            <select name="site" onchange="this.form.submit()">
+                {% for key, label in site_choices %}
+                    <option value="{{ key }}" {% if site_filter == key %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
             </select>
+            <input type="text" name="search" value="{{ search_query }}" placeholder="Search devices…">
+            <select name="paginate_by" onchange="this.form.submit()">
+                {% for option in per_page_options %}
+                    <option value="{{ option }}" {% if paginate_by == option %}selected{% endif %}>Show {{ option }}</option>
+                {% endfor %}
+            </select>
+            <input type="hidden" name="sort" value="{{ sort_field }}">
             <button type="submit">Search</button>
         </form>
     </div>
@@ -205,14 +210,15 @@ main {
     <table class="device-table">
         <thead>
             <tr>
-                <th>Device</th>
-                <th>IP</th>
+                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&sort=name">Device</a></th>
+                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&sort=management_ip">IP</a></th>
                 <th>Reachability</th>
-                <th>Status</th>
-                <th>Type</th>
-                <th>Serial</th>
-                <th>Location</th>
-                <th>Image</th>
+                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&sort=status">Status</a></th>
+                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&sort=device_type__model">Type</a></th>
+                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&sort=serial_number">Serial</a></th>
+                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&sort=area__name">Location</a></th>
+                <th>Site</th>
+                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&sort=image_version">Image</a></th>
                 <th></th>
             </tr>
         </thead>
@@ -238,6 +244,7 @@ main {
                 <td>{{ device.device_type|default:"—" }}</td>
                 <td>{{ device.serial_number|default:"—" }}</td>
                 <td>{{ device.area|default:"—" }}</td>
+                <td>{{ device.site }}</td>
                 <td>{{ device.image_version|default:"—" }}</td>
                 <td class="table-actions">
                     <a href="{% url 'device_detail' device.id %}">View</a>
@@ -255,25 +262,31 @@ main {
 
     <div class="pagination-wrapper">
         <div class="range-info">
-            Showing {{ devices.start_index }}–{{ devices.end_index }} of {{ devices.paginator.count }} devices
+            Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} devices
         </div>
         <ul class="pagination">
-            {% if devices.has_previous %}
-                <li><a href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort={{ request.GET.sort }}&page={{ devices.previous_page_number }}&paginate_by={{ request.GET.paginate_by }}">Previous</a></li>
+            {% if page_obj.has_previous %}
+                <li>
+                    <a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if sort_field %}sort={{ sort_field }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&page={{ page_obj.previous_page_number }}">Previous</a>
+                </li>
             {% else %}
                 <li><span>Previous</span></li>
             {% endif %}
 
-            {% for num in devices.paginator.page_range %}
-                {% if devices.number == num %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
                     <li class="active"><span>{{ num }}</span></li>
-                {% elif num > devices.number|add:-3 and num < devices.number|add:3 %}
-                    <li><a href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort={{ request.GET.sort }}&page={{ num }}&paginate_by={{ request.GET.paginate_by }}">{{ num }}</a></li>
+                {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+                    <li>
+                        <a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if sort_field %}sort={{ sort_field }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&page={{ num }}">{{ num }}</a>
+                    </li>
                 {% endif %}
             {% endfor %}
 
-            {% if devices.has_next %}
-                <li><a href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}sort={{ request.GET.sort }}&page={{ devices.next_page_number }}&paginate_by={{ request.GET.paginate_by }}">Next</a></li>
+            {% if page_obj.has_next %}
+                <li>
+                    <a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if sort_field %}sort={{ sort_field }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&page={{ page_obj.next_page_number }}">Next</a>
+                </li>
             {% else %}
                 <li><span>Next</span></li>
             {% endif %}
