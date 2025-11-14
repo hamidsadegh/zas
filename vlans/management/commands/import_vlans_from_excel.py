@@ -56,7 +56,7 @@ class Command(BaseCommand):
                         "name": None if pd.isna(name) else str(name).strip(),
                         "subnet": str(subnet).strip(),
                         "gateway": None if pd.isna(gateway) else str(gateway).strip(),
-                        "usage_area": usage_area if usage_area in dict(VLAN.USAGE_CHOICES) else "Frei",
+                        "usage_area": usage_area if usage_area in dict(VLAN.USAGE_CHOICES) else "Sonstiges",
                         "description": None if pd.isna(description) else str(description).strip(),
                     },
                 )

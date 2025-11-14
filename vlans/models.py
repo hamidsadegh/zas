@@ -12,17 +12,19 @@ class VLAN(models.Model):
     SITE_CHOICES = [
         ("Berlin", "Berlin"),
         ("Bonn", "Bonn"),
+        ("Gemeinsam", "Gemeinsam"),
     ]
 
     USAGE_CHOICES = [
         ("ACI", "ACI"),
         ("Campus", "Campus"),
         ("Management", "Management"),
-        ("PostProd", "PostProd"),
+        ("PostPro", "PostPro"),
         ("Autark", "Autark"),
         ("BTSU", "BTSU"),
         ("IP-Telefine", "IP-Telefone"),
         ("Frei", "Frei"),
+        ("Sonstiges", "Sonstiges"),
     ]
 
     site = models.CharField(max_length=50, choices=SITE_CHOICES)
@@ -30,7 +32,7 @@ class VLAN(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True, default="")
     subnet = models.CharField(max_length=50, validators=[cidr_validator], null=True)  # accepts 10.228.0.0/24
     gateway = models.GenericIPAddressField(blank=True, null=True)
-    usage_area = models.CharField(max_length=50, choices=USAGE_CHOICES, null=True, default="Frei")
+    usage_area = models.CharField(max_length=50, choices=USAGE_CHOICES, null=True, default="Sonstiges")
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
