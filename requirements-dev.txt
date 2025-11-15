@@ -19,3 +19,8 @@ pytest-django
 requests
 ntc_templates
 textfsm
+
+# Development tools
+ipython
+ipython-pygments-lexers
+rich
