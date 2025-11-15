@@ -103,6 +103,11 @@ class ImportExcelForm(forms.Form):
     excel_file = forms.FileField(label="Select Excel file")
 
 
+from django import forms
+from django.urls import reverse
+from .models import Device, Rack
+
+
 class DeviceAdminForm(forms.ModelForm):
     class Meta:
         model = Device
@@ -110,41 +115,51 @@ class DeviceAdminForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if "area" in self.fields:
-            self.fields["area"].widget.attrs["data-racks-url"] = reverse("racks_for_area")
 
+        # 1. Add racks-URL to the Area field for JS dynamic loading
+        self.fields["area"].widget.widget.attrs["data-racks-url"] = reverse("racks_for_area")
+
+        # 2. Prepare the Rack queryset depending on current area
         rack_field = self.fields.get("rack")
-        if rack_field:
-            area_id = self._resolve_area_id()
-            if area_id:
-                rack_field.queryset = Rack.objects.filter(area_id=area_id)
-            else:
-                rack_field.queryset = Rack.objects.none()
-                rack_field.help_text = "Select an area to choose from available racks."
-            current_value = self._resolve_rack_id()
-            if current_value:
-                rack_field.widget.attrs["data-current-value"] = str(current_value)
-            else:
-                rack_field.widget.attrs["data-current-value"] = ""
+        area_id = self._current_area_id()
 
-    def _resolve_area_id(self):
-        if self.data and self.data.get("area"):
+        if area_id:
+            rack_field.queryset = Rack.objects.filter(area_id=area_id)
+        else:
+            rack_field.queryset = Rack.objects.none()
+            rack_field.help_text = "Racks will appear after selecting an Area."
+
+        # 3. Pass current rack as attribute for JS pre-selection
+        current_rack_id = self._current_rack_id()
+        rack_field.widget.attrs["data-current-value"] = (
+            str(current_rack_id) if current_rack_id else ""
+        )
+
+    # Helpers — determine selected area/rack from POST or instance
+    def _current_area_id(self):
+        """Resolve area from POST data or instance."""
+        if self.data.get("area"):
             try:
-                return int(self.data.get("area"))
-            except (TypeError, ValueError):
+                return int(self.data["area"])
+            except ValueError:
                 return None
-        if self.instance and self.instance.pk and self.instance.area_id:
+
+        if self.instance and self.instance.pk:
             return self.instance.area_id
+
         return None
 
-    def _resolve_rack_id(self):
-        if self.data and self.data.get("rack"):
+    def _current_rack_id(self):
+        """Resolve rack from POST data or instance."""
+        if self.data.get("rack"):
             try:
-                return int(self.data.get("rack"))
-            except (TypeError, ValueError):
+                return int(self.data["rack"])
+            except ValueError:
                 return None
-        if self.instance and self.instance.pk and self.instance.rack_id:
+
+        if self.instance and self.instance.pk:
             return self.instance.rack_id
+
         return None
 
 

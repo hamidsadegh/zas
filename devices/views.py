@@ -168,6 +168,12 @@ def devices_by_area(request, area_id):
     return render(request, "devices/devices_by_area.html", {"area": area, "devices": devices})
 
 
+def racks_by_area(request):
+    area_id = request.GET.get("area_id")
+    racks = Rack.objects.filter(area_id=area_id).values("id", "name")
+    return JsonResponse({"results": list(racks)})
+
+
 @login_required
 def racks_for_area(request):
     area_id = request.GET.get("area")

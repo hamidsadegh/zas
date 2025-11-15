@@ -117,17 +117,7 @@ class DeviceSerializer(serializers.ModelSerializer):
     role_name = serializers.CharField(source="role.name", read_only=True)
     rack_name = serializers.CharField(source="rack.name", read_only=True)
 
-    def validate(self, data):
-        area = data.get("area")
-        rack = data.get("rack")
-
-        if area and rack:
-            if rack.area != area:
-                raise serializers.ValidationError({
-                    "rack": "Selected rack does not belong to the chosen area."
-                })
-
-        return data
+    rack = serializers.PrimaryKeyRelatedField(queryset=Rack.objects.none())
 
     class Meta:
         model = Device
@@ -154,5 +144,54 @@ class DeviceSerializer(serializers.ModelSerializer):
             "status",
             "uptime",
             "created_at",
-            "updated_at"
+            "updated_at",
         ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        request = self.context.get("request", None)
+        area_id = None
+
+        # 1 — From POST/PUT/PATCH request body
+        if request and hasattr(request, "data"):
+            raw = request.data.get("area")
+            if isinstance(raw, (int, str)):
+                area_id = raw
+
+        # 2 — From query params (GET /api/devices/?area=5)
+        if not area_id and request:
+            area_id = request.query_params.get("area")
+
+        # 3 — From initial data (Browsable API form)
+        if not area_id and isinstance(self.initial, dict):   # <-- Fix for initial=None
+            area_id = self.initial.get("area")
+
+        # 4 — From instance being edited
+        if not area_id and self.instance:
+            area_id = getattr(self.instance, "area_id", None)
+
+        # 5 — Apply queryset
+        if area_id:
+            try:
+                self.fields["rack"].queryset = Rack.objects.filter(area_id=area_id)
+            except Exception:
+                self.fields["rack"].queryset = Rack.objects.none()
+        else:
+            # Browsable API list view and GET list view MUST allow full queryset
+            if self.parent and getattr(self.parent, "many", False):
+                self.fields["rack"].queryset = Rack.objects.all()
+            else:
+                self.fields["rack"].queryset = Rack.objects.none()
+
+
+    def validate(self, data):
+        area = data.get("area") or getattr(self.instance, "area", None)
+        rack = data.get("rack") or getattr(self.instance, "rack", None)
+
+        if area and rack and rack.area_id != area.id:
+            raise serializers.ValidationError({
+                "rack": f"Rack '{rack.name}' does not belong to area '{area.name}'."
+            })
+
+        return data

@@ -2,7 +2,7 @@
 
 from django.urls import path
 from . import views
-from .views import DeviceListView, DeviceDetailView
+from .views import DeviceListView, DeviceDetailView, racks_by_area
 
 urlpatterns = [
     # Dashboard / home
@@ -21,4 +21,7 @@ urlpatterns = [
 
     # Racks
     path('racks/', views.rack_list, name='rack_list'),
+
+    # ⭐ AJAX endpoint (required for filtered Rack dropdown)
+    path('ajax/racks/', views.racks_by_area, name='racks_by_area'),
 ]
