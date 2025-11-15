@@ -116,32 +116,32 @@ print("All area hierarchies created.")
 # Racks
 # -----------------------------
 a = Area.objects.get(name="A324")
-Rack.objects.get_or_create(name=f"Rack37", site=a, height=42)
-Rack.objects.get_or_create(name=f"Rack43", site=a, height=42)
-Rack.objects.get_or_create(name=f"Rack44", site=a, height=42)
-Rack.objects.get_or_create(name=f"Rack46", site=a, height=42)
-Rack.objects.get_or_create(name=f"Rack63", site=a, height=42)
-Rack.objects.get_or_create(name=f"Rack106", site=a, height=42)
-Rack.objects.get_or_create(name=f"Rack108", site=a, height=42)
-Rack.objects.get_or_create(name=f"Rack109", site=a, height=42)
-Rack.objects.get_or_create(name=f"Rack116", site=a, height=42)
-Rack.objects.get_or_create(name=f"Rack118", site=a, height=42)
-Rack.objects.get_or_create(name=f"Rack125", site=a, height=42)
+Rack.objects.get_or_create(name=f"Rack37", area=a, height=42)
+Rack.objects.get_or_create(name=f"Rack43", area=a, height=42)
+Rack.objects.get_or_create(name=f"Rack44", area=a, height=42)
+Rack.objects.get_or_create(name=f"Rack46", area=a, height=42)
+Rack.objects.get_or_create(name=f"Rack63", area=a, height=42)
+Rack.objects.get_or_create(name=f"Rack106", area=a, height=42)
+Rack.objects.get_or_create(name=f"Rack108", area=a, height=42)
+Rack.objects.get_or_create(name=f"Rack109", area=a, height=42)
+Rack.objects.get_or_create(name=f"Rack116", area=a, height=42)
+Rack.objects.get_or_create(name=f"Rack118", area=a, height=42)
+Rack.objects.get_or_create(name=f"Rack125", area=a, height=42)
 a = Area.objects.get(name="A384")
-Rack.objects.get_or_create(name=f"Rack00", site=a, height=42)
-Rack.objects.get_or_create(name=f"Rack03", site=a, height=42)
-Rack.objects.get_or_create(name=f"Rack11", site=a, height=42)
+Rack.objects.get_or_create(name=f"Rack00", area=a, height=42)
+Rack.objects.get_or_create(name=f"Rack03", area=a, height=42)
+Rack.objects.get_or_create(name=f"Rack11", area=a, height=42)
 a = Area.objects.get(name="A587")
-Rack.objects.get_or_create(name=f"RackB2", site=a, height=42)
-Rack.objects.get_or_create(name=f"RackB4", site=a, height=42)
-Rack.objects.get_or_create(name=f"RackC6", site=a, height=42)
-Rack.objects.get_or_create(name=f"RackC7", site=a, height=42)
+Rack.objects.get_or_create(name=f"RackB2", area=a, height=42)
+Rack.objects.get_or_create(name=f"RackB4", area=a, height=42)
+Rack.objects.get_or_create(name=f"RackC6", area=a, height=42)
+Rack.objects.get_or_create(name=f"RackC7", area=a, height=42)
 a = Area.objects.get(name="A0198")
-Rack.objects.get_or_create(name=f"RackB3", site=a, height=42)
-Rack.objects.get_or_create(name=f"RackB6", site=a, height=42)
-Rack.objects.get_or_create(name=f"RackC3", site=a, height=42)
-Rack.objects.get_or_create(name=f"RackC6", site=a, height=42)
-Rack.objects.get_or_create(name=f"RackC9", site=a, height=42)
+Rack.objects.get_or_create(name=f"RackB3", area=a, height=42)
+Rack.objects.get_or_create(name=f"RackB6", area=a, height=42)
+Rack.objects.get_or_create(name=f"RackC3", area=a, height=42)
+Rack.objects.get_or_create(name=f"RackC6", area=a, height=42)
+Rack.objects.get_or_create(name=f"RackC9", area=a, height=42)
 print("All racks created.")
 
 # Device Roles
@@ -233,7 +233,7 @@ for model, category, discription in device_types_data:
 #         serial_number=f"SN{i:04}",
 #         inventory_number=f"INV{i:04}",
 #         organization=org,
-#         area=rack.site,
+#         area=rack.area,
 #         vendor=dt.vendor,
 #         device_type=dt,
 #         role=role,

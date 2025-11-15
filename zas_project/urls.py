@@ -29,6 +29,7 @@ html_patterns = [
     path("areas/<int:pk>/", device_views.AreaDetailView.as_view(), name="area_detail"),
     path("racks/", device_views.RackListView.as_view(), name="rack_list"),
     path("areas/<int:area_id>/devices/", device_views.devices_by_area, name="devices_by_area"),
+    path("racks/for-area/", device_views.racks_for_area, name="racks_for_area"),
     path("system-settings/", device_views.SystemSettingsView.as_view(), name="system_settings"),
     path('', device_views.home, name='home'),
 ]

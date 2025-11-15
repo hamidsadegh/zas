@@ -31,7 +31,7 @@ def test_create_object(django_db_blocker):
         # -----------------------------
         for area in [dc1, dc2, branch]:
             for i in range(1, 4):
-                Rack.objects.create(name=f"Rack {i}", site=area, height=42)
+                Rack.objects.create(name=f"Rack {i}", area=area, height=42)
 
         # -----------------------------
         # 4️⃣ Device Roles
@@ -84,6 +84,8 @@ def test_create_object(django_db_blocker):
         all_roles = list(DeviceRole.objects.all())
         all_orgs = list(Organization.objects.all())
 
+        site_choices = [choice[0] for choice in Device.SITE_CHOICES]
+
         for i in range(1, 11):
             dt = random.choice(all_device_types)
             rack = random.choice(all_racks)
@@ -96,7 +98,9 @@ def test_create_object(django_db_blocker):
                 serial_number=f"SN{i:04}",
                 inventory_number=f"INV{i:04}",
                 organization=org,
-                area=rack.site,
+                area=rack.area,
+                rack=rack,
+                site=random.choice(site_choices),
                 vendor=dt.vendor,
                 device_type=dt,
                 role=role,
@@ -127,6 +131,10 @@ def test_create_object(django_db_blocker):
                     status=random.choice(['up', 'down', 'disabled']),
                     speed=random.choice([100, 1000, 10000])
                 )
-
+        print("Created devices:", Device.objects.count())
+        # print device details of an device
+        sample_device = Device.objects.first()
+        print("Sample Device:", sample_device.name, sample_device.management_ip, sample_device.device_type.model, sample_device.rack.name, sample_device.area.name)
+           
 
     

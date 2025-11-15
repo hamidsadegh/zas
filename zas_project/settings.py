@@ -24,19 +24,50 @@ DEBUG = False
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "[{asctime}] {levelname} {name}: {message}",
+            "style": "{",
+        },
+        "json": {
+            "format": '{{"time": "{asctime}", "level": "{levelname}", "logger": "{name}", "message": "{message}" }}',
+            "style": "{",
+        },
+    },
     "handlers": {
+        "file": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": "/var/log/zas/django.log",
+            "formatter": "standard",
+        },
+        "error_file": {
+            "level": "ERROR",
+            "class": "logging.FileHandler",
+            "filename": "/var/log/zas/errors.log",
+            "formatter": "standard",
+        },
         "console": {
+            "level": "DEBUG",
             "class": "logging.StreamHandler",
+            "formatter": "standard",
         },
     },
     "loggers": {
-        "accounts.auth_backends": {
-            "handlers": ["console"],
-            "level": "DEBUG",
+        "django": {
+            "handlers": ["file", "console"],
+            "level": "INFO",
+            "propagate": True,
         },
-        "tacacs_plus": {
-            "handlers": ["console"],
+        "django.request": {
+            "handlers": ["error_file"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        "yourapp": {
+            "handlers": ["file", "console"],
             "level": "DEBUG",
+            "propagate": True,
         },
     },
 }
@@ -181,6 +212,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
+
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
+
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = '/media/'

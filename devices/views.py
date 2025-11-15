@@ -1,3 +1,4 @@
+from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView
 from django.views import View
@@ -39,6 +40,7 @@ class DeviceListView(LoginRequiredMixin, ListView):
     context_object_name = "devices"
     paginate_by = 25
     per_page_options = (10, 25, 50, 100)
+    site_filter_choices = [("all", "All Sites")] + list(Device.SITE_CHOICES)
 
     def get_paginate_by(self, queryset):
         per_page = self.request.GET.get("paginate_by")
@@ -52,15 +54,16 @@ class DeviceListView(LoginRequiredMixin, ListView):
     
     def get_queryset(self):
         queryset = Device.objects.select_related(
-            "vendor", "device_type", "area"
+            "vendor", "device_type", "area", "rack"
         ).order_by("name")
 
-        site = self.request.GET.get("site", Device.SITE_CHOICES[0][0])
-        site_choices = dict(Device.SITE_CHOICES)
-        if site not in site_choices:
-            site = Device.SITE_CHOICES[0][0]
+        site = self.request.GET.get("site", "all")
+        valid_site_keys = {choice[0] for choice in self.site_filter_choices}
+        if site not in valid_site_keys:
+            site = "all"
         self.current_site_filter = site
-        queryset = queryset.filter(site=site)
+        if site != "all":
+            queryset = queryset.filter(site=site)
 
         search = self.request.GET.get("search", "").strip()
         if search:
@@ -72,6 +75,8 @@ class DeviceListView(LoginRequiredMixin, ListView):
                 | Q(device_type__model__icontains=search)
                 | Q(vendor__name__icontains=search)
                 | Q(area__name__icontains=search)
+                | Q(rack__name__icontains=search)
+                | Q(site__icontains=search)
             ).distinct()
 
         sort = self.request.GET.get("sort", "name")
@@ -82,6 +87,8 @@ class DeviceListView(LoginRequiredMixin, ListView):
             "device_type__model",
             "serial_number",
             "area__name",
+            "rack__name",
+            "site",
             "image_version",
         ]:
             queryset = queryset.order_by(sort)
@@ -94,8 +101,8 @@ class DeviceListView(LoginRequiredMixin, ListView):
         context['search_query'] = self.request.GET.get('search', '')
         context['sort_field'] = self.request.GET.get('sort', 'name')
         context['paginate_by'] = getattr(self, "current_paginate_by", self.paginate_by)
-        context['site_choices'] = Device.SITE_CHOICES
-        context['site_filter'] = getattr(self, "current_site_filter", Device.SITE_CHOICES[0][0])
+        context['site_choices'] = self.site_filter_choices
+        context['site_filter'] = getattr(self, "current_site_filter", "all")
         context['per_page_options'] = self.per_page_options
         return context
 
@@ -161,6 +168,16 @@ def devices_by_area(request, area_id):
     return render(request, "devices/devices_by_area.html", {"area": area, "devices": devices})
 
 
+@login_required
+def racks_for_area(request):
+    area_id = request.GET.get("area")
+    racks = Rack.objects.none()
+    if area_id:
+        racks = Rack.objects.filter(area_id=area_id).order_by("name")
+    data = [{"id": rack.id, "name": rack.name} for rack in racks]
+    return JsonResponse({"results": data})
+
+
 # -----------------------
 # DRF API ViewSets
 # -----------------------
@@ -187,8 +204,15 @@ class RackViewSet(viewsets.ModelViewSet):
     serializer_class = RackSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ["name", "site__name"]
-    ordering_fields = ["name", "site"]
+    search_fields = ["name", "area__name"]
+    ordering_fields = ["name", "area"]
+
+    def get_queryset(self):
+        queryset = Rack.objects.all()
+        area_id = self.request.query_params.get("area")
+        if area_id:
+            queryset = queryset.filter(area_id=area_id)
+        return queryset
 
 
 class DeviceRoleViewSet(viewsets.ModelViewSet):

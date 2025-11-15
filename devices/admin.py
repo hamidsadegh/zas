@@ -1,8 +1,9 @@
 from django.contrib import admin
 from django.http import HttpResponse
+from django.urls import reverse
 from io import BytesIO
 from django import forms
-import pandas as pd # pyright: ignore[reportMissingModuleSource, reportMissingImports]
+import pandas as pd  # pyright: ignore[reportMissingModuleSource, reportMissingImports]
 from django.utils.timezone import localtime
 from .models import (
     Organization,
@@ -42,8 +43,8 @@ class AreaAdmin(admin.ModelAdmin):
 # -----------------------
 @admin.register(Rack)
 class RackAdmin(admin.ModelAdmin):
-    list_display = ("name", "site", "height", "description")
-    list_filter = ("site",)
+    list_display = ("name", "area", "height", "description")
+    list_filter = ("area",)
     search_fields = ("name",)
 
 
@@ -102,6 +103,51 @@ class ImportExcelForm(forms.Form):
     excel_file = forms.FileField(label="Select Excel file")
 
 
+class DeviceAdminForm(forms.ModelForm):
+    class Meta:
+        model = Device
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "area" in self.fields:
+            self.fields["area"].widget.attrs["data-racks-url"] = reverse("racks_for_area")
+
+        rack_field = self.fields.get("rack")
+        if rack_field:
+            area_id = self._resolve_area_id()
+            if area_id:
+                rack_field.queryset = Rack.objects.filter(area_id=area_id)
+            else:
+                rack_field.queryset = Rack.objects.none()
+                rack_field.help_text = "Select an area to choose from available racks."
+            current_value = self._resolve_rack_id()
+            if current_value:
+                rack_field.widget.attrs["data-current-value"] = str(current_value)
+            else:
+                rack_field.widget.attrs["data-current-value"] = ""
+
+    def _resolve_area_id(self):
+        if self.data and self.data.get("area"):
+            try:
+                return int(self.data.get("area"))
+            except (TypeError, ValueError):
+                return None
+        if self.instance and self.instance.pk and self.instance.area_id:
+            return self.instance.area_id
+        return None
+
+    def _resolve_rack_id(self):
+        if self.data and self.data.get("rack"):
+            try:
+                return int(self.data.get("rack"))
+            except (TypeError, ValueError):
+                return None
+        if self.instance and self.instance.pk and self.instance.rack_id:
+            return self.instance.rack_id
+        return None
+
+
 # ------------------------------
 # Admin Actions
 # ------------------------------
@@ -122,6 +168,7 @@ def export_devices_to_excel(modeladmin, request, queryset):
             "Inventory Number": device.inventory_number,
             "Organization": device.organization.name if device.organization else "-",
             "Area": str(device.area) if device.area else "-",
+            "Rack": device.rack.name if device.rack else "-",
             "Vendor": device.vendor.name if device.vendor else "-",
             "Device Type": device.device_type.model if device.device_type else "-",
             "Role": device.role.name if device.role else "-",
@@ -149,11 +196,13 @@ def export_devices_to_excel(modeladmin, request, queryset):
 # ------------------------------
 @admin.register(Device)
 class DeviceAdmin(admin.ModelAdmin):
+    form = DeviceAdminForm
     list_display = (
         "name",
         "management_ip",
         "status",
         "site",
+        "rack",
         "device_type",
         "serial_number",
         "organization",
@@ -174,6 +223,9 @@ class DeviceAdmin(admin.ModelAdmin):
     list_filter = ("status", "site", "device_type", "vendor", "organization", "area")
     actions = [export_devices_to_excel]
     inlines = [DeviceConfigurationInline]
+
+    class Media:
+        js = ("admin/js/device_admin.js",)
 
 
 # -----------------------

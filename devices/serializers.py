@@ -38,11 +38,11 @@ class AreaSerializer(serializers.ModelSerializer):
 # Rack Serializer
 # -----------------------
 class RackSerializer(serializers.ModelSerializer):
-    site_name = serializers.CharField(source="site.name", read_only=True)
+    area_name = serializers.CharField(source="area.name", read_only=True)
 
     class Meta:
         model = Rack
-        fields = ["id", "name", "site", "site_name", "height", "description"]
+        fields = ["id", "name", "area", "area_name", "height", "description"]
 
 
 # -----------------------
@@ -115,6 +115,19 @@ class DeviceSerializer(serializers.ModelSerializer):
     vendor_name = serializers.CharField(source="vendor.name", read_only=True)
     device_type_name = serializers.CharField(source="device_type.model", read_only=True)
     role_name = serializers.CharField(source="role.name", read_only=True)
+    rack_name = serializers.CharField(source="rack.name", read_only=True)
+
+    def validate(self, data):
+        area = data.get("area")
+        rack = data.get("rack")
+
+        if area and rack:
+            if rack.area != area:
+                raise serializers.ValidationError({
+                    "rack": "Selected rack does not belong to the chosen area."
+                })
+
+        return data
 
     class Meta:
         model = Device
@@ -129,6 +142,8 @@ class DeviceSerializer(serializers.ModelSerializer):
             "site",
             "area",
             "area_name",
+            "rack",
+            "rack_name",
             "vendor",
             "vendor_name",
             "device_type",

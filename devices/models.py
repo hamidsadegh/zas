@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
@@ -35,13 +36,9 @@ class Organization(models.Model):
 
 class Area(models.Model):
     name = models.CharField(max_length=100)
-    parent = models.ForeignKey(
-        'self', on_delete=models.CASCADE, null=True, blank=True, related_name='children'
-    )
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
     description = models.TextField(blank=True, null=True)
-    organization = models.ForeignKey(
-        Organization, on_delete=models.CASCADE, related_name='areas'
-    )
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='areas')
 
     class Meta:
         unique_together = ('name', 'parent')
@@ -58,17 +55,17 @@ class Area(models.Model):
 
 class Rack(models.Model):
     name = models.CharField(max_length=100)
-    site = models.ForeignKey(Area, on_delete=models.CASCADE, related_name="racks")
+    area = models.ForeignKey(Area, on_delete=models.CASCADE, related_name="racks")
     height = models.PositiveIntegerField(default=42, help_text="Rack height in U units")
     description = models.TextField(blank=True, null=True)
 
     class Meta:
-        unique_together = ("name", "site")
+        unique_together = ("name", "area")
         verbose_name = "Rack"
         verbose_name_plural = "Racks"
 
     def __str__(self):
-        return f"{self.site} / {self.name}"
+        return f"{self.area} / {self.name}"
 
 
 class DeviceRole(models.Model):
@@ -126,6 +123,8 @@ class Device(models.Model):
     vendor = models.ForeignKey(Vendor, on_delete=models.SET_NULL, null=True, blank=True, related_name='devices')
     device_type = models.ForeignKey(DeviceType, on_delete=models.SET_NULL, null=True, blank=True, related_name='devices')
     role = models.ForeignKey(DeviceRole, on_delete=models.SET_NULL, null=True, blank=True, related_name='devices')
+    rack = models.ForeignKey(Rack, on_delete=models.SET_NULL, null=True, blank=True, related_name="devices")
+
     site = models.CharField(max_length=50, choices=SITE_CHOICES, default='Gemeinsam')
 
     # Software / operational
@@ -149,6 +148,17 @@ class Device(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.management_ip})"
+
+    def clean(self):
+        super().clean()
+        if self.rack:
+            if not self.area:
+                raise ValidationError({"rack": "Select an area before choosing a rack."})
+            if self.rack.area_id != self.area_id:
+                raise ValidationError({"rack": "Selected rack does not belong to the chosen area."})
+
+    def save(self, *args, **kwargs):
+        return super().save(*args, **kwargs)
 
 
 class DeviceConfiguration(models.Model):
