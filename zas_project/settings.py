@@ -2,7 +2,7 @@
 
 from pathlib import Path
 import os
-import environ
+import environ # type: ignore
 
 # Initialize environment variables
 env = environ.Env()
@@ -18,9 +18,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-axas6dz8ha_v$3(xxk3h4&6736=(%yb_bws(9+!ad!64$0ltf&'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
-
-# Logging Configuration
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -29,48 +26,72 @@ LOGGING = {
             "format": "[{asctime}] {levelname} {name}: {message}",
             "style": "{",
         },
-        "json": {
-            "format": '{{"time": "{asctime}", "level": "{levelname}", "logger": "{name}", "message": "{message}" }}',
-            "style": "{",
-        },
     },
     "handlers": {
-        "file": {
+        # General application logs (framework, internal actions)
+        "application_file": {
             "level": "INFO",
             "class": "logging.FileHandler",
-            "filename": "/var/log/zas/django.log",
+            "filename": "/var/log/zas/django/application.log",
             "formatter": "standard",
         },
+        # Errors & exceptions (only ERROR+)
         "error_file": {
             "level": "ERROR",
             "class": "logging.FileHandler",
-            "filename": "/var/log/zas/errors.log",
+            "filename": "/var/log/zas/django/errors.log",
             "formatter": "standard",
         },
-        "console": {
-            "level": "DEBUG",
-            "class": "logging.StreamHandler",
+        # HTTP requests (GET/POST/PUT/DELETE)
+        "requests_file": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": "/var/log/zas/django/requests.log",
+            "formatter": "standard",
+        },
+        # Security logs (auth failures, permissions, CSRF)
+        "security_file": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": "/var/log/zas/django/security.log",
             "formatter": "standard",
         },
     },
+
     "loggers": {
+        # Django core
         "django": {
-            "handlers": ["file", "console"],
+            "handlers": ["application_file"],
             "level": "INFO",
             "propagate": True,
         },
+        # ALL HTTP requests (very important!)
         "django.request": {
+            "handlers": ["requests_file", "error_file"],
+            "level": "INFO",        # ← INFO logs normal requests
+            "propagate": False,
+        },
+        # Security subsystem
+        "django.security": {
+            "handlers": ["security_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        # Django server (only used for error tracebacks)
+        "django.server": {
             "handlers": ["error_file"],
             "level": "ERROR",
             "propagate": False,
         },
-        "yourapp": {
-            "handlers": ["file", "console"],
-            "level": "DEBUG",
-            "propagate": True,
+        # Django REST Framework log channel
+        "rest_framework": {
+            "handlers": ["requests_file"],
+            "level": "INFO",
+            "propagate": False,
         },
     },
 }
+
 
 ALLOWED_HOSTS = ['*']
 
@@ -118,6 +139,7 @@ CELERY_BEAT_SCHEDULE = {
 LOGIN_URL = '/admin/login/'
 
 REST_FRAMEWORK = {
+    'DEFAULT_METADATA_CLASS': 'rest_framework.metadata.SimpleMetadata',
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',  # require login for all API views
     ],
