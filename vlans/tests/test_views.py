@@ -1,8 +1,8 @@
 from io import BytesIO
 
-import pytest
-from django.urls import reverse
-from openpyxl import load_workbook
+import pytest # type: ignore
+from django.urls import reverse # type: ignore
+from openpyxl import load_workbook # type: ignore
 
 from vlans.models import VLAN
 

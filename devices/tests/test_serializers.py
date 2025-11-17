@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 
-import pytest
-from rest_framework import serializers
+import pytest # type: ignore
+from rest_framework import serializers # type: ignore
 
 from devices.models import Area, Device, DeviceType, Organization, Rack, Vendor
 from devices.serializers import DeviceSerializer
