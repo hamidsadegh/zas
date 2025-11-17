@@ -100,12 +100,18 @@ class DeviceType(models.Model):
 
 
 class ModuleType(models.Model):
+    device = models.ForeignKey('Device', on_delete=models.CASCADE, related_name='modules')
     name = models.CharField(max_length=100)
-    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name='modules')
     description = models.TextField(blank=True, null=True)
+    vendor = models.ForeignKey(Vendor, on_delete=models.SET_NULL, blank=True, null=True, related_name='modules')
+    serial_number = models.CharField(max_length=100)
+
+    class Meta:
+        verbose_name = "Device Module"
+        verbose_name_plural = "Device Modules"
 
     def __str__(self):
-        return f"{self.vendor.name} {self.name}"
+        return f"{self.device.name} - {self.name} ({self.serial_number})"
 
 
 class Device(models.Model):

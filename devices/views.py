@@ -17,6 +17,7 @@ from .models import (
     DeviceType,
     Interface,
     DeviceConfiguration,
+    ModuleType,
 )
 from .serializers import (
     DeviceSerializer,
@@ -26,7 +27,8 @@ from .serializers import (
     VendorSerializer,
     DeviceTypeSerializer,
     InterfaceSerializer,
-    DeviceConfigurationSerializer
+    DeviceConfigurationSerializer,
+    ModuleTypeSerializer,
 )
 from accounts.models import SystemSettings
 from .forms import SystemSettingsForm
@@ -188,7 +190,14 @@ def racks_for_area(request):
 # DRF API ViewSets
 # -----------------------
 class DeviceViewSet(viewsets.ModelViewSet):
-    queryset = Device.objects.all()
+    queryset = Device.objects.select_related(
+        "organization",
+        "area",
+        "vendor",
+        "device_type",
+        "role",
+        "rack",
+    ).prefetch_related("modules__vendor")
     serializer_class = DeviceSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
@@ -250,6 +259,15 @@ class DeviceConfigurationViewSet(viewsets.ModelViewSet):
     queryset = DeviceConfiguration.objects.all()
     serializer_class = DeviceConfigurationSerializer
     permission_classes = [IsAuthenticated]
+
+
+class ModuleTypeViewSet(viewsets.ModelViewSet):
+    queryset = ModuleType.objects.select_related("device", "vendor")
+    serializer_class = ModuleTypeSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ["name", "serial_number", "device__name", "vendor__name"]
+    ordering_fields = ["name", "serial_number", "device"]
 
 # -----------------------
 # Home View

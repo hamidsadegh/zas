@@ -18,6 +18,7 @@ router.register(r"vendors", device_views.VendorViewSet)
 router.register(r"devicetypes", device_views.DeviceTypeViewSet)
 router.register(r"interfaces", device_views.InterfaceViewSet)
 router.register(r"deviceconfigurations", device_views.DeviceConfigurationViewSet)
+router.register(r"modules", device_views.ModuleTypeViewSet)
 
 # -----------------------
 # HTML Views URL patterns

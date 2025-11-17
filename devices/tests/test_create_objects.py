@@ -64,19 +64,6 @@ def test_create_object(django_db_blocker):
                 DeviceType.objects.create(vendor=vendor, model=model, category="other")
 
         # -----------------------------
-        # 8️⃣ Module Types
-        # -----------------------------
-        module_types_data = {
-            "Cisco": ["Module A", "Module B"],
-            "Juniper": ["Module J1", "Module J2"]
-        }
-
-        for vendor_name, modules in module_types_data.items():
-            vendor = Vendor.objects.get(name=vendor_name)
-            for m in modules:
-                ModuleType.objects.create(vendor=vendor, name=m)
-
-        # -----------------------------
         # 9️⃣ Devices
         # -----------------------------
         all_device_types = list(DeviceType.objects.all())
@@ -108,6 +95,19 @@ def test_create_object(django_db_blocker):
                 status=random.choice(['active', 'inactive', 'maintenance', 'unknown']),
                 uptime=None
             )
+
+            # -----------------------------
+            # Device Modules
+            # -----------------------------
+            module_names = ["Supervisor", "Line Card"]
+            for idx, module_name in enumerate(module_names, start=1):
+                ModuleType.objects.create(
+                    device=device,
+                    vendor=device.vendor,
+                    name=f"{module_name} {idx}",
+                    serial_number=f"{device.serial_number}-MOD{idx}",
+                    description=f"{module_name} installed in {device.name}",
+                )
 
             # -----------------------------
             # Device Configuration

@@ -79,10 +79,11 @@ class DeviceTypeSerializer(serializers.ModelSerializer):
 # -----------------------
 class ModuleTypeSerializer(serializers.ModelSerializer):
     vendor_name = serializers.CharField(source="vendor.name", read_only=True)
+    device_name = serializers.CharField(source="device.name", read_only=True)
 
     class Meta:
         model = ModuleType
-        fields = ["id", "name", "vendor", "vendor_name", "description"]
+        fields = ["id", "name", "description", "vendor", "vendor_name", "device", "device_name", "serial_number"]
 
 
 # -----------------------
@@ -116,6 +117,7 @@ class DeviceSerializer(serializers.ModelSerializer):
     device_type_name = serializers.CharField(source="device_type.model", read_only=True)
     role_name = serializers.CharField(source="role.name", read_only=True)
     rack_name = serializers.CharField(source="rack.name", read_only=True)
+    modules = ModuleTypeSerializer(many=True, read_only=True)
 
     rack = serializers.PrimaryKeyRelatedField(queryset=Rack.objects.none())
 
@@ -145,6 +147,7 @@ class DeviceSerializer(serializers.ModelSerializer):
             "uptime",
             "created_at",
             "updated_at",
+            "modules",
         ]
 
     def __init__(self, *args, **kwargs):

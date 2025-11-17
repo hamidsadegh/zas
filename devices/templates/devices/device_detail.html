@@ -217,6 +217,38 @@ main {
 
     <div class="detail-card interfaces-card">
         <div class="detail-actions" style="margin-bottom: 1.2rem;">
+            <h3 style="margin: 0;">Modules</h3>
+        </div>
+        {% with modules=device.modules.all %}
+            {% if modules %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Serial Number</th>
+                        <th>Vendor</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for module in modules %}
+                    <tr>
+                        <td>{{ module.name }}</td>
+                        <td>{{ module.serial_number|default:"—" }}</td>
+                        <td>{{ module.vendor|default:"—" }}</td>
+                        <td>{{ module.description|default:"—" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+                <p>No modules recorded for this device.</p>
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <div class="detail-card interfaces-card">
+        <div class="detail-actions" style="margin-bottom: 1.2rem;">
             <h3 style="margin: 0;">Interfaces</h3>
             <form method="get" class="filter-form">
                 <input type="text" name="search" placeholder="Search interfaces…" value="{{ search_query }}">

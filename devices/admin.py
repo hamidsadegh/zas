@@ -82,8 +82,8 @@ class DeviceTypeAdmin(admin.ModelAdmin):
 # -----------------------
 @admin.register(ModuleType)
 class ModuleTypeAdmin(admin.ModelAdmin):
-    list_display = ("name", "vendor", "description")
-    list_filter = ("vendor",)
+    list_display = ("name", "device", "serial_number", "vendor", "description")
+    list_filter = ("vendor", "device")
     search_fields = ("name",)
 
 
@@ -94,6 +94,13 @@ class DeviceConfigurationInline(admin.StackedInline):
     model = DeviceConfiguration
     extra = 0
     readonly_fields = ("last_updated",)
+
+
+class DeviceModuleInline(admin.TabularInline):
+    model = ModuleType
+    extra = 1
+    fields = ("name", "serial_number", "vendor", "description")
+    autocomplete_fields = ("vendor",)
 
 
 # ------------------------------
@@ -237,7 +244,7 @@ class DeviceAdmin(admin.ModelAdmin):
     )
     list_filter = ("status", "site", "device_type", "vendor", "organization", "area")
     actions = [export_devices_to_excel]
-    inlines = [DeviceConfigurationInline]
+    inlines = [DeviceModuleInline, DeviceConfigurationInline]
 
     class Media:
         js = ("admin/js/device_admin.js",)
