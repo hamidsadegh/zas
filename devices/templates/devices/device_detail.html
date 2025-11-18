@@ -191,6 +191,7 @@ main {
                 <div class="info-item"><span>Status</span><span>{{ device.status|default:"unknown" }}</span></div>
                 <div class="info-item"><span>Uptime</span><span>{{ device.uptime|default:"—" }}</span></div>
                 <div class="info-item"><span>Area</span><span>{{ device.area|default:"—" }}</span></div>
+                <div class="info-item"><span>Rack</span><span>{{ device.rack.name|default:"—" }}</span></div>
                 <div class="info-item"><span>Site</span><span>{{ device.site }}</span></div>
             </div>
             <div class="info-block">

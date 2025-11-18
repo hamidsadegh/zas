@@ -245,7 +245,7 @@ main {
                 <td>{{ device.device_type|default:"—" }}</td>
                 <td>{{ device.serial_number|default:"—" }}</td>
                 <td>{{ device.area|default:"—" }}</td>
-                <td>{{ device.rack|default:"—" }}</td>
+                <td>{{ device.rack.name|default:"—" }}</td>
                 <td>{{ device.site }}</td>
                 <td>{{ device.image_version|default:"—" }}</td>
                 <td class="table-actions">
