@@ -223,6 +223,10 @@ class DeviceAdmin(admin.ModelAdmin):
         "name",
         "management_ip",
         "status",
+        "reachable_ping",
+        "reachable_snmp",
+        "reachable_ssh",
+        "reachable_telemetry",
         "site",
         "rack",
         "device_type",
@@ -242,7 +246,18 @@ class DeviceAdmin(admin.ModelAdmin):
         "organization__name",
         "site",
     )
-    list_filter = ("status", "site", "device_type", "vendor", "organization", "area")
+    list_filter = (
+        "status",
+        "site",
+        "device_type",
+        "vendor",
+        "organization",
+        "area",
+        "reachable_ping",
+        "reachable_snmp",
+        "reachable_ssh",
+        "reachable_telemetry",
+    )
     actions = [export_devices_to_excel]
     inlines = [DeviceModuleInline, DeviceConfigurationInline]
 

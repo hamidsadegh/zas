@@ -145,6 +145,8 @@ class Device(models.Model):
     # Reachability
     reachable_ping = models.BooleanField(default=False)
     reachable_snmp = models.BooleanField(default=False)
+    reachable_ssh = models.BooleanField(default=False)
+    reachable_telemetry = models.BooleanField(default=False)
     last_check = models.DateTimeField(blank=True, null=True)
 
     uptime = models.DurationField(blank=True, null=True)
