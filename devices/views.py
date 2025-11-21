@@ -164,12 +164,14 @@ class RackListView(LoginRequiredMixin, ListView):
     context_object_name = "racks"
 
 
+@login_required
 def devices_by_area(request, area_id):
     area = get_object_or_404(Area, id=area_id)
     devices = Device.objects.filter(area=area)
     return render(request, "devices/devices_by_area.html", {"area": area, "devices": devices})
 
 
+@login_required
 def racks_by_area(request):
     area_id = request.GET.get("area_id")
     racks = Rack.objects.filter(area_id=area_id).values("id", "name")

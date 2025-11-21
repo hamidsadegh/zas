@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.http import HttpResponse
 from django.urls import reverse_lazy
@@ -10,7 +11,7 @@ from .forms import VLANForm
 from .models import VLAN
 
 
-class VLANListView(ListView):
+class VLANListView(LoginRequiredMixin, ListView):
     model = VLAN
     template_name = "vlans/list.html"
     context_object_name = "vlans"
@@ -58,7 +59,7 @@ class VLANListView(ListView):
         return context
 
 
-class VLANCreateView(CreateView):
+class VLANCreateView(LoginRequiredMixin, CreateView):
     model = VLAN
     form_class = VLANForm
     template_name = "vlans/form.html"
@@ -69,7 +70,7 @@ class VLANCreateView(CreateView):
         return super().form_valid(form)
 
 
-class VLANUpdateView(UpdateView):
+class VLANUpdateView(LoginRequiredMixin, UpdateView):
     model = VLAN
     form_class = VLANForm
     template_name = "vlans/form.html"
@@ -80,7 +81,7 @@ class VLANUpdateView(UpdateView):
         return super().form_valid(form)
 
 
-class VLANDeleteView(DeleteView):
+class VLANDeleteView(LoginRequiredMixin, DeleteView):
     model = VLAN
     template_name = "vlans/confirm_delete.html"
     success_url = reverse_lazy("vlan_list")
@@ -90,7 +91,7 @@ class VLANDeleteView(DeleteView):
         return super().delete(request, *args, **kwargs)
 
 
-class VLANExportView(View):
+class VLANExportView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         site = request.GET.get("site")
         queryset = VLAN.objects.all()
