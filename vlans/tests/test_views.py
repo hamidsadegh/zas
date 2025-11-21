@@ -8,6 +8,12 @@ from django.contrib.auth.models import User
 from vlans.models import VLAN
 
 
+def _login(client):
+    user = User.objects.create_user(username="vlantester", password="pass")
+    client.force_login(user)
+    return user
+
+
 def _create_vlan(**overrides):
     defaults = {
         "site": "Berlin",
@@ -24,14 +30,7 @@ def _create_vlan(**overrides):
 
 @pytest.mark.django_db
 def test_vlan_list_view_filters_by_site_and_search(client):
-    user = User.objects.create_user(
-        username="test",
-        password="pwd12345",
-        is_staff=True,
-        is_superuser=True
-    )
-    client.login(username="test", password="pwd12345")
-
+    _login(client)
     _create_vlan(vlan_id=10, name="Core VLAN Berlin", site="Berlin")
     _create_vlan(vlan_id=11, name="Core VLAN Bonn", site="Bonn")
     _create_vlan(vlan_id=12, name="Edge VLAN", site="Berlin")
@@ -48,6 +47,7 @@ def test_vlan_list_view_filters_by_site_and_search(client):
 
 @pytest.mark.django_db
 def test_vlan_list_view_respects_paginate_by(client):
+    _login(client)
     for idx in range(30):
         _create_vlan(vlan_id=100 + idx, name=f"VLAN {idx}")
 
@@ -62,6 +62,7 @@ def test_vlan_list_view_respects_paginate_by(client):
 
 @pytest.mark.django_db
 def test_vlan_export_view_filters_by_site(client):
+    _login(client)
     _create_vlan(vlan_id=50, name="Berlin Export VLAN", site="Berlin", description="Berlin VLAN")
     _create_vlan(vlan_id=60, name="Bonn VLAN", site="Bonn", description="Bonn VLAN")
 
