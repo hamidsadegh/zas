@@ -1,18 +1,49 @@
 import logging
-from django.utils import timezone
-from devices.models import Device
-from automation.models import AutomationJob, JobRun
-from devices.services.telemetry_service import TelemetryService
-from automation.services.job_runner import execute_job
+from datetime import timedelta
 
 from celery import shared_task
-from devices.services.reachability_service import ReachabilityService
+from django.utils import timezone
+
+from accounts.models import SystemSettings
+from automation.models import AutomationJob, JobRun
+from automation.services.job_runner import execute_job
+from devices.models import Device
+from devices.services.telemetry_service import TelemetryService
 
 logger = logging.getLogger(__name__)
 
 @shared_task
 def check_devices_reachability():
-    ReachabilityService.update_device_status()
+    settings = SystemSettings.get()
+    checks = settings.get_reachability_checks()
+
+    if not any(checks.values()):
+        logger.info("Reachability check skipped: all probes disabled.")
+        return "disabled"
+
+    interval = timedelta(minutes=settings.reachability_interval_minutes or 1)
+    now = timezone.now()
+    if settings.reachability_last_run and (now - settings.reachability_last_run) < interval:
+        logger.debug("Reachability check waiting for interval window.")
+        return "waiting"
+
+    job, _ = AutomationJob.objects.get_or_create(
+        job_type="reachability",
+        defaults={
+            "name": "Reachability Sweep",
+            "description": "Automated reachability verification",
+        },
+    )
+    job_run = JobRun.objects.create(job=job)
+    devices = Device.objects.all()
+    job_run.devices.set(devices)
+
+    if not devices.exists():
+        logger.info("Reachability check skipped: no devices found.")
+
+    execute_job(job_run)
+    logger.info("%s: reachability job triggered.", now)
+    return "scheduled"
 
 def collect_all_telemetry():
     """Poll all devices for telemetry data."""

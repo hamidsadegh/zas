@@ -130,9 +130,9 @@ CRONJOBS = [
 CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'  # if using Redis
 CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
 CELERY_BEAT_SCHEDULE = {
-    'check-reachability-every-10-seconds': {
+    'check-reachability-poller': {
         'task': 'automation.tasks.check_devices_reachability',
-        'schedule': 1000.0, # every 10 seconds
+        'schedule': 60.0,  # poll settings every minute; actual interval controlled in System Settings
     },
 }
 

@@ -9,6 +9,7 @@ class AutomationJob(models.Model):
         ('ztp', 'Zero Touch Provisioning'),
         ('cli', 'CLI Command Execution'),
         ('telemetry', 'Telemetry Polling'),
+        ('reachability', 'Reachability Check'),
     ]
     name = models.CharField(max_length=100)
     job_type = models.CharField(max_length=30, choices=JOB_TYPES)

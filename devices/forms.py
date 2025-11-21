@@ -3,21 +3,31 @@ from django import forms
 from accounts.models import SystemSettings
 
 
-class SystemSettingsForm(forms.ModelForm):
+REACHABILITY_INTERVAL_CHOICES = (
+    (5, "Every 5 minutes"),
+    (10, "Every 10 minutes"),
+    (60, "Every hour"),
+)
+
+
+class BaseSystemSettingsForm(forms.ModelForm):
+    """Base form that only writes the fields in this section."""
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if commit:
+            update_fields = list(self.Meta.fields)
+            # Ensure auto_now timestamp updates with partial saves
+            if "updated_at" not in update_fields:
+                update_fields.append("updated_at")
+            instance.save(update_fields=update_fields)
+        return instance
+
+
+class TacacsSettingsForm(BaseSystemSettingsForm):
     class Meta:
         model = SystemSettings
-        fields = [
-            "tacacs_enabled",
-            "tacacs_server_ip",
-            "tacacs_port",
-            "tacacs_key",
-            "tacacs_authorization_service",
-            "tacacs_retries",
-            "tacacs_session_timeout",
-            "tacacs_admin_group",
-            "tacacs_superuser_group",
-            "allow_local_superusers",
-        ]
+        fields = SystemSettings.TACACS_FIELDS
         widgets = {
             "tacacs_enabled": forms.CheckboxInput(attrs={"class": "toggle-input"}),
             "tacacs_server_ip": forms.TextInput(attrs={"placeholder": "10.10.10.10"}),
@@ -33,5 +43,28 @@ class SystemSettingsForm(forms.ModelForm):
             "tacacs_session_timeout": forms.NumberInput(attrs={"min": 10, "max": 3600}),
             "tacacs_admin_group": forms.TextInput(attrs={"placeholder": "ise-admins"}),
             "tacacs_superuser_group": forms.TextInput(attrs={"placeholder": "ise-superusers"}),
+        }
+
+
+class ReachabilitySettingsForm(BaseSystemSettingsForm):
+    class Meta:
+        model = SystemSettings
+        fields = SystemSettings.REACHABILITY_FIELDS
+        widgets = {
+            "reachability_ping_enabled": forms.CheckboxInput(),
+            "reachability_snmp_enabled": forms.CheckboxInput(),
+            "reachability_ssh_enabled": forms.CheckboxInput(),
+            "reachability_telemetry_enabled": forms.CheckboxInput(),
+            "reachability_interval_minutes": forms.Select(
+                choices=REACHABILITY_INTERVAL_CHOICES
+            ),
+        }
+
+
+class OtherSettingsForm(BaseSystemSettingsForm):
+    class Meta:
+        model = SystemSettings
+        fields = SystemSettings.OTHER_FIELDS
+        widgets = {
             "allow_local_superusers": forms.CheckboxInput(),
         }

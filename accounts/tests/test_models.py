@@ -27,3 +27,25 @@ def test_systemsettings_get_creates_default_when_missing():
 
     assert created.pk == 1
     assert created.tacacs_enabled is False
+
+
+@pytest.mark.django_db
+def test_reachability_settings_persist():
+    settings = SystemSettings.get()
+    settings.reachability_ping_enabled = False
+    settings.reachability_snmp_enabled = False
+    settings.reachability_ssh_enabled = True
+    settings.reachability_telemetry_enabled = True
+    settings.reachability_interval_minutes = 60
+    settings.save()
+
+    refreshed = SystemSettings.get()
+    checks = refreshed.get_reachability_checks()
+
+    assert checks == {
+        "ping": False,
+        "snmp": False,
+        "ssh": True,
+        "telemetry": True,
+    }
+    assert refreshed.reachability_interval_minutes == 60

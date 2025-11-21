@@ -5,7 +5,8 @@ django-celery-beat
 django-crontab
 mysqlclient
 netmiko
-pysnmp
+pyasn1==0.4.8
+pysnmp==4.4.12
 tacacs_plus
 paramiko
 openpyxl
