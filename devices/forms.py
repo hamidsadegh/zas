@@ -49,7 +49,7 @@ class TacacsSettingsForm(BaseSystemSettingsForm):
 class ReachabilitySettingsForm(BaseSystemSettingsForm):
     class Meta:
         model = SystemSettings
-        fields = SystemSettings.REACHABILITY_FIELDS
+        fields = SystemSettings.REACHABILITY_FIELDS + SystemSettings.SNMP_FIELDS
         widgets = {
             "reachability_ping_enabled": forms.CheckboxInput(),
             "reachability_snmp_enabled": forms.CheckboxInput(),
@@ -57,6 +57,19 @@ class ReachabilitySettingsForm(BaseSystemSettingsForm):
             "reachability_telemetry_enabled": forms.CheckboxInput(),
             "reachability_interval_minutes": forms.Select(
                 choices=REACHABILITY_INTERVAL_CHOICES
+            ),
+            "snmp_version": forms.Select(),
+            "snmp_port": forms.NumberInput(attrs={"min": 1, "max": 65535}),
+            "snmp_community": forms.TextInput(attrs={"placeholder": "public"}),
+            "snmp_security_level": forms.Select(),
+            "snmp_username": forms.TextInput(attrs={"placeholder": "snmp-user"}),
+            "snmp_auth_protocol": forms.Select(),
+            "snmp_auth_key": forms.PasswordInput(
+                attrs={"placeholder": "auth passphrase"}, render_value=True
+            ),
+            "snmp_priv_protocol": forms.Select(),
+            "snmp_priv_key": forms.PasswordInput(
+                attrs={"placeholder": "privacy passphrase"}, render_value=True
             ),
         }
 

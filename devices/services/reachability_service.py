@@ -11,11 +11,28 @@ from pysnmp.hlapi import (
     ObjectType,
     SnmpEngine,
     UdpTransportTarget,
+    UsmUserData,
     getCmd,
+    usmAesCfb128Protocol,
+    usmDESPrivProtocol,
+    usmHMACMD5AuthProtocol,
+    usmHMACSHAAuthProtocol,
+    usmNoAuthProtocol,
+    usmNoPrivProtocol,
 )
 
 from devices.models import Device
 from devices.services.telemetry_service import TelemetryService
+
+AUTH_PROTOCOL_MAP = {
+    "md5": usmHMACMD5AuthProtocol,
+    "sha": usmHMACSHAAuthProtocol,
+}
+
+PRIV_PROTOCOL_MAP = {
+    "des": usmDESPrivProtocol,
+    "aes128": usmAesCfb128Protocol,
+}
 
 
 class ReachabilityService:
@@ -37,21 +54,67 @@ class ReachabilityService:
             return False
 
     @staticmethod
-    def snmp_check(host: Optional[str], community: str = "public") -> bool:
+    def snmp_check(host: Optional[str], config: Optional[dict] = None) -> bool:
         """
-        Returns True if SNMP responds.
+        Returns True if SNMP responds using the provided configuration.
         """
         if not host:
             return False
+
+        config = config or {}
+        version = (config.get("version") or "v2c").lower()
+        port = config.get("port") or 161
+
         try:
+            if version == "v3":
+                username = (config.get("username") or "").strip()
+                if not username:
+                    return False
+
+                security_level = config.get("security_level") or "noAuthNoPriv"
+                auth_protocol = AUTH_PROTOCOL_MAP.get(
+                    (config.get("auth_protocol") or "").lower(), usmNoAuthProtocol
+                )
+                priv_protocol = PRIV_PROTOCOL_MAP.get(
+                    (config.get("priv_protocol") or "").lower(), usmNoPrivProtocol
+                )
+                auth_key = (config.get("auth_key") or "").strip() or None
+                priv_key = (config.get("priv_key") or "").strip() or None
+
+                if security_level == "noAuthNoPriv":
+                    auth_protocol = usmNoAuthProtocol
+                    priv_protocol = usmNoPrivProtocol
+                    auth_key = None
+                    priv_key = None
+                elif security_level == "authNoPriv":
+                    priv_protocol = usmNoPrivProtocol
+                    priv_key = None
+                    if not auth_key:
+                        return False
+                elif security_level == "authPriv":
+                    if not auth_key or not priv_key:
+                        return False
+
+                auth_data = UsmUserData(
+                    username,
+                    authKey=auth_key,
+                    privKey=priv_key,
+                    authProtocol=auth_protocol,
+                    privProtocol=priv_protocol,
+                )
+            else:
+                community = (config.get("community") or "public").strip() or "public"
+                mp_model = 1 if version == "v2c" else 0
+                auth_data = CommunityData(community, mpModel=mp_model)
+
             iterator = getCmd(
                 SnmpEngine(),
-                CommunityData(community, mpModel=0),
-                UdpTransportTarget((host, 161), timeout=1, retries=0),
+                auth_data,
+                UdpTransportTarget((host, int(port)), timeout=1, retries=0),
                 ContextData(),
                 ObjectType(ObjectIdentity("1.3.6.1.2.1.1.1.0")),
             )
-            errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
+            errorIndication, errorStatus, errorIndex, _ = next(iterator)
             return errorIndication is None and errorStatus == 0
         except Exception:
             return False
@@ -83,7 +146,7 @@ class ReachabilityService:
         check_snmp: bool = True,
         check_ssh: bool = False,
         check_telemetry: bool = False,
-        snmp_community: str = "public",
+        snmp_config: Optional[dict] = None,
     ) -> List[dict]:
         """
         Checks the provided devices and updates their reachability flags.
@@ -106,7 +169,7 @@ class ReachabilityService:
                 update_fields.append("reachable_ping")
 
             if check_snmp:
-                reachable_snmp = cls.snmp_check(device.management_ip, snmp_community)
+                reachable_snmp = cls.snmp_check(device.management_ip, snmp_config)
                 device.reachable_snmp = reachable_snmp
                 statuses.append(("snmp", reachable_snmp))
                 update_fields.append("reachable_snmp")

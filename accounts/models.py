@@ -20,7 +20,36 @@ class SystemSettings(models.Model):
         "reachability_telemetry_enabled",
         "reachability_interval_minutes",
     )
+    SNMP_FIELDS = (
+        "snmp_version",
+        "snmp_port",
+        "snmp_community",
+        "snmp_security_level",
+        "snmp_username",
+        "snmp_auth_protocol",
+        "snmp_auth_key",
+        "snmp_priv_protocol",
+        "snmp_priv_key",
+    )
     OTHER_FIELDS = ("allow_local_superusers",)
+
+    SNMP_VERSION_CHOICES = (
+        ("v2c", "SNMPv2c"),
+        ("v3", "SNMPv3"),
+    )
+    SNMP_SECURITY_LEVEL_CHOICES = (
+        ("noAuthNoPriv", "noAuthNoPriv"),
+        ("authNoPriv", "authNoPriv"),
+        ("authPriv", "authPriv"),
+    )
+    SNMP_AUTH_PROTOCOL_CHOICES = (
+        ("md5", "MD5"),
+        ("sha", "SHA"),
+    )
+    SNMP_PRIV_PROTOCOL_CHOICES = (
+        ("des", "DES"),
+        ("aes128", "AES-128"),
+    )
 
     tacacs_enabled = models.BooleanField(default=False)
     tacacs_server_ip = models.GenericIPAddressField(protocol="IPv4", blank=True, null=True)
@@ -38,6 +67,29 @@ class SystemSettings(models.Model):
     reachability_telemetry_enabled = models.BooleanField(default=False)
     reachability_interval_minutes = models.PositiveIntegerField(default=10)
     reachability_last_run = models.DateTimeField(blank=True, null=True)
+    snmp_version = models.CharField(
+        max_length=5, choices=SNMP_VERSION_CHOICES, default="v2c"
+    )
+    snmp_port = models.PositiveIntegerField(default=161)
+    snmp_community = models.CharField(max_length=128, blank=True, default="public")
+    snmp_security_level = models.CharField(
+        max_length=20, choices=SNMP_SECURITY_LEVEL_CHOICES, default="noAuthNoPriv"
+    )
+    snmp_username = models.CharField(max_length=128, blank=True, default="")
+    snmp_auth_protocol = models.CharField(
+        max_length=20,
+        choices=SNMP_AUTH_PROTOCOL_CHOICES,
+        blank=True,
+        default="sha",
+    )
+    snmp_auth_key = models.CharField(max_length=255, blank=True, default="")
+    snmp_priv_protocol = models.CharField(
+        max_length=20,
+        choices=SNMP_PRIV_PROTOCOL_CHOICES,
+        blank=True,
+        default="aes128",
+    )
+    snmp_priv_key = models.CharField(max_length=255, blank=True, default="")
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -56,7 +108,8 @@ class SystemSettings(models.Model):
     def section_fields(cls, section):
         mapping = {
             "tacacs": cls.TACACS_FIELDS,
-            "reachability": cls.REACHABILITY_FIELDS,
+            "reachability": cls.REACHABILITY_FIELDS + cls.SNMP_FIELDS,
+            "snmp": cls.SNMP_FIELDS,
             "other": cls.OTHER_FIELDS,
         }
         return mapping.get(section, ())
@@ -71,3 +124,16 @@ class SystemSettings(models.Model):
 
     def reachability_checks_enabled(self):
         return any(self.get_reachability_checks().values())
+
+    def get_snmp_config(self):
+        return {
+            "version": self.snmp_version or "v2c",
+            "port": self.snmp_port or 161,
+            "community": (self.snmp_community or "public").strip() or "public",
+            "security_level": self.snmp_security_level or "noAuthNoPriv",
+            "username": (self.snmp_username or "").strip(),
+            "auth_protocol": self.snmp_auth_protocol or "",
+            "auth_key": self.snmp_auth_key or "",
+            "priv_protocol": self.snmp_priv_protocol or "",
+            "priv_key": self.snmp_priv_key or "",
+        }

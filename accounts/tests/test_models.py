@@ -49,3 +49,28 @@ def test_reachability_settings_persist():
         "telemetry": True,
     }
     assert refreshed.reachability_interval_minutes == 60
+
+
+@pytest.mark.django_db
+def test_snmp_config_round_trip():
+    settings = SystemSettings.get()
+    default_config = settings.get_snmp_config()
+    assert default_config["version"] == "v2c"
+    assert default_config["community"] == "public"
+
+    settings.snmp_version = "v3"
+    settings.snmp_security_level = "authPriv"
+    settings.snmp_username = "snmp-user"
+    settings.snmp_auth_protocol = "sha256"
+    settings.snmp_auth_key = "AuthPass123"
+    settings.snmp_priv_protocol = "aes128"
+    settings.snmp_priv_key = "PrivKey!"
+    settings.snmp_port = 1161
+    settings.save()
+
+    cfg = SystemSettings.get().get_snmp_config()
+    assert cfg["version"] == "v3"
+    assert cfg["username"] == "snmp-user"
+    assert cfg["auth_key"] == "AuthPass123"
+    assert cfg["priv_key"] == "PrivKey!"
+    assert cfg["port"] == 1161

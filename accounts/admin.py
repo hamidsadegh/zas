@@ -27,6 +27,7 @@ class SystemSettingsAdmin(admin.ModelAdmin):
             "Reachability Settings",
             {
                 "fields": SystemSettings.REACHABILITY_FIELDS
+                + SystemSettings.SNMP_FIELDS
                 + ("reachability_last_run",),
                 "description": "Periodic device checks.",
             },

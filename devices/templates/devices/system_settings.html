@@ -181,6 +181,27 @@ main {
     margin-top: 0.2rem;
 }
 
+.snmp-config {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px dashed var(--border);
+}
+
+.snmp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
+.pill-note {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: var(--primary);
+    display: inline-flex;
+}
+
 .meta-line {
     color: var(--muted);
     font-size: 0.85rem;
@@ -328,6 +349,89 @@ main {
                     {% for error in reachability_form.reachability_interval_minutes.errors %}
                         <div class="field-error">{{ error }}</div>
                     {% endfor %}
+                </div>
+            </div>
+
+            <div class="snmp-config">
+                <div class="section-heading">
+                    <div>
+                        <p class="tag">SNMP</p>
+                        <h3 style="margin: 0;">SNMP Configuration</h3>
+                        <p style="margin: 0; color: var(--muted);">Credentials used by reachability checks and telemetry collection.</p>
+                    </div>
+                    <div class="pill-note">Secured in database</div>
+                </div>
+                <div class="snmp-grid">
+                    <div class="form-field">
+                        <label for="{{ reachability_form.snmp_version.id_for_label }}">Version</label>
+                        {{ reachability_form.snmp_version }}
+                        {% for error in reachability_form.snmp_version.errors %}
+                            <div class="field-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-field">
+                        <label for="{{ reachability_form.snmp_port.id_for_label }}">Port</label>
+                        {{ reachability_form.snmp_port }}
+                        {% for error in reachability_form.snmp_port.errors %}
+                            <div class="field-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-field">
+                        <label for="{{ reachability_form.snmp_community.id_for_label }}">Community (v2c)</label>
+                        {{ reachability_form.snmp_community }}
+                        <small style="color: var(--muted);">Only used for SNMPv2c.</small>
+                        {% for error in reachability_form.snmp_community.errors %}
+                            <div class="field-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-field">
+                        <label for="{{ reachability_form.snmp_security_level.id_for_label }}">Security Level (v3)</label>
+                        {{ reachability_form.snmp_security_level }}
+                        {% for error in reachability_form.snmp_security_level.errors %}
+                            <div class="field-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-field">
+                        <label for="{{ reachability_form.snmp_username.id_for_label }}">Username</label>
+                        {{ reachability_form.snmp_username }}
+                        {% for error in reachability_form.snmp_username.errors %}
+                            <div class="field-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-field">
+                        <label for="{{ reachability_form.snmp_auth_protocol.id_for_label }}">Auth Protocol</label>
+                        {{ reachability_form.snmp_auth_protocol }}
+                        {% for error in reachability_form.snmp_auth_protocol.errors %}
+                            <div class="field-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-field">
+                        <label for="{{ reachability_form.snmp_auth_key.id_for_label }}">Auth Passphrase</label>
+                        <div class="password-wrapper">
+                            {{ reachability_form.snmp_auth_key }}
+                            <button type="button" class="toggle-visibility" data-target="#{{ reachability_form.snmp_auth_key.id_for_label }}">Show</button>
+                        </div>
+                        {% for error in reachability_form.snmp_auth_key.errors %}
+                            <div class="field-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-field">
+                        <label for="{{ reachability_form.snmp_priv_protocol.id_for_label }}">Privacy Protocol</label>
+                        {{ reachability_form.snmp_priv_protocol }}
+                        {% for error in reachability_form.snmp_priv_protocol.errors %}
+                            <div class="field-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-field">
+                        <label for="{{ reachability_form.snmp_priv_key.id_for_label }}">Privacy Passphrase</label>
+                        <div class="password-wrapper">
+                            {{ reachability_form.snmp_priv_key }}
+                            <button type="button" class="toggle-visibility" data-target="#{{ reachability_form.snmp_priv_key.id_for_label }}">Show</button>
+                        </div>
+                        {% for error in reachability_form.snmp_priv_key.errors %}
+                            <div class="field-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
 

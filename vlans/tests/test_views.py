@@ -3,6 +3,7 @@ from io import BytesIO
 import pytest # type: ignore
 from django.urls import reverse # type: ignore
 from openpyxl import load_workbook # type: ignore
+from django.contrib.auth.models import User
 
 from vlans.models import VLAN
 
@@ -23,6 +24,14 @@ def _create_vlan(**overrides):
 
 @pytest.mark.django_db
 def test_vlan_list_view_filters_by_site_and_search(client):
+    user = User.objects.create_user(
+        username="test",
+        password="pwd12345",
+        is_staff=True,
+        is_superuser=True
+    )
+    client.login(username="test", password="pwd12345")
+
     _create_vlan(vlan_id=10, name="Core VLAN Berlin", site="Berlin")
     _create_vlan(vlan_id=11, name="Core VLAN Bonn", site="Bonn")
     _create_vlan(vlan_id=12, name="Edge VLAN", site="Berlin")

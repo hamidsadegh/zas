@@ -39,6 +39,7 @@ def execute_job(job_run: JobRun):
         elif job.job_type == "reachability":
             settings = SystemSettings.get()
             checks = settings.get_reachability_checks()
+            snmp_config = settings.get_snmp_config()
             enabled_checks = [name for name, enabled in checks.items() if enabled]
 
             if not enabled_checks:
@@ -62,6 +63,7 @@ def execute_job(job_run: JobRun):
                         check_snmp=checks["snmp"],
                         check_ssh=checks["ssh"],
                         check_telemetry=checks["telemetry"],
+                        snmp_config=snmp_config,
                     )
 
                     if not results:

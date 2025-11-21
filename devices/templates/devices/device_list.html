@@ -137,6 +137,13 @@
     box-shadow: 0 0 6px rgba(239, 68, 68, 0.45);
 }
 
+.reachability-dot.disabled {
+    background: #d1d5db;
+    border-color: #c4c9d4;
+    box-shadow: none;
+    opacity: 0.6;
+}
+
 .table-actions a {
     border-radius: 999px;
     border: 1px solid var(--border);
@@ -255,18 +262,26 @@ main {
                 <td>{{ device.management_ip }}</td>
                 <td>
                     <div class="reachability">
-                        <span class="reachability-dot {% if device.reachable_ping %}ok{% else %}fail{% endif %}"
-                              title="Ping reachable"
-                              aria-label="Ping reachable: {% if device.reachable_ping %}yes{% else %}no{% endif %}"></span>
-                        <span class="reachability-dot {% if device.reachable_snmp %}ok{% else %}fail{% endif %}"
-                              title="SNMP reachable"
-                              aria-label="SNMP reachable: {% if device.reachable_snmp %}yes{% else %}no{% endif %}"></span>
-                        <span class="reachability-dot {% if device.reachable_ssh %}ok{% else %}fail{% endif %}"
-                              title="SSH reachable"
-                              aria-label="SSH reachable: {% if device.reachable_ssh %}yes{% else %}no{% endif %}"></span>
-                        <span class="reachability-dot {% if device.reachable_telemetry %}ok{% else %}fail{% endif %}"
-                              title="Telemetry reachable"
-                              aria-label="Telemetry reachable: {% if device.reachable_telemetry %}yes{% else %}no{% endif %}"></span>
+                        {% with ping_enabled=reachability_checks.ping %}
+                        <span class="reachability-dot {% if not ping_enabled %}disabled{% elif device.reachable_ping %}ok{% else %}fail{% endif %}"
+                              title="{% if ping_enabled %}Ping reachable{% else %}Ping check disabled{% endif %}"
+                              aria-label="{% if ping_enabled %}Ping reachable: {% if device.reachable_ping %}yes{% else %}no{% endif %}{% else %}Ping check disabled{% endif %}"></span>
+                        {% endwith %}
+                        {% with snmp_enabled=reachability_checks.snmp %}
+                        <span class="reachability-dot {% if not snmp_enabled %}disabled{% elif device.reachable_snmp %}ok{% else %}fail{% endif %}"
+                              title="{% if snmp_enabled %}SNMP reachable{% else %}SNMP check disabled{% endif %}"
+                              aria-label="{% if snmp_enabled %}SNMP reachable: {% if device.reachable_snmp %}yes{% else %}no{% endif %}{% else %}SNMP check disabled{% endif %}"></span>
+                        {% endwith %}
+                        {% with ssh_enabled=reachability_checks.ssh %}
+                        <span class="reachability-dot {% if not ssh_enabled %}disabled{% elif device.reachable_ssh %}ok{% else %}fail{% endif %}"
+                              title="{% if ssh_enabled %}SSH reachable{% else %}SSH check disabled{% endif %}"
+                              aria-label="{% if ssh_enabled %}SSH reachable: {% if device.reachable_ssh %}yes{% else %}no{% endif %}{% else %}SSH check disabled{% endif %}"></span>
+                        {% endwith %}
+                        {% with telemetry_enabled=reachability_checks.telemetry %}
+                        <span class="reachability-dot {% if not telemetry_enabled %}disabled{% elif device.reachable_telemetry %}ok{% else %}fail{% endif %}"
+                              title="{% if telemetry_enabled %}Telemetry reachable{% else %}Telemetry check disabled{% endif %}"
+                              aria-label="{% if telemetry_enabled %}Telemetry reachable: {% if device.reachable_telemetry %}yes{% else %}no{% endif %}{% else %}Telemetry check disabled{% endif %}"></span>
+                        {% endwith %}
                     </div>
                 </td>
                 <td>

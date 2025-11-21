@@ -106,6 +106,8 @@ class DeviceListView(LoginRequiredMixin, ListView):
         context['site_choices'] = self.site_filter_choices
         context['site_filter'] = getattr(self, "current_site_filter", "all")
         context['per_page_options'] = self.per_page_options
+        settings_obj = SystemSettings.get()
+        context['reachability_checks'] = settings_obj.get_reachability_checks()
         return context
 
 class DeviceDetailView(LoginRequiredMixin, DetailView):
@@ -143,6 +145,7 @@ class DeviceDetailView(LoginRequiredMixin, DetailView):
         context['interfaces'] = interfaces
         context['search_query'] = search_query
         context['sort_field'] = sort_field
+        context['reachability_checks'] = SystemSettings.get().get_reachability_checks()
         return context
 
 
