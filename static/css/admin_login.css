@@ -86,6 +86,7 @@ body.zas-admin-login {
 .vendor-stream img:nth-child(10) { animation-delay: -13.5s; }
 .vendor-stream img:nth-child(11) { animation-delay: -15s; }
 .vendor-stream img:nth-child(12) { animation-delay: -16.5s; }
+.vendor-stream img:nth-child(13) { animation-delay: -18s; }
 
 @keyframes logoSlide {
     0% {
