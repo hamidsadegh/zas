@@ -13,6 +13,7 @@ openpyxl
 gunicorn
 celery
 redis
+flower
 python-dotenv
 pandas
 pytest
