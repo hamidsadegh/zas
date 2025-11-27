@@ -1,4 +1,5 @@
 from django.db import models
+from encrypted_model_fields.fields import EncryptedCharField
 
 
 class SystemSettings(models.Model):
@@ -54,7 +55,7 @@ class SystemSettings(models.Model):
     tacacs_enabled = models.BooleanField(default=False)
     tacacs_server_ip = models.GenericIPAddressField(protocol="IPv4", blank=True, null=True)
     tacacs_port = models.PositiveIntegerField(default=49)
-    tacacs_key = models.CharField(max_length=255, blank=True, null=True)
+    tacacs_key = EncryptedCharField(max_length=255, blank=True, null=True)
     tacacs_authorization_service = models.CharField(max_length=100, blank=True, null=True)
     tacacs_retries = models.PositiveSmallIntegerField(default=3)
     tacacs_session_timeout = models.PositiveIntegerField(default=60)
@@ -82,14 +83,14 @@ class SystemSettings(models.Model):
         blank=True,
         default="sha",
     )
-    snmp_auth_key = models.CharField(max_length=255, blank=True, default="")
+    snmp_auth_key = EncryptedCharField(max_length=255, blank=True, null=True)
     snmp_priv_protocol = models.CharField(
         max_length=20,
         choices=SNMP_PRIV_PROTOCOL_CHOICES,
         blank=True,
         default="aes128",
     )
-    snmp_priv_key = models.CharField(max_length=255, blank=True, default="")
+    snmp_priv_key = EncryptedCharField(max_length=255, blank=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -98,42 +99,3 @@ class SystemSettings(models.Model):
 
     def __str__(self):
         return "System Settings"
-
-    @classmethod
-    def get(cls):
-        obj, _ = cls.objects.get_or_create(pk=1)
-        return obj
-
-    @classmethod
-    def section_fields(cls, section):
-        mapping = {
-            "tacacs": cls.TACACS_FIELDS,
-            "reachability": cls.REACHABILITY_FIELDS + cls.SNMP_FIELDS,
-            "snmp": cls.SNMP_FIELDS,
-            "other": cls.OTHER_FIELDS,
-        }
-        return mapping.get(section, ())
-
-    def get_reachability_checks(self):
-        return {
-            "ping": self.reachability_ping_enabled,
-            "snmp": self.reachability_snmp_enabled,
-            "ssh": self.reachability_ssh_enabled,
-            "telemetry": self.reachability_telemetry_enabled,
-        }
-
-    def reachability_checks_enabled(self):
-        return any(self.get_reachability_checks().values())
-
-    def get_snmp_config(self):
-        return {
-            "version": self.snmp_version or "v2c",
-            "port": self.snmp_port or 161,
-            "community": (self.snmp_community or "public").strip() or "public",
-            "security_level": self.snmp_security_level or "noAuthNoPriv",
-            "username": (self.snmp_username or "").strip(),
-            "auth_protocol": self.snmp_auth_protocol or "",
-            "auth_key": self.snmp_auth_key or "",
-            "priv_protocol": self.snmp_priv_protocol or "",
-            "priv_key": self.snmp_priv_key or "",
-        }

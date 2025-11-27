@@ -1,6 +1,6 @@
-from devices.services.ssh_service import SSHService
-from devices.services.snmp_service import SNMPService
-from devices.models import Device
+from ssh_service import SSHService
+from snmp_service import SNMPService
+from dcim.models import Device
 
 class BackupService:
     """Handles configuration backup via SSH."""

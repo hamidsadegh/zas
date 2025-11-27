@@ -1,6 +1,7 @@
 # accounts/admin.py
 from django.contrib import admin
-from .models import SystemSettings
+from accounts.models.site_credentials import SiteCredential
+from accounts.models.system_settings import SystemSettings
 
 
 @admin.register(SystemSettings)
@@ -40,3 +41,9 @@ class SystemSettingsAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+
+@admin.register(SiteCredential)
+class SiteCredentialAdmin(admin.ModelAdmin):
+    list_display = ("site", "ssh_username", "ssh_port")
+    search_fields = ("site", "ssh_username")

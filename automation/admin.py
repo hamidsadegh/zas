@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import AutomationJob, JobRun, DeviceTelemetry
+from automation.models import AutomationJob, JobRun, DeviceTelemetry
 
 
 @admin.register(AutomationJob)

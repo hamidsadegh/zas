@@ -6,6 +6,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
 from django.db import transaction
 
+from accounts.services.settings_service import get_system_settings
+
 User = get_user_model()
 log = logging.getLogger(__name__)
 
@@ -28,9 +30,7 @@ class IseTacacsBackend(ModelBackend):
         if not username or not password:
             return None
 
-        from accounts.models import SystemSettings
-
-        config = SystemSettings.get()
+        config = get_system_settings()
         if not config.tacacs_enabled:
             return super().authenticate(request, username=username, password=password, **kwargs)
 

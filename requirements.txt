@@ -3,6 +3,7 @@ djangorestframework
 django-environ
 django-celery-beat
 django-crontab
+django-encrypted-model-fields
 mysqlclient
 netmiko
 pyasn1==0.4.8

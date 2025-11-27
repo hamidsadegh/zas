@@ -57,7 +57,7 @@ classDiagram
         +status
         +speed
     }
-    class ModuleType {
+    class DeviceModule {
         +name
         +vendor
         +serial_number
@@ -71,7 +71,7 @@ classDiagram
     Device --> DeviceRole : role
     Device --> DeviceConfiguration : configuration (1:1)
     Device --> Interface : interfaces (1:N)
-    Device --> ModuleType : modules (1:N)
+    Device --> DeviceModule : modules (1:N)
 ```
 
 Use the relationships as a quick reference when extending the device domain, adding new fields, or integrating with other apps.

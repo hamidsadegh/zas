@@ -4,18 +4,22 @@ from datetime import timedelta
 from celery import shared_task
 from django.utils import timezone
 
-from accounts.models import SystemSettings
 from automation.models import AutomationJob, JobRun
 from automation.services.job_runner import execute_job
-from devices.models import Device
-from devices.services.telemetry_service import TelemetryService
+from automation.services.telemetry_service import TelemetryService
+from dcim.models import Device
+from accounts.services.settings_service import (
+    get_reachability_checks,
+    get_snmp_config,
+    get_system_settings,
+)
 
 logger = logging.getLogger(__name__)
 
 @shared_task
 def check_devices_reachability():
-    settings = SystemSettings.get()
-    checks = settings.get_reachability_checks()
+    settings = get_system_settings()
+    checks = get_reachability_checks(settings)
 
     if not any(checks.values()):
         logger.info("Reachability check skipped: all probes disabled.")
@@ -41,7 +45,7 @@ def check_devices_reachability():
     if not devices.exists():
         logger.info("Reachability check skipped: no devices found.")
 
-    execute_job(job_run)
+    execute_job(job_run, snmp_config=get_snmp_config(settings), reachability_checks=checks)
     logger.info("%s: reachability job triggered.", now)
     return "scheduled"
 

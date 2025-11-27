@@ -1,0 +1,488 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings{% endblock %}
+
+{% block styles %}
+.settings-shell {
+    width: 95%;
+    margin: 0 auto;
+    font-size: 0.9rem;
+}
+
+.settings-wrapper {
+    background: var(--surface);
+    border-radius: 20px;
+    padding: 1.5rem 2rem;
+    box-shadow: var(--shadow);
+}
+
+main {
+    max-width: none;
+    width: 95vw;
+    margin: 0 auto;
+}
+
+.tag {
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: #eef2ff;
+    color: var(--primary);
+    display: inline-flex;
+}
+
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.settings-header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.settings-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.section-card {
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 1.25rem 1.5rem;
+    background: #fdfdff;
+}
+
+.settings-form {
+    display: grid;
+    gap: 1rem;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    background: #f8faff;
+    padding: 0.9rem;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+}
+
+.form-field label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 0.25rem;
+}
+
+.form-field input[type="text"],
+.form-field input[type="number"],
+.form-field input[type="password"] {
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.9rem;
+}
+
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-wrapper input {
+    flex: 1;
+    padding-right: 2.5rem;
+}
+
+.toggle-visibility {
+    position: absolute;
+    right: 0.6rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.toggle-field {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: #f0f5ff;
+    padding: 1rem;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+}
+
+.toggle-field.secondary {
+    grid-column: 1 / -1;
+}
+
+.section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+
+.reachability-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+}
+
+.interval-field select {
+    width: 100%;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.btn {
+    border: none;
+    border-radius: 999px;
+    padding: 0.6rem 1.3rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: #fff;
+}
+
+.btn-secondary {
+    background: #fff;
+    border: 1px solid var(--border);
+    color: var(--text);
+}
+
+.field-error {
+    color: #c53030;
+    font-size: 0.8rem;
+    margin-top: 0.2rem;
+}
+
+.snmp-config {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px dashed var(--border);
+}
+
+.snmp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
+.pill-note {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: var(--primary);
+    display: inline-flex;
+}
+
+.meta-line {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.other-hint {
+    margin: 0.35rem 0 0;
+    color: var(--muted);
+}
+{% endblock %}
+
+{% block content %}
+<div class="settings-shell">
+<section class="settings-wrapper">
+    <div class="settings-header">
+        <div>
+            <p class="tag">Configuration</p>
+            <h1>System Settings</h1>
+            <p style="color: var(--muted); margin-bottom: 0;">Manage TACACS+, reachability checks, and future platform settings.</p>
+        </div>
+        <a class="btn btn-secondary" href="{% url 'home' %}">← Back to Dashboard</a>
+    </div>
+
+    <div class="settings-sections">
+        <form method="post" class="settings-form section-card" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="section" value="tacacs">
+            <div class="section-heading">
+                <div>
+                    <p class="tag">Authentication</p>
+                    <h2 style="margin: 0;">TACACS+ Settings</h2>
+                    <p style="margin: 0; color: var(--muted);">Configure centralized authentication parameters.</p>
+                </div>
+            </div>
+
+            <div class="toggle-field">
+                {{ tacacs_form.tacacs_enabled }}
+                <div>
+                    <strong>TACACS+ Authentication</strong>
+                    <p style="margin: 0; color: var(--muted); font-size: 0.9rem;">Toggle centralized authentication workflow.</p>
+                </div>
+            </div>
+            {% if tacacs_form.tacacs_enabled.errors %}
+                <div class="field-error">{{ tacacs_form.tacacs_enabled.errors.0 }}</div>
+            {% endif %}
+
+            <div class="form-grid">
+                {% for field in tacacs_form %}
+                    {% if field.name == 'tacacs_enabled' %}
+                        {# already rendered #}
+                    {% elif field.name == 'tacacs_key' %}
+                        <div class="form-field">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            <div class="password-wrapper">
+                                {{ field }}
+                                <button type="button" class="toggle-visibility" data-target="#{{ field.id_for_label }}">Show</button>
+                            </div>
+                            {% for error in field.errors %}
+                                <div class="field-error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="form-field">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                                <small style="color: var(--muted);">{{ field.help_text }}</small>
+                            {% endif %}
+                            {% for error in field.errors %}
+                                <div class="field-error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save TACACS+</button>
+            </div>
+        </form>
+
+        <form method="post" class="settings-form section-card" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="section" value="reachability">
+            <div class="section-heading">
+                <div>
+                    <p class="tag">Automation</p>
+                    <h2 style="margin: 0;">Reachability Settings</h2>
+                    <p style="margin: 0; color: var(--muted);">Choose which probes to run and how often devices are polled.</p>
+                </div>
+                <div class="meta-line">
+                    Last run: {{ settings_obj.reachability_last_run|default:"Never" }}
+                </div>
+            </div>
+
+            <div class="reachability-grid">
+                <div class="toggle-field">
+                    {{ reachability_form.reachability_ping_enabled }}
+                    <div>
+                        <strong>Ping</strong>
+                        <p style="margin: 0; color: var(--muted); font-size: 0.9rem;">ICMP reachability probe.</p>
+                    </div>
+                </div>
+                {% for error in reachability_form.reachability_ping_enabled.errors %}
+                    <div class="field-error">{{ error }}</div>
+                {% endfor %}
+
+                <div class="toggle-field">
+                    {{ reachability_form.reachability_snmp_enabled }}
+                    <div>
+                        <strong>SNMP</strong>
+                        <p style="margin: 0; color: var(--muted); font-size: 0.9rem;">SNMP sysDescr request.</p>
+                    </div>
+                </div>
+                {% for error in reachability_form.reachability_snmp_enabled.errors %}
+                    <div class="field-error">{{ error }}</div>
+                {% endfor %}
+
+                <div class="toggle-field">
+                    {{ reachability_form.reachability_ssh_enabled }}
+                    <div>
+                        <strong>SSH</strong>
+                        <p style="margin: 0; color: var(--muted); font-size: 0.9rem;">TCP reachability to the SSH port.</p>
+                    </div>
+                </div>
+                {% for error in reachability_form.reachability_ssh_enabled.errors %}
+                    <div class="field-error">{{ error }}</div>
+                {% endfor %}
+
+                <div class="toggle-field">
+                    {{ reachability_form.reachability_telemetry_enabled }}
+                    <div>
+                        <strong>Telemetry</strong>
+                        <p style="margin: 0; color: var(--muted); font-size: 0.9rem;">Attempt to pull telemetry data.</p>
+                    </div>
+                </div>
+                {% for error in reachability_form.reachability_telemetry_enabled.errors %}
+                    <div class="field-error">{{ error }}</div>
+                {% endfor %}
+
+                <div class="form-field interval-field">
+                    <label for="{{ reachability_form.reachability_interval_minutes.id_for_label }}">Check Interval</label>
+                    {{ reachability_form.reachability_interval_minutes }}
+                    <small style="color: var(--muted);">Applies to all selected checks.</small>
+                    {% for error in reachability_form.reachability_interval_minutes.errors %}
+                        <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="snmp-config">
+                <div class="section-heading">
+                    <div>
+                        <p class="tag">SNMP</p>
+                        <h3 style="margin: 0;">SNMP Configuration</h3>
+                        <p style="margin: 0; color: var(--muted);">Credentials used by reachability checks and telemetry collection.</p>
+                    </div>
+                    <div class="pill-note">Secured in database</div>
+                </div>
+                <div class="snmp-grid">
+                    <div class="form-field">
+                        <label for="{{ reachability_form.snmp_version.id_for_label }}">Version</label>
+                        {{ reachability_form.snmp_version }}
+                        {% for error in reachability_form.snmp_version.errors %}
+                            <div class="field-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-field">
+                        <label for="{{ reachability_form.snmp_port.id_for_label }}">Port</label>
+                        {{ reachability_form.snmp_port }}
+                        {% for error in reachability_form.snmp_port.errors %}
+                            <div class="field-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-field">
+                        <label for="{{ reachability_form.snmp_community.id_for_label }}">Community (v2c)</label>
+                        {{ reachability_form.snmp_community }}
+                        <small style="color: var(--muted);">Only used for SNMPv2c.</small>
+                        {% for error in reachability_form.snmp_community.errors %}
+                            <div class="field-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-field">
+                        <label for="{{ reachability_form.snmp_security_level.id_for_label }}">Security Level (v3)</label>
+                        {{ reachability_form.snmp_security_level }}
+                        {% for error in reachability_form.snmp_security_level.errors %}
+                            <div class="field-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-field">
+                        <label for="{{ reachability_form.snmp_username.id_for_label }}">Username</label>
+                        {{ reachability_form.snmp_username }}
+                        {% for error in reachability_form.snmp_username.errors %}
+                            <div class="field-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-field">
+                        <label for="{{ reachability_form.snmp_auth_protocol.id_for_label }}">Auth Protocol</label>
+                        {{ reachability_form.snmp_auth_protocol }}
+                        {% for error in reachability_form.snmp_auth_protocol.errors %}
+                            <div class="field-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-field">
+                        <label for="{{ reachability_form.snmp_auth_key.id_for_label }}">Auth Passphrase</label>
+                        <div class="password-wrapper">
+                            {{ reachability_form.snmp_auth_key }}
+                            <button type="button" class="toggle-visibility" data-target="#{{ reachability_form.snmp_auth_key.id_for_label }}">Show</button>
+                        </div>
+                        {% for error in reachability_form.snmp_auth_key.errors %}
+                            <div class="field-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-field">
+                        <label for="{{ reachability_form.snmp_priv_protocol.id_for_label }}">Privacy Protocol</label>
+                        {{ reachability_form.snmp_priv_protocol }}
+                        {% for error in reachability_form.snmp_priv_protocol.errors %}
+                            <div class="field-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-field">
+                        <label for="{{ reachability_form.snmp_priv_key.id_for_label }}">Privacy Passphrase</label>
+                        <div class="password-wrapper">
+                            {{ reachability_form.snmp_priv_key }}
+                            <button type="button" class="toggle-visibility" data-target="#{{ reachability_form.snmp_priv_key.id_for_label }}">Show</button>
+                        </div>
+                        {% for error in reachability_form.snmp_priv_key.errors %}
+                            <div class="field-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save Reachability</button>
+            </div>
+        </form>
+
+        <form method="post" class="settings-form section-card" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="section" value="other">
+            <div class="section-heading">
+                <div>
+                    <p class="tag">Other Settings</p>
+                    <h2 style="margin: 0;">Local Access &amp; Future Settings</h2>
+                    <p style="margin: 0; color: var(--muted);">Fallback controls and space for upcoming configuration.</p>
+                </div>
+            </div>
+
+            <div class="toggle-field secondary">
+                {{ other_form.allow_local_superusers }}
+                <div>
+                    <strong>Allow Local Superusers</strong>
+                    <p style="margin: 0; color: var(--muted); font-size: 0.9rem;">
+                        Keep local superusers as emergency access when TACACS+ denies requests.
+                    </p>
+                </div>
+            </div>
+            {% for error in other_form.allow_local_superusers.errors %}
+                <div class="field-error">{{ error }}</div>
+            {% endfor %}
+
+            <p class="other-hint">More settings will appear here as they are added.</p>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save Other Settings</button>
+            </div>
+        </form>
+    </div>
+</section>
+</div>
+<script>
+document.querySelectorAll('.toggle-visibility').forEach((button) => {
+    button.addEventListener('click', () => {
+        const targetSelector = button.getAttribute('data-target');
+        const field = document.querySelector(targetSelector);
+        if (!field) return;
+        const isPassword = field.getAttribute('type') === 'password';
+        field.setAttribute('type', isPassword ? 'text' : 'password');
+        button.textContent = isPassword ? 'Hide' : 'Show';
+    });
+});
+</script>
+{% endblock %}
