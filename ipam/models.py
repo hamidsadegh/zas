@@ -1,11 +1,11 @@
 from django.db import models
 
-from dcim.models import DEVICE_SITE_CHOICES, Device, Interface, VLAN
-
+from dcim.models import Device, Interface, VLAN
+from dcim.choices import SITE_CHOICES
 
 class Prefix(models.Model):
     prefix = models.CharField(max_length=50)  # 10.0.0.0/24
-    site = models.CharField(max_length=50, choices=DEVICE_SITE_CHOICES)
+    site = models.CharField(max_length=50, choices=SITE_CHOICES)
     vlan = models.ForeignKey(VLAN, null=True, blank=True, on_delete=models.SET_NULL)
     status = models.CharField(max_length=50)
 

@@ -3,7 +3,7 @@ import django
 import sys
 
 sys.path.append("/opt/code/zas")
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "zas_project.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "zas.settings.base")
 django.setup()
 from django.utils import timezone
 import random

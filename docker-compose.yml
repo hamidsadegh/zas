@@ -52,7 +52,7 @@ services:
       - web
   celery:
     build: .
-    command: celery -A zas_project worker -l info
+    command: celery -A zas worker -l info
     environment:
       DATABASE_HOST: db
       DATABASE_NAME: zas
@@ -69,7 +69,7 @@ services:
 
   celery-beat:
     build: .
-    command: celery -A zas_project beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler --schedule=/code/celerybeat/celerybeat-schedule
+    command: celery -A zas beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler --schedule=/code/celerybeat/celerybeat-schedule
     environment:
       DATABASE_HOST: db
       DATABASE_NAME: zas

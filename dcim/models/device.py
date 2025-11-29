@@ -4,12 +4,10 @@ from dcim.choices import DEVICE_STATUS_CHOICES
 from dcim.choices import SITE_CHOICES
 from dcim.choices import DEVICE_TYPE_CHOICES
 from dcim.models.vendor import Vendor
-from dcim.models.device import Device   
 from django.utils import timezone
 from dcim.models.area import Area
 from dcim.models.rack import Rack
 import uuid
-
 
 
 class DeviceType(models.Model):
@@ -35,40 +33,6 @@ class DeviceRole(models.Model):
         return self.name
     
 
-class DeviceConfiguration(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    device = models.OneToOneField(
-        Device, on_delete=models.CASCADE, related_name="configuration"
-    )
-    config_text = models.TextField(help_text="Full configuration text")
-    last_updated = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        verbose_name = "Device Configuration"
-        verbose_name_plural = "Device Configurations"
-
-    def __str__(self):
-        return f"Configuration for {self.device.name}"
-
-
-class DeviceModule(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name="modules")
-    name = models.CharField(max_length=100)
-    description = models.TextField(blank=True, null=True)
-    vendor = models.ForeignKey(
-        Vendor, on_delete=models.SET_NULL, blank=True, null=True, related_name="modules"
-    )
-    serial_number = models.CharField(max_length=100)
-
-    class Meta:
-        verbose_name = "Device Module"
-        verbose_name_plural = "Device Modules"
-
-    def __str__(self):
-        return f"{self.device.name} - {self.name} ({self.serial_number})"
-    
-    
 class Device(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
@@ -113,6 +77,40 @@ class Device(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.management_ip})"
+    
+
+class DeviceConfiguration(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    device = models.OneToOneField(
+        Device, on_delete=models.CASCADE, related_name="configuration"
+    )
+    config_text = models.TextField(help_text="Full configuration text")
+    last_updated = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        verbose_name = "Device Configuration"
+        verbose_name_plural = "Device Configurations"
+
+    def __str__(self):
+        return f"Configuration for {self.device.name}"
+
+
+class DeviceModule(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name="modules")
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+    vendor = models.ForeignKey(
+        Vendor, on_delete=models.SET_NULL, blank=True, null=True, related_name="modules"
+    )
+    serial_number = models.CharField(max_length=100)
+
+    class Meta:
+        verbose_name = "Device Module"
+        verbose_name_plural = "Device Modules"
+
+    def __str__(self):
+        return f"{self.device.name} - {self.name} ({self.serial_number})"
     
     
 class DeviceRuntimeStatus(models.Model):

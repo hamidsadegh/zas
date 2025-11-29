@@ -1,0 +1,200 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}ZAS — Network Administration System{% endblock %}</title>
+    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
+    <link rel="icon" href="{% static 'img/favicon-32.png' %}" sizes="32x32" type="image/png">
+    <link rel="icon" href="{% static 'img/favicon-64.png' %}" sizes="64x64" type="image/png">
+    <link rel="icon" href="{% static 'img/favicon-192.png' %}" sizes="192x192" type="image/png">
+    <link rel="apple-touch-icon" href="{% static 'img/favicon-192.png' %}">
+    <style>
+        :root {
+            --bg: #f6f8fb;
+            --surface: #ffffff;
+            --primary: #2663eb;
+            --primary-dark: #1c4ab2;
+            --text: #0f1d40;
+            --muted: #6b7280;
+            --border: #e2e8f0;
+            --shadow: 0 10px 25px rgba(15, 29, 64, 0.08);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        a { color: var(--primary); text-decoration: none; }
+        a:hover { color: var(--primary-dark); }
+
+        header {
+            background: var(--surface);
+            padding: 1.5rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .brand {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand span:first-child {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .brand span:last-child {
+            font-size: 0.85rem;
+            color: var(--muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        nav {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        nav a {
+            font-weight: 500;
+            color: var(--muted);
+        }
+
+        nav a.active,
+        nav a:hover {
+            color: var(--primary);
+        }
+
+        main {
+            padding: 2.5rem 2rem 3rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .logout-form {
+            margin: 0;
+        }
+
+        .logout-btn {
+            border: none;
+            background: #fff;
+            color: var(--primary);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 0.45rem 1.3rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+        }
+
+        .logout-btn:hover {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .flash-container {
+            max-width: 1200px;
+            margin: 1rem auto 0;
+            padding: 0 2rem;
+        }
+
+        .flash {
+            padding: 0.9rem 1.2rem;
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
+            font-weight: 500;
+        }
+
+        .flash-success {
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #34d399;
+        }
+
+        .flash-error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #f87171;
+        }
+
+        .flash-info {
+            background: #eff6ff;
+            color: #1e3a8a;
+            border: 1px solid #60a5fa;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            nav a {
+                margin-left: 0;
+                margin-right: 1rem;
+            }
+        }
+
+        {% block styles %}{% endblock %}
+    </style>
+</head>
+<body>
+<header>
+    <div class="brand">
+        <span>ZAS Platform</span>
+        <span>Network Administration</span>
+    </div>
+    <div class="nav-actions">
+        <nav>
+            <a href="{% url 'home' %}">Dashboard</a>
+            <a href="{% url 'device_list' %}">Devices</a>
+            <a href="{% url 'vlan_list' %}">VLANs</a>
+            <!-- <a href="{% url 'area_list' %}">Areas</a>
+            <a href="{% url 'rack_list' %}">Racks</a> -->
+            <a href="{% url 'system_settings' %}">Settings</a>
+            <a href="/admin/">Admin</a>
+        </nav>
+        {% if user.is_authenticated %}
+        <form method="post" action="{% url 'logout' %}" class="logout-form">
+            {% csrf_token %}
+            <button type="submit" class="logout-btn">Logout</button>
+        </form>
+        {% endif %}
+    </div>
+</header>
+{% if messages %}
+<div class="flash-container">
+    {% for message in messages %}
+        <div class="flash flash-{{ message.tags|default:'info' }}">
+            {{ message }}
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+<main>
+    {% block content %}{% endblock %}
+</main>
+</body>
+</html>

@@ -9,11 +9,12 @@ from openpyxl import Workbook
 
 from ..forms.vlan_forms import VLANForm
 from dcim.models.vlan import VLAN
+from dcim.choices import SITE_CHOICES
 
 
 class VLANListView(LoginRequiredMixin, ListView):
     model = VLAN
-    template_name = "vlans/list.html"
+    template_name = "dcim/vlan_list.html"
     context_object_name = "vlans"
     paginate_by = 25
     per_page_options = (10, 25, 50, 100)
@@ -28,10 +29,11 @@ class VLANListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         queryset = VLAN.objects.all()
+
         site = self.request.GET.get("site", "Berlin")
         search = self.request.GET.get("q", "").strip()
 
-        if site in dict(VLAN.SITE_CHOICES):
+        if site in dict(SITE_CHOICES):
             queryset = queryset.filter(site=site)
 
         if search:
@@ -53,16 +55,17 @@ class VLANListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context["site_filter"] = self.request.GET.get("site", "Berlin")
         context["search_query"] = self.request.GET.get("q", "")
-        context["site_choices"] = VLAN.SITE_CHOICES
+        context["site_choices"] = SITE_CHOICES
         context["per_page_options"] = self.per_page_options
         context["paginate_by_value"] = getattr(self, "_current_paginate_by", self.paginate_by)
         return context
 
 
-class VLANCreateView(LoginRequiredMixin, CreateView):
+
+class VLANAddView(LoginRequiredMixin, CreateView):
     model = VLAN
     form_class = VLANForm
-    template_name = "vlans/form.html"
+    template_name = "dcim/vlan_form.html"
     success_url = reverse_lazy("vlan_list")
 
     def form_valid(self, form):
@@ -73,7 +76,7 @@ class VLANCreateView(LoginRequiredMixin, CreateView):
 class VLANUpdateView(LoginRequiredMixin, UpdateView):
     model = VLAN
     form_class = VLANForm
-    template_name = "vlans/form.html"
+    template_name = "dcim/vlan_form.html"
     success_url = reverse_lazy("vlan_list")
 
     def form_valid(self, form):
@@ -83,7 +86,7 @@ class VLANUpdateView(LoginRequiredMixin, UpdateView):
 
 class VLANDeleteView(LoginRequiredMixin, DeleteView):
     model = VLAN
-    template_name = "vlans/confirm_delete.html"
+    template_name = "dcim/vlan_confirm_delete.html"
     success_url = reverse_lazy("vlan_list")
 
     def delete(self, request, *args, **kwargs):
@@ -95,7 +98,7 @@ class VLANExportView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         site = request.GET.get("site")
         queryset = VLAN.objects.all()
-        if site in dict(VLAN.SITE_CHOICES):
+        if site in dict(SITE_CHOICES):
             queryset = queryset.filter(site=site)
 
         wb = Workbook()

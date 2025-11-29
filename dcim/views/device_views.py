@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count
 from rest_framework import viewsets, filters
 from rest_framework.permissions import IsAuthenticated
+from dcim.choices import SITE_CHOICES
 from dcim.models import Device, Area, Rack, DeviceRole, Vendor, DeviceType, Interface, DeviceConfiguration, DeviceModule
 
 from ..serializers import (
@@ -21,7 +22,7 @@ from ..serializers import (
     RackSerializer,
     VendorSerializer,
 )
-from accounts.models import SystemSettings
+from accounts.models.system_settings import SystemSettings
 from ..forms.device_forms import OtherSettingsForm, ReachabilitySettingsForm, TacacsSettingsForm
 from accounts.services.settings_service import get_reachability_checks, get_system_settings
 
@@ -34,7 +35,7 @@ class DeviceListView(LoginRequiredMixin, ListView):
     context_object_name = "devices"
     paginate_by = 25
     per_page_options = (10, 25, 50, 100)
-    site_filter_choices = [("all", "All Sites")] + list(Device.SITE_CHOICES)
+    site_filter_choices = [("all", "All Sites")] + list(SITE_CHOICES)
 
     def get_paginate_by(self, queryset):
         per_page = self.request.GET.get("paginate_by")
@@ -104,7 +105,7 @@ class DeviceListView(LoginRequiredMixin, ListView):
 
 class DeviceDetailView(LoginRequiredMixin, DetailView):
     model = Device
-    template_name = "dcim/templates/dcim/device_detail.html"
+    template_name = "dcim/device_detail.html"
     context_object_name = "device"
 
     def get_context_data(self, **kwargs):

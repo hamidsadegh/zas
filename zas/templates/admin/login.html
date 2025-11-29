@@ -1,0 +1,83 @@
+{% load static i18n %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ZAS Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/admin_login.css' %}">
+</head>
+<body class="zas-admin-login light">
+    <div class="bg-scene" aria-hidden="true">
+        <div class="fiber-overlay"></div>
+        <div class="gradient-wash"></div>
+        <div class="vendor-stream">
+            <img src="{% static 'images/cisco-blue-logo.png' %}" alt="Cisco">
+            <img src="{% static 'images/nvidia-logo.png' %}" alt="NVIDIA">
+            <img src="{% static 'images/microsoft-azure-logo.jpg' %}" alt="Microsoft Azure">
+            <img src="{% static 'images/hpe-logo.png' %}" alt="HP">
+            <img src="{% static 'images/redhat-logo.png' %}" alt="Red Hat">
+            <img src="{% static 'images/aws-logo.jpg' %}" alt="AWS">
+            <img src="{% static 'images/mysql-logo.png' %}" alt="MySQL">
+            <img src="{% static 'images/django-logo.png' %}" alt="Django">
+            <img src="{% static 'images/nginx-logo.png' %}" alt="Nginx">
+            <img src="{% static 'images/python-logo.png' %}" alt="Python">
+            <img src="{% static 'images/atlassian-logo.jpg' %}" alt="Atlassian">
+            <img src="{% static 'images/dw-logo.jpg' %}" alt="Deutche Welle">
+            <img src="{% static 'images/grafana-logo.jpg' %}" alt="Grafana">
+        </div>
+    </div>
+    <main class="login-shell">
+        <section class="login-panel">
+            <div class="panel-header" aria-hidden="true">
+                <h1>ZAS</h1>
+                <p>{% trans "Platform for Network Administration" %}</p>
+            </div>
+            {% if form.errors and not form.non_field_errors %}
+                <p class="feedback error">{% trans "Please correct the errors below." %}</p>
+            {% endif %}
+            {% if form.non_field_errors %}
+                {% for error in form.non_field_errors %}
+                    <p class="feedback error">{{ error }}</p>
+                {% endfor %}
+            {% endif %}
+            {% if user.is_authenticated %}
+                <p class="feedback warning">
+                    {% blocktrans with username=user.get_username %}
+                        You are logged in as {{ username }}.
+                    {% endblocktrans %}
+                </p>
+            {% endif %}
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next }}">
+                <div class="form-field">
+                    <label class="sr-only" for="{{ form.username.id_for_label }}">{% trans "Username" %}</label>
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                        <small class="field-error">{{ form.username.errors|striptags }}</small>
+                    {% endif %}
+                </div>
+                <div class="form-field">
+                    <label class="sr-only" for="{{ form.password.id_for_label }}">{% trans "Password" %}</label>
+                    {{ form.password }}
+                    {% if form.password.errors %}
+                        <small class="field-error">{{ form.password.errors|striptags }}</small>
+                    {% endif %}
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">{% trans "Log in" %}</button>
+                    {% url 'admin_password_reset' as password_reset_url %}
+                    {% if password_reset_url %}
+                        <a class="link-muted" href="{{ password_reset_url }}">{% trans "Forgot password?" %}</a>
+                    {% endif %}
+                </div>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

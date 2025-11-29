@@ -6,6 +6,7 @@ from accounts.models.system_settings import SystemSettings
 from accounts.services.settings_service import get_system_settings
 from dcim.forms.device_forms import OtherSettingsForm, ReachabilitySettingsForm, TacacsSettingsForm
 
+
 class SystemSettingsView(LoginRequiredMixin, View):
     template_name = "settings/system_settings.html"
 

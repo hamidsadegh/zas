@@ -20,10 +20,10 @@ python manage.py crontab add || true
 /usr/sbin/crond -n -s &
 
 # Start Celery beat in background
-celery -A zas_project worker -l info &
+celery -A zas worker -l info &
 
 # Start Gunicorn (foreground)
-gunicorn zas_project.wsgi:application \
+gunicorn zas.wsgi:application \
     --bind 0.0.0.0:8000 \
     --workers 3 \
     --timeout 120 \
