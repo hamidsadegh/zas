@@ -261,7 +261,18 @@ class Device(models.Model):
         default="unknown",
         choices=DeviceStatusChoices,
     )
-
+    uptime = models.DurationField(
+        blank=True, 
+        null=True,
+        verbose_name=_('uptime'),
+        help_text=_('Total time the device has been operational since last reboot.')
+        )
+    last_reboot = models.DateTimeField(
+        blank=True, 
+        null=True,
+        verbose_name=_('last reboot'),
+        help_text=_('Timestamp of the device\'s last reboot.')
+        )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

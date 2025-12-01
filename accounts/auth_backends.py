@@ -137,9 +137,31 @@ class IseTacacsBackend(ModelBackend):
 
     @staticmethod
     def _normalize_status(result) -> bool:
-        if isinstance(result, tuple):
-            return bool(result[0])
-        return bool(result)
+        """
+        Return True only for explicit PASS/OK responses from the TACACS+ client.
+        """
+        # Result objects with a status attribute (common in tacacs_plus)
+        status = getattr(result, "status", None)
+        if status is not None:
+            if isinstance(status, str):
+                return status.upper() in {"PASS", "OK", "ACCEPT", "ACCEPTED", "SUCCESS"}
+            try:
+                return int(status) == 1  # TAC_PLUS_AUTHEN_STATUS_PASS
+            except (TypeError, ValueError):
+                return False
+
+        # Tuple/list responses, e.g. (status, session_id)
+        if isinstance(result, (tuple, list)) and result:
+            first = result[0]
+            if isinstance(first, str):
+                return first.upper() in {"PASS", "OK", "ACCEPT", "ACCEPTED", "SUCCESS"}
+            try:
+                return int(first) == 1
+            except (TypeError, ValueError):
+                return False
+
+        # Fallback: only truthy booleans should pass
+        return result is True
 
     def _fetch_groups(self, client, username: str, service: str) -> Iterable[str]:
         """

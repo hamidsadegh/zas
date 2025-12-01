@@ -33,7 +33,7 @@ def test_create_object(django_db_blocker):
         # -----------------------------
         for area in [dc1, dc2, branch]:
             for i in range(1, 4):
-                Rack.objects.create(name=f"Rack {i}", area=area, height=42)
+                Rack.objects.create(name=f"Rack {i}", area=area, u_height=42)
 
         # -----------------------------
         # 4️⃣ Device Roles
@@ -63,7 +63,7 @@ def test_create_object(django_db_blocker):
         for vendor_name, models in device_types_data.items():
             vendor = Vendor.objects.get(name=vendor_name)
             for model in models:
-                DeviceType.objects.create(vendor=vendor, model=model, category="other")
+                DeviceType.objects.create(vendor=vendor, model=model)
 
         # -----------------------------
         # 9️⃣ Devices

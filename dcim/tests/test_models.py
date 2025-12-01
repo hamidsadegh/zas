@@ -10,7 +10,7 @@ def test_device_creation():
     organization = Organization.objects.create(name="TestOrg")
     area = Area.objects.create(name="Berlin", organization=organization)
     vendor = Vendor.objects.create(name="Cisco")
-    device_type = DeviceType.objects.create(vendor=vendor, model="C9300-48P", category="catalyst")
+    device_type = DeviceType.objects.create(vendor=vendor, model="C9300-48P")
     role = DeviceRole.objects.create(name="Access Switch")
 
     # Create device with all required foreign keys

@@ -11,8 +11,8 @@ def _make_area(name, organization):
     return Area.objects.create(name=name, organization=organization)
 
 
-def _make_rack(name, area):
-    return Rack.objects.create(name=name, area=area)
+def _make_rack(name, area, **kwargs):
+    return Rack.objects.create(name=name, area=area, **kwargs)
 
 
 @pytest.mark.django_db
@@ -20,8 +20,8 @@ def test_device_serializer_rack_queryset_uses_request_data():
     org = Organization.objects.create(name="Org One")
     area_a = _make_area("Area A", org)
     area_b = _make_area("Area B", org)
-    rack_a1 = _make_rack("Rack A1", area_a)
-    rack_a2 = _make_rack("Rack A2", area_a)
+    rack_a1 = _make_rack("Rack A1", area_a, width=19, u_height=42, starting_unit =1, status='active')
+    rack_a2 = _make_rack("Rack A2", area_a, width=19, u_height=42, starting_unit =1, status='active')
     _make_rack("Rack B1", area_b)
 
     request = SimpleNamespace(data={"area": area_a.id}, query_params={})
@@ -76,7 +76,7 @@ def test_device_serializer_validate_rejects_rack_from_other_area():
 def test_device_serializer_includes_related_display_fields():
     org = Organization.objects.create(name="Org Base")
     vendor = Vendor.objects.create(name="Cisco")
-    dtype = DeviceType.objects.create(vendor=vendor, model="C9300", category="iosxe")
+    dtype = DeviceType.objects.create(vendor=vendor, model="C9300")
     device = Device.objects.create(
         name="bcsw01",
         management_ip="192.168.10.10",

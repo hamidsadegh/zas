@@ -28,4 +28,6 @@ def test_device_serializer_includes_modules():
     assert modules[0]["name"] == "Supervisor"
     assert modules[0]["serial_number"] == "SN123"
     assert serializer.data["reachable_ssh"] is False
-    assert serializer.data["reachable_telemetry"] is False
+    assert serializer.data["reachable_ping"] is False
+    assert serializer.data["reachable_snmp"] is False
+    assert serializer.data["reachable_netconf"] is False
