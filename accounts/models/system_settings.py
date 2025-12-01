@@ -19,7 +19,7 @@ class SystemSettings(models.Model):
         "reachability_ping_enabled",
         "reachability_snmp_enabled",
         "reachability_ssh_enabled",
-        "reachability_telemetry_enabled",
+        "reachability_netconf_enabled",
         "reachability_interval_minutes",
     )
     SNMP_FIELDS = (
@@ -66,7 +66,7 @@ class SystemSettings(models.Model):
     reachability_ping_enabled = models.BooleanField(default=True)
     reachability_snmp_enabled = models.BooleanField(default=True)
     reachability_ssh_enabled = models.BooleanField(default=False)
-    reachability_telemetry_enabled = models.BooleanField(default=False)
+    reachability_netconf_enabled = models.BooleanField(default=False)
     reachability_interval_minutes = models.PositiveIntegerField(default=10)
     reachability_last_run = models.DateTimeField(blank=True, null=True)
     snmp_version = models.CharField(
@@ -120,7 +120,7 @@ class SystemSettings(models.Model):
             "ping": bool(self.reachability_ping_enabled),
             "snmp": bool(self.reachability_snmp_enabled),
             "ssh": bool(self.reachability_ssh_enabled),
-            "telemetry": bool(self.reachability_telemetry_enabled),
+            "netconf": bool(self.reachability_netconf_enabled),
         }
 
     def get_snmp_config(self):

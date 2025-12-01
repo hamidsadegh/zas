@@ -35,7 +35,7 @@ def test_reachability_settings_persist():
     settings.reachability_ping_enabled = False
     settings.reachability_snmp_enabled = False
     settings.reachability_ssh_enabled = True
-    settings.reachability_telemetry_enabled = True
+    settings.reachability_netconf_enabled = True
     settings.reachability_interval_minutes = 60
     settings.save()
 
@@ -46,7 +46,7 @@ def test_reachability_settings_persist():
         "ping": False,
         "snmp": False,
         "ssh": True,
-        "telemetry": True,
+        "netconf": True,
     }
     assert refreshed.reachability_interval_minutes == 60
 

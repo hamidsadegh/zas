@@ -54,7 +54,7 @@ class ReachabilitySettingsForm(BaseSystemSettingsForm):
             "reachability_ping_enabled": forms.CheckboxInput(),
             "reachability_snmp_enabled": forms.CheckboxInput(),
             "reachability_ssh_enabled": forms.CheckboxInput(),
-            "reachability_telemetry_enabled": forms.CheckboxInput(),
+            "reachability_netconf_enabled": forms.CheckboxInput(),
             "reachability_interval_minutes": forms.Select(
                 choices=REACHABILITY_INTERVAL_CHOICES
             ),

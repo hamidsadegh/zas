@@ -23,7 +23,7 @@ from ..serializers import (
     VendorSerializer,
 )
 from accounts.models.system_settings import SystemSettings
-from ..forms.device_forms import OtherSettingsForm, ReachabilitySettingsForm, TacacsSettingsForm
+from accounts.forms import OtherSettingsForm, ReachabilitySettingsForm, TacacsSettingsForm
 from accounts.services.settings_service import get_reachability_checks, get_system_settings
 
 # -----------------------

@@ -4,9 +4,9 @@ from django.utils import timezone
 
 from automation.models import JobRun
 from dcim.models import Device
-from reachability_service import ReachabilityService
-from ssh_service import SSHService
-from telemetry_service import TelemetryService
+from automation.engine.reachability_engine import ReachabilityEngine
+from automation.engine.ssh_engine import SSHEngine
+from automation.engine.netconf_engine import NetconfEngine
 from accounts.services.settings_service import (
     get_reachability_checks,
     get_snmp_config,
@@ -25,22 +25,22 @@ def execute_job(job_run: JobRun, snmp_config=None, reachability_checks=None, sys
         log_entries = []
 
         if job.job_type == "cli":
-            ssh = SSHService()
+            ssh = SSHEngine()
             for device in job_run.devices.all():
                 output = ssh.run_command(device, "show version")
                 log_entries.append(f"[{device.name}] CLI:\n{output}\n")
 
         elif job.job_type == "backup":
-            ssh = SSHService()
+            ssh = SSHEngine()
             for device in job_run.devices.all():
                 output = ssh.run_command(device, "show running-config")
                 log_entries.append(f"[{device.name}] Backup done.\n")
 
-        elif job.job_type == "telemetry":
-            telemetry = TelemetryService()
+        elif job.job_type == "netconf":
+            netconf = NetconfEngine()
             for device in job_run.devices.all():
-                telemetry.collect(device)
-                log_entries.append(f"[{device.name}] Telemetry collected.\n")
+                netconf.collect(device)
+                log_entries.append(f"[{device.name}] Netconf collected.\n")
         elif job.job_type == "reachability":
             settings = system_settings or get_system_settings()
             checks = reachability_checks or get_reachability_checks(settings)
@@ -64,12 +64,12 @@ def execute_job(job_run: JobRun, snmp_config=None, reachability_checks=None, sys
                     if not devices.exists():
                         devices = Device.objects.all()
 
-                    results = ReachabilityService.update_device_status(
+                    results = ReachabilityEngine.update_device_status(
                         devices=devices,
                         check_ping=checks["ping"],
                         check_snmp=checks["snmp"],
                         check_ssh=checks["ssh"],
-                        check_telemetry=checks.get("telemetry"),
+                        check_netconf=checks.get("netconf"),
                         snmp_config=snmp_config,
                     )
 

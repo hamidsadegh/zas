@@ -22,7 +22,7 @@ from pysnmp.hlapi import (
 )
 
 from dcim.models import Device, DeviceRuntimeStatus
-from telemetry_service import TelemetryService
+from automation.services.telemetry_service import TelemetryService
 
 AUTH_PROTOCOL_MAP = {
     "md5": usmHMACMD5AuthProtocol,

@@ -52,6 +52,6 @@ def home(request):
         "recent_checks": recent_checks,
         "top_vendors": top_vendors,
     }
-    return render(request, "core/home.html", context)
+    return render(request, "core/dashboard.html", context)
 
 

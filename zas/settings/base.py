@@ -107,6 +107,7 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
+    # Default Django apps
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -118,11 +119,11 @@ INSTALLED_APPS = [
     'rest_framework',
 
     # Local apps
-    'dcim',
+    'core',
     'ipam',
+    'dcim',
     'accounts',
     'automation',
-    'core',
     'django_crontab',
     'django_celery_beat',
 

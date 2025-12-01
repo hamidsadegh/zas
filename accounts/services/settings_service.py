@@ -24,7 +24,7 @@ def get_reachability_checks(settings: SystemSettings) -> Dict[str, bool]:
         "ping": settings.reachability_ping_enabled,
         "snmp": settings.reachability_snmp_enabled,
         "ssh": settings.reachability_ssh_enabled,
-        "telemetry": settings.reachability_telemetry_enabled,
+        "netconf": settings.reachability_netconf_enabled,
     }
 
 

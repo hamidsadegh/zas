@@ -5,8 +5,7 @@ from celery import shared_task
 from django.utils import timezone
 
 from automation.models import AutomationJob, JobRun
-from automation.services.job_runner import execute_job
-from automation.services.telemetry_service import TelemetryService
+from automation.workers.job_runner import execute_job
 from dcim.models import Device
 from accounts.services.settings_service import (
     get_reachability_checks,
@@ -48,17 +47,6 @@ def check_devices_reachability():
     execute_job(job_run, snmp_config=get_snmp_config(settings), reachability_checks=checks)
     logger.info("%s: reachability job triggered.", now)
     return "scheduled"
-
-def collect_all_telemetry():
-    """Poll all devices for telemetry data."""
-    telemetry = TelemetryService()
-    devices = Device.objects.all()
-    for device in devices:
-        try:
-            telemetry.collect(device)
-            logger.info(f"{timezone.now()}: telemetry collected for {device.name}")
-        except Exception as e:
-            logger.error(f"Telemetry failed for {device.name}: {e}")
 
 
 def run_scheduled_backups():
