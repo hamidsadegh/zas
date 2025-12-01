@@ -22,3 +22,6 @@ pytest-django
 requests
 ntc_templates
 textfsm
+netaddr
+pillow
+

@@ -9,7 +9,7 @@ from openpyxl import Workbook
 
 from ..forms.vlan_forms import VLANForm
 from dcim.models.vlan import VLAN
-from dcim.choices import SITE_CHOICES
+from dcim.choices import SiteChoices
 
 
 class VLANListView(LoginRequiredMixin, ListView):
@@ -33,7 +33,7 @@ class VLANListView(LoginRequiredMixin, ListView):
         site = self.request.GET.get("site", "Berlin")
         search = self.request.GET.get("q", "").strip()
 
-        if site in dict(SITE_CHOICES):
+        if site in dict(SiteChoices.CHOICES):
             queryset = queryset.filter(site=site)
 
         if search:
@@ -55,7 +55,7 @@ class VLANListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context["site_filter"] = self.request.GET.get("site", "Berlin")
         context["search_query"] = self.request.GET.get("q", "")
-        context["site_choices"] = SITE_CHOICES
+        context["site_choices"] = SiteChoices.CHOICES
         context["per_page_options"] = self.per_page_options
         context["paginate_by_value"] = getattr(self, "_current_paginate_by", self.paginate_by)
         return context
@@ -98,7 +98,7 @@ class VLANExportView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         site = request.GET.get("site")
         queryset = VLAN.objects.all()
-        if site in dict(SITE_CHOICES):
+        if site in dict(SiteChoices.CHOICES):
             queryset = queryset.filter(site=site)
 
         wb = Workbook()

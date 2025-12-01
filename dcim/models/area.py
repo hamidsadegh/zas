@@ -5,7 +5,10 @@ from dcim.models.organization import Organization
 
 class Area(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=100)
+    name = models.CharField(
+        max_length=100,
+        help_text="Name of the area. It can be hierarchical by specifying a parent area. From Global/Continent/Country/City/Building/Floor/Room",
+    )
     parent = models.ForeignKey(
         "self", on_delete=models.CASCADE, null=True, blank=True, related_name="children"
     )

@@ -7,7 +7,11 @@ zas/
 │   │   ├── base.py
 │   │   ├── dev.py
 │   │   ├── prod.py
+│   │   ├── test.py
 │   │   └── secrets.py        # optional
+│   ├── templates/
+│   │       └──admin
+│   │          └── login.html
 │   ├── urls.py
 │   ├── wsgi.py
 │   ├── asgi.py

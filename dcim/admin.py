@@ -43,7 +43,7 @@ class AreaAdmin(admin.ModelAdmin):
 # -----------------------
 @admin.register(Rack)
 class RackAdmin(admin.ModelAdmin):
-    list_display = ("name", "area", "height", "description")
+    list_display = ("name", "area", "u_height", "description")
     list_filter = ("area",)
     search_fields = ("name",)
 
@@ -72,8 +72,8 @@ class VendorAdmin(admin.ModelAdmin):
 # -----------------------
 @admin.register(DeviceType)
 class DeviceTypeAdmin(admin.ModelAdmin):
-    list_display = ("model", "vendor", "category")
-    list_filter = ("vendor", "category")
+    list_display = ("model", "vendor",)
+    list_filter = ("vendor",)
     search_fields = ("model",)
 
 

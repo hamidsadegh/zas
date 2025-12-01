@@ -3,6 +3,7 @@ from encrypted_model_fields.fields import EncryptedCharField
 
 
 class SystemSettings(models.Model):
+    # Field groupings for forms/admin reuse
     TACACS_FIELDS = (
         "tacacs_enabled",
         "tacacs_server_ip",
@@ -99,3 +100,41 @@ class SystemSettings(models.Model):
 
     def __str__(self):
         return "System Settings"
+
+    # -----------------------
+    # Helper APIs
+    # -----------------------
+    @classmethod
+    def get(cls):
+        """
+        Return the singleton SystemSettings row, creating it with pk=1 when missing.
+        """
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def get_reachability_checks(self):
+        """
+        Return the enabled/disabled state for reachability probes.
+        """
+        return {
+            "ping": bool(self.reachability_ping_enabled),
+            "snmp": bool(self.reachability_snmp_enabled),
+            "ssh": bool(self.reachability_ssh_enabled),
+            "telemetry": bool(self.reachability_telemetry_enabled),
+        }
+
+    def get_snmp_config(self):
+        """
+        Return SNMP configuration dict normalized for consumers.
+        """
+        return {
+            "version": self.snmp_version or "v2c",
+            "port": self.snmp_port or 161,
+            "community": (self.snmp_community or "public").strip() or "public",
+            "security_level": self.snmp_security_level or "noAuthNoPriv",
+            "username": (self.snmp_username or "").strip(),
+            "auth_protocol": self.snmp_auth_protocol or "",
+            "auth_key": self.snmp_auth_key or "",
+            "priv_protocol": self.snmp_priv_protocol or "",
+            "priv_key": self.snmp_priv_key or "",
+        }

@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count
 from rest_framework import viewsets, filters
 from rest_framework.permissions import IsAuthenticated
-from dcim.choices import SITE_CHOICES
+from dcim.choices import SiteChoices
 from dcim.models import Device, Area, Rack, DeviceRole, Vendor, DeviceType, Interface, DeviceConfiguration, DeviceModule
 
 from ..serializers import (
@@ -35,7 +35,7 @@ class DeviceListView(LoginRequiredMixin, ListView):
     context_object_name = "devices"
     paginate_by = 25
     per_page_options = (10, 25, 50, 100)
-    site_filter_choices = [("all", "All Sites")] + list(SITE_CHOICES)
+    site_filter_choices = [("all", "All Sites")] + list(SiteChoices.CHOICES)
 
     def get_paginate_by(self, queryset):
         per_page = self.request.GET.get("paginate_by")
@@ -96,7 +96,7 @@ class DeviceListView(LoginRequiredMixin, ListView):
         context['search_query'] = self.request.GET.get('search', '')
         context['sort_field'] = self.request.GET.get('sort', 'name')
         context['paginate_by'] = getattr(self, "current_paginate_by", self.paginate_by)
-        context['site_choices'] = self.site_filter_choices
+        context['SiteChoices.CHOICES'] = self.site_filter_choices
         context['site_filter'] = getattr(self, "current_site_filter", "all")
         context['per_page_options'] = self.per_page_options
         settings_obj = get_system_settings()

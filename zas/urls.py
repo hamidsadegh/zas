@@ -33,7 +33,6 @@ html_patterns = [
     path("areas/<uuid:area_id>/devices/", device_views.devices_by_area, name="devices_by_area"),
     path("racks/for-area/", device_views.racks_for_area, name="racks_for_area"),
     path("system-settings/", SystemSettingsView.as_view(), name="system_settings"),
-    path("", include("core.urls")),
 ]
 
 # -----------------------
@@ -41,8 +40,7 @@ html_patterns = [
 # -----------------------
 urlpatterns = [
     path("logout/", auth_views.LogoutView.as_view(next_page="/admin/login/"), name="logout"),
-    path("", lambda request: redirect("device_list"), name="home"),
-    path('', include('core.urls')),             # Core app URLs
+    path("", include("core.urls")),             # Core app URLs (dashboard as home)
     path("admin/", admin.site.urls),            # /admin/login/ is default login
     path("api/", include(router.urls)),         # DRF API
     path("", include(html_patterns)),           # HTML views

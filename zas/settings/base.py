@@ -122,6 +122,7 @@ INSTALLED_APPS = [
     'ipam',
     'accounts',
     'automation',
+    'core',
     'django_crontab',
     'django_celery_beat',
 
@@ -145,6 +146,7 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 LOGIN_URL = '/admin/login/'
+LOGOUT_REDIRECT_URL = '/admin/login/'
 
 REST_FRAMEWORK = {
     'DEFAULT_METADATA_CLASS': 'rest_framework.metadata.SimpleMetadata',

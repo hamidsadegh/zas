@@ -2,6 +2,8 @@ from django.db import models
 import uuid
 from dcim.models.device import Device
 from dcim.models.vlan import VLAN
+from dcim.choices import InterfaceStatusChoices
+
 
 
 class Interface(models.Model):
@@ -13,8 +15,8 @@ class Interface(models.Model):
     ip_address = models.GenericIPAddressField(protocol="IPv4", blank=True, null=True)
     status = models.CharField(
         max_length=20,
+        choices=InterfaceStatusChoices.CHOICES,
         default="down",
-        choices=[("up", "Up"), ("down", "Down"), ("disabled", "Disabled")],
     )
     endpoint = models.CharField(max_length=255, blank=True, null=True)
     speed = models.PositiveIntegerField(blank=True, null=True, help_text="Mbps")

@@ -1,6 +1,6 @@
 from django.core.validators import RegexValidator
 from django.db import models
-from dcim.choices import SITE_CHOICES, VLAN_USAGE_CHOICES
+from dcim.choices import SiteChoices, VLAN_USAGE_CHOICES
 import uuid
 
 
@@ -13,7 +13,7 @@ class VLAN(models.Model):
 
     USAGE_CHOICES = VLAN_USAGE_CHOICES
 
-    site = models.CharField(max_length=50, choices=SITE_CHOICES)
+    site = models.CharField(max_length=50, choices=SiteChoices.CHOICES, default="Berlin")
     vlan_id = models.IntegerField()
     name = models.CharField(max_length=100, blank=True, null=True, default="")
     subnet = models.CharField(max_length=50, validators=[cidr_validator], blank=True, null=True)

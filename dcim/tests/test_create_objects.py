@@ -1,13 +1,15 @@
 import pytest
 from django.test import TestCase
+from django.utils import timezone
+import random
 
 # Create your tests here.
 from dcim.models import (
     Organization, Area, Rack, DeviceRole, Vendor, DeviceType,
     DeviceModule, Device, DeviceConfiguration, Interface
 )
-from django.utils import timezone
-import random
+from dcim.choices import SiteChoices
+
 
 @pytest.mark.django_db
 def test_create_object(django_db_blocker):
@@ -71,7 +73,7 @@ def test_create_object(django_db_blocker):
         all_roles = list(DeviceRole.objects.all())
         all_orgs = list(Organization.objects.all())
 
-        site_choices = [choice[0] for choice in Device.SITE_CHOICES]
+        site_choices = [choice[0] for choice in SiteChoices.CHOICES]
 
         for i in range(1, 11):
             dt = random.choice(all_device_types)

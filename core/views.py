@@ -3,9 +3,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.db.models import Count, Q
-from dcim.models.device import Device
+from dcim.models.device import Device, Vendor
 from dcim.models.interface import Interface
-from dcim.models.vendor import Vendor
 from django.views import View
 
 

@@ -4,7 +4,11 @@ from django.shortcuts import render, redirect
 from django.views import View
 from accounts.models.system_settings import SystemSettings
 from accounts.services.settings_service import get_system_settings
-from dcim.forms.device_forms import OtherSettingsForm, ReachabilitySettingsForm, TacacsSettingsForm
+from accounts.forms.settings_form import (
+    OtherSettingsForm,
+    ReachabilitySettingsForm,
+    TacacsSettingsForm,
+)
 
 
 class SystemSettingsView(LoginRequiredMixin, View):
@@ -67,4 +71,3 @@ class SystemSettingsView(LoginRequiredMixin, View):
                 other_form=other_form,
             ),
         )
-
