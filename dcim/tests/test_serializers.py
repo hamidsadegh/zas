@@ -29,7 +29,7 @@ def test_device_serializer_rack_queryset_uses_request_data():
     rack_a2 = _make_rack("Rack A2", area_a, width=19, u_height=42, starting_unit =1, status='active')
     _make_rack("Rack B1", area_b)
 
-    request = SimpleNamespace(data={"area": area_a.id, "site": site.id}, query_params={})
+    request = SimpleNamespace(data={"area": str(area_a.id), "site": str(site.id)}, query_params={})
 
     serializer = DeviceSerializer(context={"request": request})
 

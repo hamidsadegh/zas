@@ -1,5 +1,3 @@
-# automation/engine/reachability_engine.py
-
 import socket
 import subprocess
 from contextlib import closing

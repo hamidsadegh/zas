@@ -277,10 +277,10 @@ main {
                               title="{% if ssh_enabled %}SSH reachable{% else %}SSH check disabled{% endif %}"
                               aria-label="{% if ssh_enabled %}SSH reachable: {% if device.runtime.reachable_ssh %}yes{% else %}no{% endif %}{% else %}SSH check disabled{% endif %}"></span>
                         {% endwith %}
-                        {% with telemetry_enabled=reachability_checks.telemetry %}
-                        <span class="reachability-dot {% if not telemetry_enabled %}disabled{% elif device.runtime.reachable_netconf %}ok{% else %}fail{% endif %}"
-                              title="{% if telemetry_enabled %}Telemetry reachable{% else %}Telemetry check disabled{% endif %}"
-                              aria-label="{% if telemetry_enabled %}Telemetry reachable: {% if device.runtime.reachable_netconf %}yes{% else %}no{% endif %}{% else %}Telemetry check disabled{% endif %}"></span>
+                        {% with netconf_enabled=reachability_checks.netconf %}
+                        <span class="reachability-dot {% if not netconf_enabled %}disabled{% elif device.runtime.reachable_netconf %}ok{% else %}fail{% endif %}"
+                              title="{% if netconf_enabled %}Netconf reachable{% else %}Netconf check disabled{% endif %}"
+                              aria-label="{% if netconf_enabled %}Netconf reachable: {% if device.runtime.reachable_netconf %}yes{% else %}no{% endif %}{% else %}Netconf check disabled{% endif %}"></span>
                         {% endwith %}
                     </div>
                 </td>

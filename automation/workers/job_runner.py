@@ -41,6 +41,7 @@ def execute_job(job_run: JobRun, snmp_config=None, reachability_checks=None, sys
             for device in job_run.devices.all():
                 netconf.collect(device)
                 log_entries.append(f"[{device.name}] Netconf collected.\n")
+                
         elif job.job_type == "reachability":
             settings = system_settings or get_system_settings()
             checks = reachability_checks or get_reachability_checks(settings)
