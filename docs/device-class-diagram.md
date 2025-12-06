@@ -40,7 +40,7 @@ classDiagram
         +site
         +image_version
         +status
-        +reachable_ping/snmp/ssh/telemetry
+        +reachable_ping/snmp/ssh/netconf
         +uptime
         +created_at
         +updated_at
