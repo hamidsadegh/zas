@@ -19,7 +19,13 @@ and can be deployed using Docker.
 
 ### Models
 - `Organization` → `Sites` → `Areas` → `Racks` → `Devices` → `Interfaces` & `Configurations`
-
+Organization
+   └── Site
+         └── Area
+               └── Rack
+                     └── Device
+                           ├── Interfaces
+                           └── Configurations
 ### REST API
 - Built with Django REST Framework
 - Provides JSON endpoints for devices and interfaces

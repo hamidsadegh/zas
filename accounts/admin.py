@@ -46,4 +46,4 @@ class SystemSettingsAdmin(admin.ModelAdmin):
 @admin.register(SiteCredential)
 class SiteCredentialAdmin(admin.ModelAdmin):
     list_display = ("site", "ssh_username", "ssh_port")
-    search_fields = ("site", "ssh_username")
+    search_fields = ("site__name", "ssh_username")

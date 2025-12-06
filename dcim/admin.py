@@ -7,6 +7,7 @@ import pandas as pd  # pyright: ignore[reportMissingModuleSource, reportMissingI
 from django.utils.timezone import localtime
 from .models import (
     Organization,
+    Site,
     Area,
     Rack,
     DeviceRole,
@@ -28,14 +29,43 @@ class OrganizationAdmin(admin.ModelAdmin):
 
 
 # -----------------------
+# Site Admin
+# -----------------------
+@admin.register(Site)
+class SiteAdmin(admin.ModelAdmin):
+    list_display = ("name", "organization", "description", "created_at")
+    list_filter = ("organization",)
+    search_fields = ("name", "organization__name")
+    ordering = ("organization__name", "name")
+
+
+class AreaAdminForm(forms.ModelForm):
+    class Meta:
+        model = Area
+        fields = "__all__"
+
+    def clean(self):
+        cleaned_data = super().clean()
+        parent = cleaned_data.get("parent")
+        site = cleaned_data.get("site")
+        if parent and site and parent.site_id != site.id:
+            self.add_error(
+                "parent",
+                "Parent area must belong to the same site as this area.",
+            )
+        return cleaned_data
+
+
+# -----------------------
 # Area Admin (hierarchical)
 # -----------------------
 @admin.register(Area)
 class AreaAdmin(admin.ModelAdmin):
-    list_display = ("name", "parent", "organization")
-    list_filter = ("organization",)
-    search_fields = ("name",)
-    ordering = ("organization", "parent", "name")
+    form = AreaAdminForm
+    list_display = ("name", "parent", "site")
+    list_filter = ("site",)
+    search_fields = ("name", "site__name")
+    ordering = ("site__name", "parent__name", "name")
 
 
 # -----------------------
@@ -112,7 +142,7 @@ class ImportExcelForm(forms.Form):
 
 from django import forms
 from django.urls import reverse
-from .models import Device, Rack
+from .models import Area, Device, Rack, Site
 
 
 class DeviceAdminForm(forms.ModelForm):
@@ -123,26 +153,56 @@ class DeviceAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # 1. Add racks-URL to the Area field for JS dynamic loading
-        self.fields["area"].widget.widget.attrs["data-racks-url"] = reverse("racks_for_area")
+        self._set_widget_attr("site", "data-areas-url", reverse("areas_for_site"))
+        self._set_widget_attr("area", "data-racks-url", reverse("racks_for_area"))
 
-        # 2. Prepare the Rack queryset depending on current area
+        site_id = self._current_site_id()
+        area_field = self.fields.get("area")
         rack_field = self.fields.get("rack")
         area_id = self._current_area_id()
+        area_widget = self._base_widget("area")
+        rack_widget = self._base_widget("rack")
+
+        if site_id:
+            area_field.queryset = Area.objects.filter(site_id=site_id)
+            if area_widget:
+                area_widget.attrs.pop("disabled", None)
+        else:
+            area_field.queryset = Area.objects.none()
+            area_field.help_text = "Areas will appear after selecting a Site."
+            if area_widget:
+                area_widget.attrs["disabled"] = "disabled"
 
         if area_id:
             rack_field.queryset = Rack.objects.filter(area_id=area_id)
+            if rack_widget:
+                rack_widget.attrs.pop("disabled", None)
         else:
             rack_field.queryset = Rack.objects.none()
             rack_field.help_text = "Racks will appear after selecting an Area."
+            if rack_widget:
+                rack_widget.attrs["disabled"] = "disabled"
 
-        # 3. Pass current rack as attribute for JS pre-selection
+        if area_widget:
+            area_widget.attrs["data-current-value"] = str(area_id) if area_id else ""
         current_rack_id = self._current_rack_id()
-        rack_field.widget.attrs["data-current-value"] = (
-            str(current_rack_id) if current_rack_id else ""
-        )
+        if rack_widget:
+            rack_widget.attrs["data-current-value"] = str(current_rack_id) if current_rack_id else ""
+
+    class Media:
+        js = ("dcim/js/device_location_admin.js",)
 
     # Helpers — determine selected area/rack from POST or instance
+    def _current_site_id(self):
+        """Resolve site from POST data or instance."""
+        if self.data.get("site"):
+            return self.data.get("site")
+
+        if self.instance and self.instance.pk:
+            return self.instance.site_id
+
+        return None
+
     def _current_area_id(self):
         """Resolve area from POST data or instance."""
         if self.data.get("area"):
@@ -163,6 +223,18 @@ class DeviceAdminForm(forms.ModelForm):
 
         return None
 
+    def _base_widget(self, field_name):
+        field = self.fields.get(field_name)
+        if not field:
+            return None
+        widget = field.widget
+        return getattr(widget, "widget", widget)
+
+    def _set_widget_attr(self, field_name, attr, value):
+        widget = self._base_widget(field_name)
+        if widget:
+            widget.attrs[attr] = value
+
 
 # ------------------------------
 # Admin Actions
@@ -182,7 +254,8 @@ def export_devices_to_excel(modeladmin, request, queryset):
             "MAC Address": device.mac_address,
             "Serial Number": device.serial_number,
             "Inventory Number": device.inventory_number,
-            "Organization": device.organization.name if device.organization else "-",
+            "Organization": device.site.organization.name if device.site else "-",
+            "Site": device.site.name if device.site else "-",
             "Area": str(device.area) if device.area else "-",
             "Rack": device.rack.name if device.rack else "-",
             "Vendor": device.vendor.name if device.vendor else "-",
@@ -190,7 +263,6 @@ def export_devices_to_excel(modeladmin, request, queryset):
             "Role": device.role.name if device.role else "-",
             "Status": device.status,
             "Image Version": device.image_version,
-            "Site": device.site,
             "Created At": localtime(device.created_at).replace(tzinfo=None) if device.created_at else "-",
             "Updated At": localtime(device.updated_at).replace(tzinfo=None) if device.updated_at else "-",
 
@@ -233,15 +305,15 @@ class DeviceAdmin(admin.ModelAdmin):
         "device_type__model",
         "vendor__name",
         "area__name",
-        "organization__name",
-        "site",
+        "site__name",
+        "site__organization__name",
     )
     list_filter = (
         "status",
         "site",
         "device_type",
         "vendor",
-        "organization",
+        "site__organization",
         "area",
     )
     actions = [export_devices_to_excel]
@@ -249,6 +321,12 @@ class DeviceAdmin(admin.ModelAdmin):
 
     class Media:
         js = ("admin/js/device_admin.js",)
+
+    @admin.display(description="Organization", ordering="site__organization__name")
+    def organization(self, obj):
+        if obj.site:
+            return obj.site.organization
+        return "-"
 
 
 # -----------------------
@@ -272,4 +350,3 @@ class VLANAdmin(admin.ModelAdmin):
     list_display = ("vlan_id", "name", "site", "subnet", "usage_area")
     list_filter = ("site", "usage_area")
     search_fields = ("vlan_id", "name", "subnet", "description")
-

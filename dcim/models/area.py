@@ -1,6 +1,9 @@
-from django.db import models
 import uuid
-from dcim.models.organization import Organization
+
+from django.core.exceptions import ValidationError
+from django.db import models
+
+from dcim.models.site import Site
 
 
 class Area(models.Model):
@@ -12,13 +15,16 @@ class Area(models.Model):
     parent = models.ForeignKey(
         "self", on_delete=models.CASCADE, null=True, blank=True, related_name="children"
     )
-    description = models.TextField(blank=True, null=True)
-    organization = models.ForeignKey(
-        Organization, on_delete=models.CASCADE, related_name="areas"
+    site = models.ForeignKey(
+        Site,
+        on_delete=models.CASCADE,
+        related_name="areas",
+        help_text="Site that contains this area.",
     )
+    description = models.TextField(blank=True, null=True)
 
     class Meta:
-        unique_together = ("name", "parent")
+        unique_together = ("site", "name", "parent")
         verbose_name_plural = "Areas"
 
     def __str__(self):
@@ -27,4 +33,12 @@ class Area(models.Model):
         while parent is not None:
             full_path.append(parent.name)
             parent = parent.parent
-        return " → ".join(full_path[::-1])
+        path = " → ".join(full_path[::-1])
+        return f"{self.site.name} / {path}" if self.site else path
+
+    def clean(self):
+        super().clean()
+        if self.parent and self.site_id and self.parent.site_id != self.site_id:
+            raise ValidationError(
+                {"parent": "Parent area must belong to the same site as this area."}
+            )

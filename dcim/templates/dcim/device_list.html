@@ -247,7 +247,7 @@ main {
                 <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&sort=serial_number">Serial</a></th>
                 <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&sort=area__name">Location</a></th>
                 <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&sort=rack__name">Rack</a></th>
-                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&sort=site">Site</a></th>
+                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&sort=site__name">Site</a></th>
                 <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&sort=image_version">Image</a></th>
                 <th></th>
             </tr>
@@ -293,7 +293,7 @@ main {
                 <td>{{ device.serial_number|default:"—" }}</td>
                 <td>{{ device.area|default:"—" }}</td>
                 <td>{{ device.rack.name|default:"—" }}</td>
-                <td>{{ device.site }}</td>
+                <td>{{ device.site.name|default:"—" }}</td>
                 <td>{{ device.image_version|default:"—" }}</td>
                 <td class="table-actions">
                     <a href="{% url 'device_detail' device.id %}">View</a>

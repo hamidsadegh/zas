@@ -1,7 +1,10 @@
+import uuid
+
 from django.core.validators import RegexValidator
 from django.db import models
-from dcim.choices import SiteChoices, VLAN_USAGE_CHOICES
-import uuid
+
+from dcim.choices import VLAN_USAGE_CHOICES
+from dcim.models.site import Site
 
 
 class VLAN(models.Model):
@@ -13,7 +16,11 @@ class VLAN(models.Model):
 
     USAGE_CHOICES = VLAN_USAGE_CHOICES
 
-    site = models.CharField(max_length=50, choices=SiteChoices.CHOICES, default="Berlin")
+    site = models.ForeignKey(
+        Site,
+        on_delete=models.CASCADE,
+        related_name="vlans",
+    )
     vlan_id = models.IntegerField()
     name = models.CharField(max_length=100, blank=True, null=True, default="")
     subnet = models.CharField(max_length=50, validators=[cidr_validator], blank=True, null=True)
@@ -30,4 +37,5 @@ class VLAN(models.Model):
         ordering = ["site", "vlan_id"]
 
     def __str__(self):
-        return f"{self.vlan_id} - {self.name} ({self.site})"
+        site_name = self.site.name if self.site else "-"
+        return f"{self.vlan_id} - {self.name} ({site_name})"

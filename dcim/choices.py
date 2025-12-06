@@ -1,21 +1,6 @@
 from django.utils.translation import gettext_lazy as _
 
 from utilities.choices import ChoiceSet
-#
-# Sites
-#
-class SiteChoices(ChoiceSet):
-    key = 'Site.name'
-
-    BERLIN = 'Berlin'
-    BONN = 'Bonn'
-    GEMEINSAM = 'Gemeinsam'
-
-    CHOICES = [
-        (BERLIN, _('Berlin')),
-        (BONN, _('Bonn')),
-        (GEMEINSAM, _('Gemeinsam')),
-    ]
 
 
 #

@@ -174,7 +174,7 @@ main {
                     <td>{{ vlan.gateway|default:"—" }}</td>
                     <td>{{ vlan.usage_area }}</td>
                     <td>{{ vlan.description|default:"—" }}</td>
-                    <td>{{ vlan.site }}</td>
+                    <td>{{ vlan.site.name|default:"—" }}</td>
                     <td class="table-actions">
                         <a href="{% url 'vlan_edit' vlan.pk %}">Edit</a>
                         <a href="{% url 'vlan_delete' vlan.pk %}">Delete</a>

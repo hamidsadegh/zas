@@ -5,10 +5,9 @@ import random
 
 # Create your tests here.
 from dcim.models import (
-    Organization, Area, Rack, DeviceRole, Vendor, DeviceType,
+    Organization, Site, Area, Rack, DeviceRole, Vendor, DeviceType,
     DeviceModule, Device, DeviceConfiguration, Interface
 )
-from dcim.choices import SiteChoices
 
 
 @pytest.mark.django_db
@@ -22,11 +21,15 @@ def test_create_object(django_db_blocker):
         print("Created organizations:", Organization.objects.count())
 
         # -----------------------------
-        # 2️⃣ Areas
+        # 2️⃣ Sites & Areas
         # -----------------------------
-        dc1 = Area.objects.create(name="Data Center 1", organization=org1)
-        dc2 = Area.objects.create(name="Data Center 2", organization=org1)
-        branch = Area.objects.create(name="Branch Office 1", organization=org2)
+        dw_site_a = Site.objects.create(name="DW Campus A", organization=org1)
+        dw_site_b = Site.objects.create(name="DW Campus B", organization=org1)
+        branch_site = Site.objects.create(name="Branch Campus", organization=org2)
+
+        dc1 = Area.objects.create(name="Data Center 1", site=dw_site_a)
+        dc2 = Area.objects.create(name="Data Center 2", site=dw_site_b)
+        branch = Area.objects.create(name="Branch Office 1", site=branch_site)
 
         # -----------------------------
         # 3️⃣ Racks
@@ -71,25 +74,20 @@ def test_create_object(django_db_blocker):
         all_device_types = list(DeviceType.objects.all())
         all_racks = list(Rack.objects.all())
         all_roles = list(DeviceRole.objects.all())
-        all_orgs = list(Organization.objects.all())
-
-        site_choices = [choice[0] for choice in SiteChoices.CHOICES]
 
         for i in range(1, 11):
             dt = random.choice(all_device_types)
             rack = random.choice(all_racks)
             role = random.choice(all_roles)
-            org = random.choice(all_orgs)
             device = Device.objects.create(
                 name=f"Device-{i}",
                 management_ip=f"192.168.1.{i}",
                 mac_address=f"00:1A:2B:3C:4D:{i:02X}",
                 serial_number=f"SN{i:04}",
                 inventory_number=f"INV{i:04}",
-                organization=org,
+                site=rack.area.site,
                 area=rack.area,
                 rack=rack,
-                site=random.choice(site_choices),
                 vendor=dt.vendor,
                 device_type=dt,
                 role=role,

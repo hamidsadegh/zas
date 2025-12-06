@@ -3,7 +3,6 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.translation import gettext_lazy as _
 
-from dcim.models.organization import Organization
 from dcim.choices import *
 from dcim.constants import *
 from dcim.fields import *
@@ -11,6 +10,7 @@ from django.utils import timezone
 from dcim.models.area import Area
 from dcim.models.rack import Rack
 from dcim.models.vendor import Vendor
+from dcim.models.site import Site
 import uuid
 
 __all__ = (
@@ -168,11 +168,6 @@ class Device(models.Model):
         )
 
     # Relations
-    organization = models.ForeignKey(
-        Organization, 
-        on_delete=models.CASCADE, 
-        related_name="devices"
-        )
     area = models.ForeignKey(
         Area, 
         on_delete=models.SET_NULL, 
@@ -222,11 +217,12 @@ class Device(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(RACK_U_HEIGHT_MAX + 0.5)],
         help_text=_('The lowest-numbered unit occupied by the device')
         )
-    site = models.CharField(
-        max_length=50, 
-        choices=SiteChoices.CHOICES, 
-        default="Gemeinsam"
-        )
+    site = models.ForeignKey(
+        Site,
+        on_delete=models.PROTECT,
+        related_name="devices",
+        help_text=_("Site where this device is installed."),
+    )
     face = models.CharField(
         max_length=5,
         verbose_name=_('rack face'),

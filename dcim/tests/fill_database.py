@@ -8,7 +8,7 @@ django.setup()
 from django.utils import timezone
 import random
 from dcim.models import (
-    Organization, Area, Rack, DeviceRole, Vendor, DeviceType,
+    Organization, Site, Area, Rack, DeviceRole, Vendor, DeviceType,
     DeviceModule, Device, DeviceConfiguration, Interface
 )
 
@@ -22,12 +22,14 @@ print(f"Organization '{org.name}' {'created' if created else 'already exists'}."
 # 2️⃣ Create Arias for Berlin and Bonn 
 def create_area_hierarchy(org, hierarchy_list):
     """Erstellt oder findet eine verschachtelte Area-Hierarchie."""
+    site_name = hierarchy_list[2] if len(hierarchy_list) > 2 else hierarchy_list[-1]
+    site, _ = Site.objects.get_or_create(name=site_name, organization=org)
     parent = None
     for name in hierarchy_list:
         area, _ = Area.objects.get_or_create(
             name=name,
             parent=parent,
-            organization=org
+            site=site
         )
         parent = area
     return parent

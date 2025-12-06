@@ -1,14 +1,15 @@
 import pytest # pyright: ignore[reportMissingImports]
 from django.utils import timezone
 from dcim.models import (
-    Organization, Area, Vendor, DeviceType, DeviceRole, Device
+    Organization, Site, Area, Vendor, DeviceType, DeviceRole, Device
 )
 
 @pytest.mark.django_db
 def test_device_creation():
     # Create base dependencies
     organization = Organization.objects.create(name="TestOrg")
-    area = Area.objects.create(name="Berlin", organization=organization)
+    site = Site.objects.create(name="Berlin", organization=organization)
+    area = Area.objects.create(name="Berlin", site=site)
     vendor = Vendor.objects.create(name="Cisco")
     device_type = DeviceType.objects.create(vendor=vendor, model="C9300-48P")
     role = DeviceRole.objects.create(name="Access Switch")
@@ -17,7 +18,7 @@ def test_device_creation():
     device = Device.objects.create(
         name="bcsw01-a324-46",
         management_ip="192.168.49.128",
-        organization=organization,
+        site=site,
         area=area,
         vendor=vendor,
         device_type=device_type,

@@ -1,16 +1,20 @@
 from django.db import models
 
-from dcim.models import Device, Interface, VLAN
-from dcim.choices import SiteChoices
+from dcim.models import Device, Interface, Site, VLAN
 
 class Prefix(models.Model):
     prefix = models.CharField(max_length=50)  # 10.0.0.0/24
-    site = models.CharField(max_length=50, choices=SiteChoices.CHOICES, default="Berlin")
+    site = models.ForeignKey(
+        Site,
+        on_delete=models.CASCADE,
+        related_name="prefixes",
+    )
     vlan = models.ForeignKey(VLAN, null=True, blank=True, on_delete=models.SET_NULL)
     status = models.CharField(max_length=50)
 
     def __str__(self):
-        return f"{self.prefix} ({self.site})"
+        site_name = self.site.name if self.site else "-"
+        return f"{self.prefix} ({site_name})"
 
 
 class IPAddress(models.Model):

@@ -8,17 +8,17 @@ The `devices` app manages network devices, their configurations, and interfaces.
 - Represents an organization that owns sites and devices
 - Fields: `name`, `description`
 
-### Area
-- Hierarchical physical location: Global → Region → Country → Building → Rack
-- Fields: `name`, `parent`, `description`
-
 ### Site
 - Represents a specific site within an organization
-- Fields: `name`, `parent`, `organization`, `description`
+- Fields: `name`, `organization`, `description`
+
+### Area
+- Hierarchical physical location: Global → Region → Country → Building → Rack
+- Fields: `name`, `parent`, `site`, `description`
 
 ### Rack
 - Represents a rack inside a site
-- Fields: `name`, `site`, `height`, `description`
+- Fields: `name`, `area`, `height`, `description`
 
 ### DeviceRole
 - Device role (e.g., Access Switch, Core Switch, Router)
@@ -35,7 +35,7 @@ The `devices` app manages network devices, their configurations, and interfaces.
 ### Device
 - Represents a network device
 - Fields: `name`, `management_ip`, `mac_address`, `serial_number`, `inventory_number`
-- Relations: `organization`, `area`, `vendor`, `device_type`, `platform`, `role`
+- Relations: `site`, `area`, `rack`, `vendor`, `device_type`, `platform`, `role`
 - Software / Operational: `image_version`, `status`, `uptime`
 - Configuration: `configuration` text
 
@@ -61,4 +61,3 @@ The `devices` app manages network devices, their configurations, and interfaces.
 ## Templates
 - `device_list.html`: Device table with search, sort, pagination
 - `device_detail.html`: Device details, configuration, interfaces
-

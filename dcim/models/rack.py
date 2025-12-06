@@ -246,6 +246,13 @@ class Rack(RackBase):
 
     def __str__(self):
         return f"{self.area} / {self.name}"
+
+    @property
+    def site(self):
+        """
+        Convenience accessor to the rack's site, derived from its area.
+        """
+        return self.area.site if self.area else None
    
 
 

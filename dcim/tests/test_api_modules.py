@@ -1,17 +1,18 @@
 import pytest
-from dcim.models import Vendor, Device, Organization, Area, DeviceModule
+from dcim.models import Vendor, Device, Organization, Area, Site, DeviceModule
 from dcim.serializers import DeviceSerializer
 
 
 @pytest.mark.django_db
 def test_device_serializer_includes_modules():
     org = Organization.objects.create(name="Org1")
-    area = Area.objects.create(name="Area1", organization=org)
+    site = Site.objects.create(name="Site1", organization=org)
+    area = Area.objects.create(name="Area1", site=site)
     vendor = Vendor.objects.create(name="Cisco")
     device = Device.objects.create(
         name="Device-1",
         management_ip="10.0.0.1",
-        organization=org,
+        site=site,
         area=area,
         vendor=vendor,
     )

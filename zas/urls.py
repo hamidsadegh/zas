@@ -11,6 +11,7 @@ from rest_framework import routers
 # DRF Router
 # -----------------------
 router = routers.DefaultRouter()
+router.register(r"sites", device_views.SiteViewSet)
 router.register(r"devices", device_views.DeviceViewSet)
 router.register(r"areas", device_views.AreaViewSet)
 router.register(r"racks", device_views.RackViewSet)
@@ -32,6 +33,7 @@ html_patterns = [
     path("racks/", device_views.RackListView.as_view(), name="rack_list"),
     path("areas/<uuid:area_id>/devices/", device_views.devices_by_area, name="devices_by_area"),
     path("racks/for-area/", device_views.racks_for_area, name="racks_for_area"),
+    path("areas/for-site/", device_views.areas_for_site, name="areas_for_site"),
     path("system-settings/", SystemSettingsView.as_view(), name="system_settings"),
 ]
 

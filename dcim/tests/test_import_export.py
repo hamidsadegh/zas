@@ -2,7 +2,7 @@ import io
 import pytest # pyright: ignore[reportMissingImports]
 from django.utils import timezone
 from django.contrib.admin.sites import AdminSite
-from dcim.models import Device, Organization, Vendor, DeviceType, DeviceRole, Area, Rack
+from dcim.models import Device, Organization, Vendor, DeviceType, DeviceRole, Area, Rack, Site
 from dcim.admin import DeviceAdmin, export_devices_to_excel
 
 @pytest.mark.django_db
@@ -14,7 +14,8 @@ class TestExport:
         """
         # Create related objects
         org = Organization.objects.create(name="TestOrg")
-        area = Area.objects.create(name="TestArea", organization=org)
+        site = Site.objects.create(name="Berlin", organization=org)
+        area = Area.objects.create(name="TestArea", site=site)
         vendor = Vendor.objects.create(name="Cisco")
         device_type = DeviceType.objects.create(model="C9300-48P", vendor=vendor)
         role = DeviceRole.objects.create(name="Access Switch")
@@ -24,10 +25,9 @@ class TestExport:
         device = Device.objects.create(
             name="bcsw01",
             management_ip="192.168.1.1",
-            organization=org,
+            site=site,
             area=area,
             rack=rack,
-            site="Berlin",
             vendor=vendor,
             device_type=device_type,
             role=role,

@@ -1,3 +1,5 @@
+import uuid
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
@@ -9,7 +11,7 @@ from openpyxl import Workbook
 
 from ..forms.vlan_forms import VLANForm
 from dcim.models.vlan import VLAN
-from dcim.choices import SiteChoices
+from dcim.models.site import Site
 
 
 class VLANListView(LoginRequiredMixin, ListView):
@@ -28,13 +30,19 @@ class VLANListView(LoginRequiredMixin, ListView):
         return self.paginate_by
 
     def get_queryset(self):
-        queryset = VLAN.objects.all()
+        queryset = VLAN.objects.select_related("site", "site__organization").order_by("vlan_id")
 
-        site = self.request.GET.get("site", "Berlin")
+        site = self.request.GET.get("site", "all")
+        try:
+            if site != "all":
+                uuid.UUID(str(site))
+        except (ValueError, TypeError):
+            site = "all"
+        self._site_filter = site
         search = self.request.GET.get("q", "").strip()
 
-        if site in dict(SiteChoices.CHOICES):
-            queryset = queryset.filter(site=site)
+        if site != "all":
+            queryset = queryset.filter(site_id=site)
 
         if search:
             q_objects = Q(
@@ -42,10 +50,12 @@ class VLANListView(LoginRequiredMixin, ListView):
             ) | Q(description__icontains=search) | Q(usage_area__icontains=search) | Q(subnet__icontains=search)
             if search.isdigit():
                 q_objects |= Q(vlan_id=int(search))
+            else:
+                q_objects |= Q(site__name__icontains=search)
             queryset = queryset.filter(q_objects)
 
         sort = self.request.GET.get("sort", "vlan_id")
-        allowed = {"vlan_id", "name", "subnet", "usage_area", "site"}
+        allowed = {"vlan_id", "name", "subnet", "usage_area", "site__name"}
         if sort.lstrip("-") in allowed:
             queryset = queryset.order_by(sort)
 
@@ -53,12 +63,22 @@ class VLANListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["site_filter"] = self.request.GET.get("site", "Berlin")
+        context["site_choices"] = self._site_choices()
+        context["site_filter"] = getattr(self, "_site_filter", "all")
         context["search_query"] = self.request.GET.get("q", "")
-        context["site_choices"] = SiteChoices.CHOICES
         context["per_page_options"] = self.per_page_options
         context["paginate_by_value"] = getattr(self, "_current_paginate_by", self.paginate_by)
         return context
+
+    def _site_choices(self):
+        if hasattr(self, "_site_cache"):
+            return self._site_cache
+        choices = [("all", "All Sites")]
+        for site in Site.objects.select_related("organization").order_by("name"):
+            label = f"{site.name} ({site.organization.name})"
+            choices.append((str(site.id), label))
+        self._site_cache = choices
+        return choices
 
 
 
@@ -98,8 +118,13 @@ class VLANExportView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         site = request.GET.get("site")
         queryset = VLAN.objects.all()
-        if site in dict(SiteChoices.CHOICES):
-            queryset = queryset.filter(site=site)
+        if site and site != "all":
+            try:
+                uuid.UUID(str(site))
+            except (ValueError, TypeError):
+                site = None
+            if site:
+                queryset = queryset.filter(site_id=site)
 
         wb = Workbook()
         ws = wb.active
@@ -110,7 +135,7 @@ class VLANExportView(LoginRequiredMixin, View):
         for vlan in queryset:
             ws.append(
                 [
-                    vlan.site,
+                    vlan.site.name if vlan.site else "",
                     vlan.vlan_id,
                     vlan.name,
                     vlan.subnet,

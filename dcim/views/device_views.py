@@ -1,3 +1,5 @@
+import uuid
+
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView
@@ -6,10 +8,21 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count
-from rest_framework import viewsets, filters
+from rest_framework import filters, viewsets
 from rest_framework.permissions import IsAuthenticated
-from dcim.choices import SiteChoices
-from dcim.models import Device, Area, Rack, DeviceRole, Vendor, DeviceType, Interface, DeviceConfiguration, DeviceModule
+
+from dcim.models import (
+    Area,
+    Device,
+    DeviceConfiguration,
+    DeviceModule,
+    DeviceRole,
+    DeviceType,
+    Interface,
+    Rack,
+    Site,
+    Vendor,
+)
 
 from ..serializers import (
     AreaSerializer,
@@ -20,6 +33,7 @@ from ..serializers import (
     DeviceTypeSerializer,
     InterfaceSerializer,
     RackSerializer,
+    SiteSerializer,
     VendorSerializer,
 )
 from accounts.models.system_settings import SystemSettings
@@ -35,7 +49,6 @@ class DeviceListView(LoginRequiredMixin, ListView):
     context_object_name = "devices"
     paginate_by = 25
     per_page_options = (10, 25, 50, 100)
-    site_filter_choices = [("all", "All Sites")] + list(SiteChoices.CHOICES)
 
     def get_paginate_by(self, queryset):
         per_page = self.request.GET.get("paginate_by")
@@ -49,16 +62,23 @@ class DeviceListView(LoginRequiredMixin, ListView):
     
     def get_queryset(self):
         queryset = Device.objects.select_related(
-            "vendor", "device_type", "area", "rack", "runtime"
+            "vendor",
+            "device_type",
+            "area",
+            "rack",
+            "runtime",
+            "site",
+            "site__organization",
         ).order_by("name")
 
+        self.site_filter_choices = self._site_filter_options()
         site = self.request.GET.get("site", "all")
         valid_site_keys = {choice[0] for choice in self.site_filter_choices}
         if site not in valid_site_keys:
             site = "all"
         self.current_site_filter = site
         if site != "all":
-            queryset = queryset.filter(site=site)
+            queryset = queryset.filter(site_id=site)
 
         search = self.request.GET.get("search", "").strip()
         if search:
@@ -71,7 +91,8 @@ class DeviceListView(LoginRequiredMixin, ListView):
                 | Q(vendor__name__icontains=search)
                 | Q(area__name__icontains=search)
                 | Q(rack__name__icontains=search)
-                | Q(site__icontains=search)
+                | Q(site__name__icontains=search)
+                | Q(site__organization__name__icontains=search)
             ).distinct()
 
         sort = self.request.GET.get("sort", "name")
@@ -83,7 +104,7 @@ class DeviceListView(LoginRequiredMixin, ListView):
             "serial_number",
             "area__name",
             "rack__name",
-            "site",
+            "site__name",
             "image_version",
         ]:
             queryset = queryset.order_by(sort)
@@ -96,12 +117,19 @@ class DeviceListView(LoginRequiredMixin, ListView):
         context['search_query'] = self.request.GET.get('search', '')
         context['sort_field'] = self.request.GET.get('sort', 'name')
         context['paginate_by'] = getattr(self, "current_paginate_by", self.paginate_by)
-        context['SiteChoices.CHOICES'] = self.site_filter_choices
+        context['site_choices'] = self.site_filter_choices
         context['site_filter'] = getattr(self, "current_site_filter", "all")
         context['per_page_options'] = self.per_page_options
         settings_obj = get_system_settings()
         context['reachability_checks'] = get_reachability_checks(settings_obj)
         return context
+
+    def _site_filter_options(self):
+        choices = [("all", "All Sites")]
+        for site in Site.objects.select_related("organization").order_by("name"):
+            label = f"{site.name} ({site.organization.name})"
+            choices.append((str(site.id), label))
+        return choices
 
 class DeviceDetailView(LoginRequiredMixin, DetailView):
     model = Device
@@ -170,7 +198,13 @@ def devices_by_area(request, area_id):
 @login_required
 def racks_by_area(request):
     area_id = request.GET.get("area_id")
-    racks = Rack.objects.filter(area_id=area_id).values("id", "name")
+    racks = Rack.objects.none()
+    try:
+        if area_id:
+            uuid.UUID(str(area_id))
+            racks = Rack.objects.filter(area_id=area_id)
+    except (ValueError, TypeError):
+        racks = Rack.objects.none()
     return JsonResponse({"results": list(racks)})
 
 
@@ -179,17 +213,45 @@ def racks_for_area(request):
     area_id = request.GET.get("area")
     racks = Rack.objects.none()
     if area_id:
-        racks = Rack.objects.filter(area_id=area_id).order_by("name")
+        try:
+            uuid.UUID(str(area_id))
+            racks = Rack.objects.filter(area_id=area_id).order_by("name")
+        except (ValueError, TypeError):
+            racks = Rack.objects.none()
     data = [{"id": rack.id, "name": rack.name} for rack in racks]
+    return JsonResponse({"results": data})
+
+
+@login_required
+def areas_for_site(request):
+    site_id = request.GET.get("site")
+    areas = Area.objects.none()
+    if site_id:
+        try:
+            uuid.UUID(str(site_id))
+            areas = Area.objects.filter(site_id=site_id).order_by("name")
+        except (ValueError, TypeError):
+            areas = Area.objects.none()
+    data = [{"id": area.id, "name": area.name} for area in areas]
     return JsonResponse({"results": data})
 
 
 # -----------------------
 # DRF API ViewSets
 # -----------------------
+class SiteViewSet(viewsets.ModelViewSet):
+    queryset = Site.objects.select_related("organization")
+    serializer_class = SiteSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ["name", "organization__name"]
+    ordering_fields = ["name", "organization__name"]
+
+
 class DeviceViewSet(viewsets.ModelViewSet):
     queryset = Device.objects.select_related(
-        "organization",
+        "site",
+        "site__organization",
         "area",
         "vendor",
         "device_type",
@@ -200,26 +262,33 @@ class DeviceViewSet(viewsets.ModelViewSet):
     serializer_class = DeviceSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ["name", "management_ip", "serial_number", "inventory_number", "site"]
-    ordering_fields = ["name", "management_ip", "created_at"]
+    search_fields = [
+        "name",
+        "management_ip",
+        "serial_number",
+        "inventory_number",
+        "site__name",
+        "site__organization__name",
+    ]
+    ordering_fields = ["name", "management_ip", "created_at", "site__name"]
 
 
 class AreaViewSet(viewsets.ModelViewSet):
-    queryset = Area.objects.all()
+    queryset = Area.objects.select_related("site", "site__organization", "parent")
     serializer_class = AreaSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ["name", "description"]
-    ordering_fields = ["name", "organization"]
+    search_fields = ["name", "description", "site__name"]
+    ordering_fields = ["name", "site__name"]
 
 
 class RackViewSet(viewsets.ModelViewSet):
-    queryset = Rack.objects.all()
+    queryset = Rack.objects.select_related("area", "area__site")
     serializer_class = RackSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ["name", "area__name"]
-    ordering_fields = ["name", "area"]
+    search_fields = ["name", "area__name", "area__site__name"]
+    ordering_fields = ["name", "area", "area__site__name"]
 
     def get_queryset(self):
         queryset = Rack.objects.all()

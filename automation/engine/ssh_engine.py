@@ -19,12 +19,18 @@ class SSHEngine:
 
     def __init__(self, device: Device):
         self.device = device
+        try:
+            credential = SiteCredential.objects.select_related("site").get(site=device.site)
+        except SiteCredential.DoesNotExist as exc:
+            raise SiteCredential.DoesNotExist(
+                f"No credentials configured for site '{device.site.name}'."
+            ) from exc
         self.conn_params: Dict[str, Any] = {
             "device_type": self._netmiko_platform(),
             "host": getattr(device, "management_ip", None),
-            "username": SiteCredential.objects.get(site=device.site).ssh_username,
-            "password": SiteCredential.objects.get(site=device.site).ssh_password,
-            "port": SiteCredential.objects.get(site=device.site).ssh_port,
+            "username": credential.ssh_username,
+            "password": credential.ssh_password,
+            "port": credential.ssh_port,
             "timeout": 10,
         }
 

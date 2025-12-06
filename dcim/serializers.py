@@ -9,6 +9,7 @@ from dcim.models import (
     Interface,
     Organization,
     Rack,
+    Site,
     VLAN,
     Vendor,
 )
@@ -24,15 +25,53 @@ class OrganizationSerializer(serializers.ModelSerializer):
 
 
 # -----------------------
+# Site Serializer
+# -----------------------
+class SiteSerializer(serializers.ModelSerializer):
+    organization_name = serializers.CharField(source="organization.name", read_only=True)
+
+    class Meta:
+        model = Site
+        fields = [
+            "id",
+            "name",
+            "description",
+            "organization",
+            "organization_name",
+            "created_at",
+            "updated_at",
+        ]
+
+
+# -----------------------
 # Area Serializer
 # -----------------------
 class AreaSerializer(serializers.ModelSerializer):
     parent_name = serializers.CharField(source="parent.name", read_only=True)
-    organization_name = serializers.CharField(source="organization.name", read_only=True)
+    site_name = serializers.CharField(source="site.name", read_only=True)
+    organization = serializers.PrimaryKeyRelatedField(source="site.organization", read_only=True)
 
     class Meta:
         model = Area
-        fields = ["id", "name", "parent", "parent_name", "description", "organization", "organization_name"]
+        fields = [
+            "id",
+            "name",
+            "parent",
+            "parent_name",
+            "description",
+            "site",
+            "site_name",
+            "organization",
+        ]
+
+    def validate(self, attrs):
+        site = attrs.get("site") or getattr(self.instance, "site", None)
+        parent = attrs.get("parent") or getattr(self.instance, "parent", None)
+        if parent and site and parent.site_id != site.id:
+            raise serializers.ValidationError({
+                "parent": "Parent area must belong to the same site as this area."
+            })
+        return attrs
 
 
 # -----------------------
@@ -40,10 +79,12 @@ class AreaSerializer(serializers.ModelSerializer):
 # -----------------------
 class RackSerializer(serializers.ModelSerializer):
     area_name = serializers.CharField(source="area.name", read_only=True)
+    site = serializers.PrimaryKeyRelatedField(source="area.site", read_only=True)
+    site_name = serializers.CharField(source="area.site.name", read_only=True)
 
     class Meta:
         model = Rack
-        fields = ["id", "name", "area", "area_name", "height", "description"]
+        fields = ["id", "name", "area", "area_name", "site", "site_name", "description"]
 
 
 # -----------------------
@@ -132,6 +173,9 @@ class DeviceSerializer(serializers.ModelSerializer):
     device_type_name = serializers.CharField(source="device_type.model", read_only=True)
     role_name = serializers.CharField(source="role.name", read_only=True)
     rack_name = serializers.CharField(source="rack.name", read_only=True)
+    site_name = serializers.CharField(source="site.name", read_only=True)
+    organization = serializers.PrimaryKeyRelatedField(source="site.organization", read_only=True)
+    organization_name = serializers.CharField(source="site.organization.name", read_only=True)
     modules = DeviceModuleSerializer(many=True, read_only=True)
     reachable_ping = serializers.SerializerMethodField()
     reachable_snmp = serializers.SerializerMethodField()
@@ -139,7 +183,7 @@ class DeviceSerializer(serializers.ModelSerializer):
     reachable_netconf = serializers.SerializerMethodField()
     uptime = serializers.SerializerMethodField()
 
-    rack = serializers.PrimaryKeyRelatedField(queryset=Rack.objects.none())
+    rack = serializers.PrimaryKeyRelatedField(queryset=Rack.objects.none(), required=False, allow_null=True)
 
     class Meta:
         model = Device
@@ -150,8 +194,10 @@ class DeviceSerializer(serializers.ModelSerializer):
             "mac_address",
             "serial_number",
             "inventory_number",
-            "organization",
             "site",
+            "site_name",
+            "organization",
+            "organization_name",
             "area",
             "area_name",
             "rack",
@@ -176,48 +222,77 @@ class DeviceSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         request = self.context.get("request", None)
-        area_id = None
+        area_id = self._resolve_value("area", request)
+        site_id = self._resolve_value("site", request)
 
-        # 1 — From POST/PUT/PATCH request body
-        if request and hasattr(request, "data"):
-            raw = request.data.get("area")
-            if isinstance(raw, (int, str)):
-                area_id = raw
+        area_field = self.fields.get("area")
+        rack_field = self.fields.get("rack")
 
-        # 2 — From query params (GET /api/devices/?area=5)
-        if not area_id and request:
-            area_id = request.query_params.get("area")
+        # Restrict area queryset to the selected site
+        if site_id:
+            try:
+                area_field.queryset = Area.objects.filter(site_id=site_id)
+            except Exception:
+                area_field.queryset = Area.objects.none()
+        else:
+            area_field.queryset = Area.objects.none()
 
-        # 3 — From initial data (Browsable API form)
-        if not area_id and isinstance(self.initial, dict):   # <-- Fix for initial=None
-            area_id = self.initial.get("area")
-
-        # 4 — From instance being edited
-        if not area_id and self.instance:
-            area_id = getattr(self.instance, "area_id", None)
-
-        # 5 — Apply queryset
+        # Restrict rack queryset to the selected area
         if area_id:
             try:
-                self.fields["rack"].queryset = Rack.objects.filter(area_id=area_id)
+                rack_field.queryset = Rack.objects.filter(area_id=area_id)
             except Exception:
-                self.fields["rack"].queryset = Rack.objects.none()
+                rack_field.queryset = Rack.objects.none()
         else:
-            # Browsable API list view and GET list view MUST allow full queryset
-            if self.parent and getattr(self.parent, "many", False):
-                self.fields["rack"].queryset = Rack.objects.all()
-            else:
-                self.fields["rack"].queryset = Rack.objects.none()
+            rack_field.queryset = Rack.objects.none()
+
+    def _resolve_value(self, field_name, request):
+        """
+        Determine the current value for a related field across request data, initial data and instance.
+        """
+        value = None
+        if request and hasattr(request, "data"):
+            raw = request.data.get(field_name)
+            if isinstance(raw, (int, str)):
+                value = raw
+
+        if not value and request:
+            candidate = request.query_params.get(field_name)
+            if candidate:
+                value = candidate
+
+        if not value and hasattr(self, "initial_data") and isinstance(self.initial_data, dict):
+            initial_value = self.initial_data.get(field_name)
+            if initial_value:
+                value = initial_value
+
+        if not value and self.instance:
+            value = getattr(self.instance, f"{field_name}_id", None)
+
+        return value
 
     def validate(self, data):
+        site = data.get("site") or getattr(self.instance, "site", None)
         area = data.get("area") or getattr(self.instance, "area", None)
         rack = data.get("rack") or getattr(self.instance, "rack", None)
+
+        if site is None:
+            raise serializers.ValidationError({"site": "A site must be specified for each device."})
+
+        if area and area.site_id != site.id:
+            raise serializers.ValidationError({
+                "area": f"Area '{area.name}' does not belong to site '{site.name}'."
+            })
 
         if area and rack and rack.area_id != area.id:
             raise serializers.ValidationError({
                 "rack": f"Rack '{rack.name}' does not belong to area '{area.name}'."
+            })
+
+        if rack and not area and rack.area.site_id != site.id:
+            raise serializers.ValidationError({
+                "rack": f"Rack '{rack.name}' does not belong to site '{site.name}'."
             })
 
         return data
