@@ -11,6 +11,7 @@ from dcim.models.area import Area
 from dcim.models.rack import Rack
 from dcim.models.vendor import Vendor
 from dcim.models.site import Site
+from dcim.models.tag import Tag
 import uuid
 
 __all__ = (
@@ -165,6 +166,11 @@ class Device(models.Model):
         blank=True, 
         null=True,
         help_text=_("An internal inventory or asset tag number.")
+        )
+    tags = models.ManyToManyField(
+        Tag, 
+        related_name="devices", 
+        blank=True
         )
 
     # Relations

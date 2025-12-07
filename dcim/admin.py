@@ -1,10 +1,12 @@
 from django.contrib import admin
 from django.http import HttpResponse
+from django.contrib.admin import SimpleListFilter
 from django.urls import reverse
 from io import BytesIO
 from django import forms
 import pandas as pd  # pyright: ignore[reportMissingModuleSource, reportMissingImports]
 from django.utils.timezone import localtime
+
 from .models import (
     Organization,
     Site,
@@ -17,6 +19,7 @@ from .models import (
     DeviceConfiguration,
     Interface,
     DeviceModule,
+    Tag,
 )
 
 # -----------------------
@@ -132,6 +135,26 @@ class DeviceModuleInline(admin.TabularInline):
     fields = ("name", "serial_number", "vendor", "description")
     autocomplete_fields = ("vendor",)
 
+
+# -----------------------
+# Tag Admin
+# -----------------------
+class TagFilter(admin.SimpleListFilter):
+    title = "Tag"
+    parameter_name = "tag"
+
+    def lookups(self, request, model_admin):
+        return [(tag.id, tag.name) for tag in Tag.objects.all()]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(tags__id=self.value())
+        return queryset
+    
+@admin.register(Tag)
+class TagAdmin(admin.ModelAdmin):
+    list_display = ("name", "description", "color")
+    search_fields = ("name",)
 
 # ------------------------------
 # Import Form
@@ -296,6 +319,7 @@ class DeviceAdmin(admin.ModelAdmin):
         "organization",
         "area",
         "image_version",
+        "tag_list",
     )
     search_fields = (
         "name",
@@ -307,6 +331,7 @@ class DeviceAdmin(admin.ModelAdmin):
         "area__name",
         "site__name",
         "site__organization__name",
+        "tags__name",
     )
     list_filter = (
         "status",
@@ -315,12 +340,17 @@ class DeviceAdmin(admin.ModelAdmin):
         "vendor",
         "site__organization",
         "area",
+        TagFilter,
     )
     actions = [export_devices_to_excel]
     inlines = [DeviceModuleInline, DeviceConfigurationInline]
 
     class Media:
         js = ("admin/js/device_admin.js",)
+
+    @admin.display(description="Tags")
+    def tag_list(self, obj):
+        return ", ".join([t.name for t in obj.tags.all()])
 
     @admin.display(description="Organization", ordering="site__organization__name")
     def organization(self, obj):

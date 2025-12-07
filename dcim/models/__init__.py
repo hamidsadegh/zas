@@ -4,6 +4,7 @@ from .area import Area
 from .rack import Rack, RackType
 from .vendor import Vendor
 from .vlan import VLAN
+from .tag import Tag
 from .device import (
     Device,
     DeviceType,
@@ -30,4 +31,5 @@ __all__ = [
     "DeviceModule",
     "DeviceConfiguration",
     "DeviceRuntimeStatus",
+    "Tag",
 ]

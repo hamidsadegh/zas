@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 # REACHABILITY SCHEDULER
 # ---------------------------------------------------------------------
 @shared_task
-def check_devices_reachability():
+def check_devices_reachability(tags: list = None):
     """
     Periodic task executed by Celery Beat.
     Creates a JobRun for the reachability job and delegates execution
@@ -28,6 +28,10 @@ def check_devices_reachability():
     """
     settings = get_system_settings()
     checks = get_reachability_checks(settings)
+
+    # Default to all tags if none specified
+    if tags is None:
+        tags = ["reachability_check"]
 
     # If all checks are disabled → don't schedule job
     if not any(checks.values()):
@@ -56,8 +60,8 @@ def check_devices_reachability():
     # Create a new JobRun
     job_run = JobRun.objects.create(job=job)
 
-    # Assign devices for this run
-    devices = Device.objects.all()
+    # Assign taged devices for this run
+    devices = Device.objects.filter(tags__name__in=tags).distinct()
     job_run.devices.set(devices)
 
     if not devices.exists():
@@ -71,7 +75,7 @@ def check_devices_reachability():
         system_settings=settings
     )
 
-    logger.info("%s: reachability job triggered.", now)
+    logger.info("%s: reachability job triggered for tags: %s.", now, tags)
     return "scheduled"
 
 
