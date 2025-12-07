@@ -9,7 +9,9 @@ The `automation` module handles automated tasks such as reachability, backups, c
 - Using `Celery` for scheduling
 
 ## Workflow
-- Example:
+Celery Task  →  Worker  →  Engines  →  DB Models
+
+- In Detail:
 Celery Beat (schedule) 
   → Celery Worker (task) 
     → automation.tasks.check_devices_reachability

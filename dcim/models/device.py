@@ -322,5 +322,10 @@ class DeviceRuntimeStatus(models.Model):
     last_check = models.DateTimeField(null=True, blank=True)
     uptime = models.DurationField(null=True, blank=True)
 
+    updated_at = models.DateTimeField(auto_now=True)
+    class Meta:
+        verbose_name = "Device Runtime Status"
+        verbose_name_plural = "Device Runtime Statuses"
+
     def __str__(self):
         return f"Runtime status for {self.device.name}"

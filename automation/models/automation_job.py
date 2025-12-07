@@ -1,6 +1,6 @@
+import uuid
 from django.db import models
 from django.utils import timezone
-import uuid
 
 
 class AutomationJob(models.Model):

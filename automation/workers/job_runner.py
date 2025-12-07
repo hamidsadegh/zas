@@ -1,97 +1,46 @@
-from datetime import timedelta
-
 from django.utils import timezone
 
 from automation.models import JobRun
-from dcim.models import Device
-from automation.engine.reachability_engine import ReachabilityEngine
-from automation.engine.ssh_engine import SSHEngine
-from automation.engine.netconf_engine import NetconfEngine
-from accounts.services.settings_service import (
-    get_reachability_checks,
-    get_snmp_config,
-    get_system_settings,
-    update_reachability_last_run,
-)
+from automation.workers.ssh_worker import run_ssh_job
+from automation.workers.backup_worker import run_backup_job
+from automation.workers.reachability_worker import run_reachability_job
 
 
 def execute_job(job_run: JobRun, snmp_config=None, reachability_checks=None, system_settings=None):
+    """
+    Delegates a JobRun to the correct worker based on job_type.
+    Updates JobRun lifecycle fields.
+    """
+
     job = job_run.job
-    job_run.status = "running"
+    job_run.status = JobRun.STATUS_RUNNING
     job_run.started_at = timezone.now()
-    job_run.save()
+    job_run.save(update_fields=["status", "started_at"])
 
     try:
-        log_entries = []
-
         if job.job_type == "cli":
-            ssh = SSHEngine()
-            for device in job_run.devices.all():
-                output = ssh.run_command(device, "show version")
-                log_entries.append(f"[{device.name}] CLI:\n{output}\n")
+            log = run_ssh_job(job_run)
 
         elif job.job_type == "backup":
-            ssh = SSHEngine()
-            for device in job_run.devices.all():
-                output = ssh.run_command(device, "show running-config")
-                log_entries.append(f"[{device.name}] Backup done.\n")
+            log = run_backup_job(job_run)
 
-        elif job.job_type == "netconf":
-            netconf = NetconfEngine()
-            for device in job_run.devices.all():
-                netconf.collect(device)
-                log_entries.append(f"[{device.name}] Netconf collected.\n")
-                
         elif job.job_type == "reachability":
-            settings = system_settings or get_system_settings()
-            checks = reachability_checks or get_reachability_checks(settings)
-            snmp_config = snmp_config or get_snmp_config(settings)
-            enabled_checks = [name for name, enabled in checks.items() if enabled]
+            log = run_reachability_job(
+                job_run=job_run,
+                snmp_config=snmp_config,
+                reachability_checks=reachability_checks,
+                system_settings=system_settings,
+            )
 
-            if not enabled_checks:
-                log_entries.append("Reachability job skipped: all probes disabled in System Settings.")
-            else:
-                now = timezone.now()
-                interval = timedelta(minutes=getattr(settings, "reachability_interval_minutes", 1) or 1)
-                if getattr(settings, "reachability_last_run", None) and (
-                    now - settings.reachability_last_run
-                ) < interval:
-                    remaining = interval - (now - settings.reachability_last_run)
-                    log_entries.append(
-                        f"Reachability job skipped: waiting {remaining} before next run."
-                    )
-                else:
-                    devices = job_run.devices.all()
-                    if not devices.exists():
-                        devices = Device.objects.all()
+        else:
+            log = f"Unknown job type: {job.job_type}"
 
-                    results = ReachabilityEngine.update_device_status(
-                        devices=devices,
-                        check_ping=checks["ping"],
-                        check_snmp=checks["snmp"],
-                        check_ssh=checks["ssh"],
-                        check_netconf=checks.get("netconf"),
-                        snmp_config=snmp_config,
-                    )
+        job_run.log = log
+        job_run.status = JobRun.STATUS_SUCCESS
 
-                    if not results:
-                        log_entries.append("Reachability executed but no devices were updated.")
-                    else:
-                        for entry in results:
-                            status_chunks = [
-                                f"{name.upper()}: {'OK' if state else 'FAIL'}"
-                                for name, state in entry["statuses"]
-                            ]
-                            log_entries.append(f"[{entry['device'].name}] {', '.join(status_chunks)}")
-
-                    update_reachability_last_run(settings, now)
-
-        job_run.log = "\n".join(log_entries)
-        job_run.status = "success"
-
-    except Exception as e:
-        job_run.log = f"Error: {e}"
-        job_run.status = "failed"
+    except Exception as exc:
+        job_run.log = f"Error: {exc}"
+        job_run.status = JobRun.STATUS_FAILED
 
     job_run.finished_at = timezone.now()
-    job_run.save()
+    job_run.save(update_fields=["log", "status", "finished_at"])

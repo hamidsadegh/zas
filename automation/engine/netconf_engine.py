@@ -1,36 +1,18 @@
-from django.utils import timezone
-
-from dcim.models import Device
-from automation.models import DeviceTelemetry
-from automation.engine.snmp_engine import SNMPEngine
+import socket
+from contextlib import closing
 
 
 class NetconfEngine:
     """
-    Telemetry polling + persistence.
-
-    Currently uses SNMPEngine as a backend and writes to DeviceTelemetry.
+    Raw NETCONF connectivity engine (TCP 830 reachability).
     """
 
-    def __init__(self, snmp_engine: SNMPEngine | None = None):
-        self.snmp_engine = snmp_engine or SNMPEngine()
+    def check(self, host, timeout=2.0):
+        if not host:
+            return False
 
-    def collect(self, device: Device) -> dict:
-        """
-        Collect telemetry for a device and save a DeviceTelemetry record.
-
-        Returns the collected stats dictionary.
-        """
-        stats = self.snmp_engine.get_device_stats(device)
-
-        DeviceTelemetry.objects.create(
-            device=device,
-            timestamp=timezone.now(),
-            cpu_usage=stats.get("cpu"),
-            memory_usage=stats.get("memory"),
-            uptime=stats.get("uptime"),
-            interface_count=stats.get("if_count"),
-        )
-
-        return stats
-
+        try:
+            with closing(socket.create_connection((host, 830), timeout=timeout)):
+                return True
+        except OSError:
+            return False

@@ -1,30 +1,33 @@
-from typing import Dict, Optional
-
-from accounts.services.settings_service import get_snmp_config, get_system_settings
+from typing import Optional, Dict
+from pysnmp.hlapi import (
+    SnmpEngine, CommunityData, UdpTransportTarget, ContextData,
+    ObjectType, ObjectIdentity, getCmd
+)
 
 
 class SNMPEngine:
     """
-    Simple SNMP helper that centralizes access to saved SNMP credentials/config.
-
-    This engine is used by TelemetryEngine and can later be extended to do
-    real SNMP polling.
+    Low-level SNMP helper engine.
     """
 
-    def __init__(self, config: Optional[Dict] = None):
-        system_settings = get_system_settings()
-        self.config = config or get_snmp_config(system_settings)
+    def check(self, host, config):
+        if not host:
+            return False
 
-    def get_device_stats(self, device) -> Dict:
-        """
-        Placeholder SNMP polling implementation.
+        version = (config.get("version") or "v2c").lower()
+        community = config.get("community", "public")
+        port = int(config.get("port") or 161)
 
-        Returns mock data but ensures the engine has access to the saved config.
-        """
-        return {
-            "cpu": 15.2,
-            "memory": 63.7,
-            "uptime": 245_120,
-            "if_count": 24,
-            "snmp_version": self.config.get("version"),
-        }
+        try:
+            iterator = getCmd(
+                SnmpEngine(),
+                CommunityData(community, mpModel=1 if version == "v2c" else 0),
+                UdpTransportTarget((host, port), timeout=1, retries=0),
+                ContextData(),
+                ObjectType(ObjectIdentity("1.3.6.1.2.1.1.1.0")),
+            )
+            error_indication, error_status, _, _ = next(iterator)
+            return error_indication is None and error_status == 0
+
+        except Exception:
+            return False
