@@ -115,7 +115,7 @@ def test_create_object(django_db_blocker):
             DeviceConfiguration.objects.create(
                 device=device,
                 config_text=f"Sample configuration for {device.name}",
-                last_updated=timezone.now()
+                updated_at=timezone.now()
             )
 
             # -----------------------------

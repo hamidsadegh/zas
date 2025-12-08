@@ -14,7 +14,7 @@ Celery Task  →  Worker  →  Engines  →  DB Models
 - Device Reachability in Detail:
 Celery Beat (schedule) 
   → Celery Worker (task) 
-    → automation.tasks.check_devices_reachability
+    → automation.scheduler.check_devices_reachability
       → JobRun created/loaded
         → execute_job(job_run) in workers.job_runner
           → ReachabilityEngine.update_device_status(...)
@@ -23,7 +23,7 @@ Celery Beat (schedule)
           → JobRun.log + status updated
 
 - Configuration Backup:
-Celery Beat  →  Celery Worker →  automation.tasks.backup_device_config
+Celery Beat  →  Celery Worker →  automation.scheduler.schedule_configuration_backups
                                    ↓
                              SSHEngine (Netmiko wrapper)
                                    ↓
