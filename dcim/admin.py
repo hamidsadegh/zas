@@ -126,7 +126,7 @@ class DeviceModuleAdmin(admin.ModelAdmin):
 class DeviceConfigurationInline(admin.StackedInline):
     model = DeviceConfiguration
     extra = 0
-    readonly_fields = ("last_updated",)
+    readonly_fields = ["created_at", "updated_at"]
 
 
 class DeviceModuleInline(admin.TabularInline):

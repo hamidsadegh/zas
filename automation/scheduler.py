@@ -4,14 +4,17 @@ from datetime import timedelta
 from celery import shared_task
 from django.utils import timezone
 
+from dcim.models import Device
 from automation.models import AutomationJob, JobRun
 from automation.workers.job_runner import execute_job
-from dcim.models import Device
 from accounts.services.settings_service import (
     get_reachability_checks,
     get_snmp_config,
     get_system_settings,
 )
+
+from automation.backup_tasks.config_backup import backup_device_config
+
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +25,8 @@ logger = logging.getLogger(__name__)
 @shared_task
 def check_devices_reachability(tags: list = None):
     """
-    Periodic task executed by Celery Beat.
-    Creates a JobRun for the reachability job and delegates execution
-    to the job_runner worker.
+    Periodic scheduler for reachability checks.
+    Creates a JobRun and delegates execution to job_runner.
     """
     settings = get_system_settings()
     checks = get_reachability_checks(settings)
@@ -83,18 +85,16 @@ def check_devices_reachability(tags: list = None):
 # BACKUP SCHEDULER
 # ---------------------------------------------------------------------
 @shared_task
-def run_scheduled_backups():
+def schedule_configuration_backups():
     """
-    Runs all 'backup' jobs that have been marked as scheduled.
+    Schedules configuration backup tasks for all devices tagged
+    with 'configuration_backup'. Each device is backed up by
+    an individual Celery task.
     """
-    backup_jobs = AutomationJob.objects.filter(job_type="backup")
+    devices = Device.objects.filter(tags__name="configuration_backup").distinct()
 
-    for job in backup_jobs:
-        job_run = JobRun.objects.create(job=job)
-        job_run.devices.set(Device.objects.all())  # extend logic later (site/org filter)
+    for device in devices:
+        backup_device_config.delay(str(device.id))
 
-        execute_job(job_run)
-
-        logger.info(f"{timezone.now()}: backup job {job.name} executed.")
-
-    return "ok"
+    logger.info(f"Scheduled configuration backups for {devices.count()} devices.")
+    return "scheduled"

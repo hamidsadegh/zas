@@ -5,11 +5,11 @@ from .rack import Rack, RackType
 from .vendor import Vendor
 from .vlan import VLAN
 from .tag import Tag
+from .device_config import DeviceConfiguration
 from .device import (
     Device,
     DeviceType,
     DeviceRole,
-    DeviceConfiguration,
     DeviceModule,
     DeviceRuntimeStatus,
 )
@@ -21,11 +21,11 @@ __all__ = [
     "Site",
     "Area",
     "Rack",
-    "RackType",
-    "Vendor",
     "VLAN",
-    "Interface",
+    "Vendor",
     "Device",
+    "RackType",
+    "Interface",
     "DeviceType",
     "DeviceRole",
     "DeviceModule",

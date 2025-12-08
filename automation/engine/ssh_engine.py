@@ -1,12 +1,11 @@
 # automation/engine/ssh_engine.py
 
-from typing import Any, Dict, Iterable, List, Optional
-
+from typing import Any, Dict, Iterable
 from netmiko import ConnectHandler
 
 from dcim.models import Device
 from accounts.models import SiteCredential
-
+from automation.choices import NETMIKO_PLATFORM_MAP, DevicePlatformChoices
 
 class SSHEngine:
     """
@@ -19,6 +18,8 @@ class SSHEngine:
 
     def __init__(self, device: Device):
         self.device = device
+
+        # Fetch site credentials
         try:
             credential = SiteCredential.objects.select_related("site").get(site=device.site)
         except SiteCredential.DoesNotExist as exc:
@@ -31,54 +32,25 @@ class SSHEngine:
             "username": credential.ssh_username,
             "password": credential.ssh_password,
             "port": credential.ssh_port,
-            "timeout": 10,
+            "timeout": 30,
         }
 
     def _netmiko_platform(self) -> str:
         """
         Map ZAS device attributes to a Netmiko platform string.
-
-        Adjust this mapping to fit your actual Device/Platform model.
+        Returns:
+            Netmiko platform string.
         """
         # try to use platform slug if available
-        platform_slug = None
-        platform = getattr(self.device, "platform", None)
-        if platform is not None:
-            platform_slug = getattr(platform, "slug", None) or getattr(platform, "name", None)
-
-        # fallback: use device_type as string (e.g. "catalyst", "nexus", etc.)
-        device_type_str = getattr(self.device, "device_type", None)
-        if hasattr(device_type_str, "slug"):
-            device_type_str = device_type_str.slug
-        elif hasattr(device_type_str, "model"):
-            device_type_str = device_type_str.model
-
-        device_type_str = (device_type_str or "").lower()
-        platform_slug = (platform_slug or "").lower()
-
-        # simple mapping
-        mapping = {
-            "catalyst": "cisco_ios",
-            "router": "cisco_ios",
-            "nexus": "cisco_nxos",
-            "asa": "cisco_asa",
-            "firewall": "cisco_asa",
-        }
-
-        # decide based on platform or device_type string
-        for key, netmiko_type in mapping.items():
-            if key in platform_slug or key in device_type_str:
-                return netmiko_type
-
-        # last resort
-        return "autodetect"
+        platform = getattr(self.device, "platform", DevicePlatformChoices.UNKNOWN)
+        return NETMIKO_PLATFORM_MAP.get(platform, "autodetect")
 
     def run_command(self, command: str, timeout: int = 30) -> str:
         """
         Run a single show command and return its output.
         """
         with ConnectHandler(**self.conn_params) as conn:
-            output = conn.send_command(command, timeout=timeout)
+            output = conn.send_command(command)
             return output
 
     def send_config(self, commands: Iterable[str]) -> str:

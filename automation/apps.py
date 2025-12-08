@@ -5,4 +5,4 @@ class AutomationConfig(AppConfig):
     name = "automation"
 
     def ready(self):
-        import automation.tasks
+        import automation.scheduler

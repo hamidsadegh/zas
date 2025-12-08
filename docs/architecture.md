@@ -14,8 +14,9 @@ and can be deployed using Docker.
 ## Key Components
 
 ### Apps
-- `devices`: Core app managing devices, racks, areas, configurations, and interfaces
+- `dcim`: Core app managing devices, racks, areas, configurations, and interfaces
 - `automation`: Background tasks, device provisioning, backups
+      
 
 ### Models
 - `Organization` → `Sites` → `Areas` → `Racks` → `Devices` → `Interfaces` & `Configurations`

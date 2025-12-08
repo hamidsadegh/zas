@@ -135,7 +135,7 @@ class DevicePlatformChoices(ChoiceSet):
     FIREWALL = 'firewall'
     AP = 'ap'
     SERVER = 'server'
-    OTHER = 'other'
+    UNKNOWN = 'unknown'
 
     CHOICES = [
         (IOS, _('Cisco IOS Switch')),
@@ -145,7 +145,7 @@ class DevicePlatformChoices(ChoiceSet):
         (FIREWALL, _('Firewall')),
         (AP, _('Access Point')),
         (SERVER, _('Server')),
-        (OTHER, _('Other')),
+        (UNKNOWN, _('Unknown Platform')),
     ]
 
 

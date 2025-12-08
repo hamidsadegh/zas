@@ -20,7 +20,6 @@ __all__ = (
     "DeviceRole",
     "DeviceModule",
     "DevicePlatform",
-    "DeviceConfiguration",
     "DeviceRuntimeStatus",
 )
 
@@ -280,22 +279,6 @@ class Device(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.management_ip})"
-    
-
-class DeviceConfiguration(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    device = models.OneToOneField(
-        Device, on_delete=models.CASCADE, related_name="configuration"
-    )
-    config_text = models.TextField(help_text="Full configuration text")
-    last_updated = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        verbose_name = "Device Configuration"
-        verbose_name_plural = "Device Configurations"
-
-    def __str__(self):
-        return f"Configuration for {self.device.name}"
 
 
 class DeviceModule(models.Model):

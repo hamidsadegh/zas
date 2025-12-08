@@ -11,7 +11,7 @@ The `automation` module handles automated tasks such as reachability, backups, c
 ## Workflow
 Celery Task  →  Worker  →  Engines  →  DB Models
 
-- In Detail:
+- Device Reachability in Detail:
 Celery Beat (schedule) 
   → Celery Worker (task) 
     → automation.tasks.check_devices_reachability
@@ -21,6 +21,16 @@ Celery Beat (schedule)
             → ping/snmp/ssh/netconf checks
               → DeviceRuntimeStatus saved
           → JobRun.log + status updated
+
+- Configuration Backup:
+Celery Beat  →  Celery Worker →  automation.tasks.backup_device_config
+                                   ↓
+                             SSHEngine (Netmiko wrapper)
+                                   ↓
+                          Command Map (per platform/type)
+                                   ↓
+                      Save result in DeviceConfig model
+
 
 
 

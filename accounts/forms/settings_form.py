@@ -1,13 +1,7 @@
 from django import forms
 
 from accounts.models.system_settings import SystemSettings
-
-
-REACHABILITY_INTERVAL_CHOICES = (
-    (5, "Every 5 minutes"),
-    (10, "Every 10 minutes"),
-    (60, "Every hour"),
-)
+from accounts.choices import REACHABILITY_INTERVAL_CHOICES
 
 
 class BaseSystemSettingsForm(forms.ModelForm):
