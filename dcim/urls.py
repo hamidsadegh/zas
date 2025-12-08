@@ -1,4 +1,5 @@
 from django.urls import path
+
 from dcim.views.vlan_views import (
     VLANListView,
     VLANAddView,
@@ -15,6 +16,9 @@ from dcim.views.device_views import (
     devices_by_area,
     #rack_list,
     racks_by_area,
+    device_configuration_history,
+    device_configuration_diff,
+    device_configuration_visual_diff,
 )
 
 
@@ -22,6 +26,21 @@ urlpatterns = [
     # Devices
     path("devices/", DeviceListView.as_view(), name="device_list"),
     path("devices/<uuid:pk>/", DeviceDetailView.as_view(), name="device_detail"),
+    path(
+        "devices/<uuid:device_id>/configurations/",
+        device_configuration_history,
+        name="device_configuration_history",
+    ),
+    path(
+        "devices/<uuid:device_id>/configurations/diff/<uuid:config_id>/<uuid:other_id>/",
+        device_configuration_diff,
+        name="device_configuration_diff",
+    ),
+    path(
+        "devices/<uuid:device_id>/config/<uuid:config_id>/visual-diff/<uuid:other_id>/",
+        device_configuration_visual_diff,
+        name="device_configuration_visual_diff",
+    ),
 
     # VLANs
     path("vlans/", VLANListView.as_view(), name="vlan_list"),

@@ -1,0 +1,122 @@
+{% extends "core/base.html" %}
+
+{% block title %}Visual Configuration Diff – {{ device.name }}{% endblock %}
+
+{% block styles %}
+.visual-diff-wrapper {
+    width: 95%;
+    margin: 0 auto;
+}
+.detail-card {
+    background: var(--surface);
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+}
+.diff-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+}
+.diff-column {
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: auto;
+    max-height: 32rem;
+}
+.diff-column header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    background: #f8faff;
+}
+.diff-line {
+    display: grid;
+    grid-template-columns: 4rem 1fr;
+    gap: 0.5rem;
+    padding: 0.25rem 1rem;
+    font-family: "Fira Code", "SFMono-Regular", Menlo, monospace;
+    white-space: pre-wrap;
+}
+.diff-line .line-number {
+    color: var(--muted);
+}
+.diff-added {
+    background: #d4ffd4;
+}
+.diff-removed {
+    background: #ffd4d4;
+}
+.diff-changed {
+    background: #fff4d4;
+}
+.diff-context {
+    background: #ffffff;
+}
+.detail-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.config-link,
+.back-link {
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    padding: 0.4rem 1rem;
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+.tag {
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: #eef2ff;
+    color: var(--primary);
+}
+{% endblock %}
+
+{% block content %}
+<section class="visual-diff-wrapper">
+    <div class="detail-card">
+        <div class="detail-actions">
+            <div>
+                <p class="tag">Advanced Diff</p>
+                <h1 style="margin:0;">{{ device.name }}</h1>
+                <p style="margin:0;color:var(--muted);">
+                    {{ secondary_config.backup_time|date:"Y-m-d H:i" }} → {{ primary_config.backup_time|date:"Y-m-d H:i" }}
+                </p>
+            </div>
+            <div>
+                <a class="config-link" href="{% url 'device_configuration_diff' device.id primary_config.id secondary_config.id %}">Show raw unified diff</a>
+                <a class="back-link" href="{% url 'device_configuration_history' device.id %}">← History</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-card">
+        <div class="diff-grid">
+            <div class="diff-column">
+                <header>Old Configuration</header>
+                {% for left_line, left_class, _, _ in diff_rows %}
+                <div class="diff-line {{ left_class }}">
+                    <span class="line-number">{{ forloop.counter }}</span>
+                    <code>{{ left_line|default:""|escape }}</code>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="diff-column">
+                <header>New Configuration</header>
+                {% for _, _, right_line, right_class in diff_rows %}
+                <div class="diff-line {{ right_class }}">
+                    <span class="line-number">{{ forloop.counter }}</span>
+                    <code>{{ right_line|default:""|escape }}</code>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -133,10 +133,24 @@ class DeviceModuleSerializer(serializers.ModelSerializer):
 # -----------------------
 class DeviceConfigurationSerializer(serializers.ModelSerializer):
     device_name = serializers.CharField(source="device.name", read_only=True)
+    size = serializers.SerializerMethodField()
 
     class Meta:
         model = DeviceConfiguration
-        fields = ["id", "device", "device_name", "config_text", "last_updated"]
+        fields = [
+            "id",
+            "device",
+            "device_name",
+            "backup_time",
+            "success",
+            "error_message",
+            "config_text",
+            "size",
+        ]
+        read_only_fields = fields
+
+    def get_size(self, obj):
+        return len(obj.config_text or "")
 
 
 # -----------------------

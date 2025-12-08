@@ -120,6 +120,14 @@ class DeviceModuleAdmin(admin.ModelAdmin):
     search_fields = ("name",)
 
 
+@admin.register(DeviceConfiguration)
+class DeviceConfigurationAdmin(admin.ModelAdmin):
+    list_display = ("device", "backup_time", "success", "source")
+    list_filter = ("success", "source", "device__site")
+    search_fields = ("device__name",)
+    readonly_fields = ("config_text", "error_message", "backup_time")
+
+
 # -----------------------
 # Inline DeviceConfiguration for DeviceAdmin
 # -----------------------

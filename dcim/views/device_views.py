@@ -26,7 +26,6 @@ from dcim.models import (
 
 from ..serializers import (
     AreaSerializer,
-    DeviceConfigurationSerializer,
     DeviceModuleSerializer,
     DeviceRoleSerializer,
     DeviceSerializer,
@@ -36,6 +35,7 @@ from ..serializers import (
     SiteSerializer,
     VendorSerializer,
 )
+from automation.engine.diff_engine import generate_diff, generate_visual_diff
 from accounts.models.system_settings import SystemSettings
 from accounts.forms import OtherSettingsForm, ReachabilitySettingsForm, TacacsSettingsForm
 from accounts.services.settings_service import get_reachability_checks, get_system_settings
@@ -167,6 +167,18 @@ class DeviceDetailView(LoginRequiredMixin, DetailView):
         context['search_query'] = search_query
         context['sort_field'] = sort_field
         context['reachability_checks'] = get_reachability_checks(get_system_settings())
+        latest_config = (
+            DeviceConfiguration.objects.filter(device=device)
+            .order_by("-backup_time")
+            .first()
+        )
+        if latest_config:
+            preview_lines = (latest_config.config_text or "").splitlines()
+            context["latest_config"] = latest_config
+            context["latest_config_preview"] = "\n".join(preview_lines[:20])
+        else:
+            context["latest_config"] = None
+            context["latest_config_preview"] = ""
         return context
 
 
@@ -234,6 +246,96 @@ def areas_for_site(request):
             areas = Area.objects.none()
     data = [{"id": area.id, "name": area.name} for area in areas]
     return JsonResponse({"results": data})
+
+
+@login_required
+def device_configuration_history(request, device_id):
+    device = get_object_or_404(Device, id=device_id)
+    queryset = DeviceConfiguration.objects.filter(device=device).order_by("-backup_time")
+    configurations = list(queryset)
+    config_rows = []
+    previous = None
+    for config in configurations:
+        config_rows.append({"config": config, "previous": previous})
+        previous = config
+    focus_id = request.GET.get("focus")
+    selected_config = None
+    if focus_id:
+        try:
+            uuid.UUID(str(focus_id))
+            selected_config = queryset.filter(id=focus_id).first()
+        except (ValueError, TypeError):
+            selected_config = None
+
+    if request.method == "POST":
+        selected = request.POST.getlist("compare")
+        if len(selected) == 2:
+            return redirect(
+                "device_configuration_diff",
+                device_id=device.id,
+                config_id=selected[0],
+                other_id=selected[1],
+            )
+        messages.error(request, "Select two configuration backups to compare.")
+
+    context = {
+        "device": device,
+        "config_rows": config_rows,
+        "selected_config": selected_config,
+    }
+    return render(request, "dcim/device_configuration_history.html", context)
+
+
+@login_required
+def device_configuration_diff(request, device_id, config_id, other_id):
+    device = get_object_or_404(Device, id=device_id)
+    primary = get_object_or_404(
+        DeviceConfiguration, id=config_id, device=device
+    )
+    secondary = get_object_or_404(
+        DeviceConfiguration, id=other_id, device=device
+    )
+    diff_text = generate_diff(secondary.config_text, primary.config_text)
+    visual = generate_visual_diff(secondary.config_text, primary.config_text)
+    context = {
+        "device": device,
+        "primary_config": primary,
+        "secondary_config": secondary,
+        "diff": diff_text,
+        "visual_diff": visual,
+    }
+    return render(request, "dcim/device_configuration_diff.html", context)
+
+
+@login_required
+def device_configuration_visual_diff(request, device_id, config_id, other_id):
+    device = get_object_or_404(Device, id=device_id)
+    primary = get_object_or_404(
+        DeviceConfiguration, id=config_id, device=device
+    )
+    secondary = get_object_or_404(
+        DeviceConfiguration, id=other_id, device=device
+    )
+    visual = generate_visual_diff(secondary.config_text, primary.config_text)
+    paired = list(
+        zip(
+            visual["left_lines"],
+            visual["left_classes"],
+            visual["right_lines"],
+            visual["right_classes"],
+        )
+    )
+    context = {
+        "device": device,
+        "primary_config": primary,
+        "secondary_config": secondary,
+        "diff_rows": paired,
+    }
+    return render(
+        request,
+        "dcim/device_configuration_visual_diff.html",
+        context,
+    )
 
 
 # -----------------------
@@ -320,12 +422,6 @@ class DeviceTypeViewSet(viewsets.ModelViewSet):
 class InterfaceViewSet(viewsets.ModelViewSet):
     queryset = Interface.objects.all()
     serializer_class = InterfaceSerializer
-    permission_classes = [IsAuthenticated]
-
-
-class DeviceConfigurationViewSet(viewsets.ModelViewSet):
-    queryset = DeviceConfiguration.objects.all()
-    serializer_class = DeviceConfigurationSerializer
     permission_classes = [IsAuthenticated]
 
 

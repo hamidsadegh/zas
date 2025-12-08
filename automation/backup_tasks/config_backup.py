@@ -8,9 +8,11 @@ from dcim.models import Device
 from dcim.models.device_config import DeviceConfiguration
 from automation.engine.ssh_engine import SSHEngine
 from automation.choices import BACKUP_COMMAND_MAP, DevicePlatformChoices
+from automation.storage.git_storage import ConfigBackupGitStorage
 
 
 logger = logging.getLogger(__name__)
+git_storage = ConfigBackupGitStorage()
 
 
 @shared_task
@@ -45,14 +47,14 @@ def backup_device_config(device_id: str):
 
     try:
         config_text = ssh.run_command(command)
-
-        DeviceConfiguration.objects.create(
+        backup = DeviceConfiguration.objects.create(
             device=device,
             backup_time=timezone.now(),
             config_text=config_text,
             success=True,
             error_message=None,
         )
+        git_storage.store(device, backup.config_text, backup.backup_time)
 
         logger.info(f"Backup OK: {device.name}")
         return "ok"

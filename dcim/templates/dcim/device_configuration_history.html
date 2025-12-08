@@ -1,0 +1,142 @@
+{% extends "core/base.html" %}
+
+{% block title %}Configuration History – {{ device.name }}{% endblock %}
+
+{% block styles %}
+.device-detail-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 95%;
+    margin: 0 auto;
+}
+.detail-card {
+    background: var(--surface);
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+}
+.config-box {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 1rem;
+    border-radius: 16px;
+    white-space: pre-wrap;
+}
+.tag {
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: #eef2ff;
+    color: var(--primary);
+}
+.config-link {
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    padding: 0.3rem 0.8rem;
+    text-decoration: none;
+    font-weight: 600;
+}
+.detail-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.back-link {
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    padding: 0.4rem 1rem;
+    text-decoration: none;
+}
+.copy-btn {
+    border: none;
+    border-radius: 999px;
+    padding: 0.45rem 1rem;
+    background: var(--primary);
+    color: #fff;
+    font-weight: 600;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+th, td {
+    padding: 0.6rem;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+}
+{% endblock %}
+
+{% block content %}
+<section class="device-detail-wrapper">
+    <div class="detail-card">
+        <div class="detail-actions">
+            <div>
+                <p class="tag">Configuration History</p>
+                <h1 style="margin: 0;">{{ device.name }}</h1>
+            </div>
+            <a href="{% url 'device_detail' device.id %}" class="back-link">← Back to device</a>
+        </div>
+
+        {% if selected_config %}
+            <h3>Backup from {{ selected_config.backup_time|date:"Y-m-d H:i" }}</h3>
+            <pre class="config-box">{{ selected_config.config_text|default:""|escape }}</pre>
+        {% else %}
+            <p>Select a backup entry below to view its content.</p>
+        {% endif %}
+    </div>
+
+    <div class="detail-card">
+        <form method="post">
+            {% csrf_token %}
+            <table class="interfaces-card">
+                <thead>
+                    <tr>
+                        <th>Compare</th>
+                        <th>Timestamp</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in config_rows %}
+                    {% with config=row.config previous=row.previous %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="compare" value="{{ config.id }}">
+                        </td>
+                        <td>{{ config.backup_time|date:"Y-m-d H:i" }}</td>
+                        <td>
+                            {% if config.success %}
+                                <span class="tag" style="background:#dcfce7;color:#166534;">Success</span>
+                            {% else %}
+                                <span class="tag" style="background:#fee2e2;color:#991b1b;">Failed</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a class="config-link" href="?focus={{ config.id }}">View</a>
+                            {% if selected_config and selected_config.id != config.id %}
+                                <a class="config-link" href="{% url 'device_configuration_visual_diff' device.id selected_config.id config.id %}">Advanced diff</a>
+                            {% elif previous %}
+                                <a class="config-link" href="{% url 'device_configuration_visual_diff' device.id config.id previous.id %}">Diff against previous</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endwith %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align:center;">No configuration backups found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if config_rows %}
+            <div class="config-actions" style="margin-top:1rem;">
+                <button type="submit" class="copy-btn">Compare Selected</button>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</section>
+{% endblock %}

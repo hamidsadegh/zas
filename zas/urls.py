@@ -3,6 +3,7 @@ from django.urls import path, include
 from django.shortcuts import redirect
 from django.contrib.auth import views as auth_views
 from dcim.views import device_views
+from dcim.api_views import DeviceConfigurationViewSet
 from accounts.views.system_setting_view import SystemSettingsView
 from rest_framework import routers
 
@@ -19,7 +20,11 @@ router.register(r"deviceroles", device_views.DeviceRoleViewSet)
 router.register(r"vendors", device_views.VendorViewSet)
 router.register(r"devicetypes", device_views.DeviceTypeViewSet)
 router.register(r"interfaces", device_views.InterfaceViewSet)
-router.register(r"deviceconfigurations", device_views.DeviceConfigurationViewSet)
+router.register(
+    r"devices/(?P<device_id>[^/.]+)/configurations",
+    DeviceConfigurationViewSet,
+    basename="device-configurations",
+)
 router.register(r"modules", device_views.DeviceModuleViewSet)
 
 # -----------------------

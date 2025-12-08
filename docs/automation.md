@@ -11,6 +11,9 @@ The `automation` module handles automated tasks such as reachability, backups, c
 ## Workflow
 Celery Task  →  Worker  →  Engines  →  DB Models
 
+- Dependencies:
+  - Install GitPython for Git storage: `pip install gitpython`
+
 - Device Reachability in Detail:
 Celery Beat (schedule) 
   → Celery Worker (task) 
@@ -30,7 +33,6 @@ Celery Beat  →  Celery Worker →  automation.scheduler.schedule_configuration
                           Command Map (per platform/type)
                                    ↓
                       Save result in DeviceConfig model
-
 
 
 

@@ -280,6 +280,15 @@ class Device(models.Model):
     def __str__(self):
         return f"{self.name} ({self.management_ip})"
 
+    def clean(self):
+        super().clean()
+        if self.platform:
+            valid_platforms = {choice[0] for choice in DevicePlatformChoices.CHOICES}
+            if self.platform not in valid_platforms:
+                raise ValidationError(
+                    {"platform": f"Platform '{self.platform}' is not supported."}
+                )
+
 
 class DeviceModule(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

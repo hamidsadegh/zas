@@ -95,6 +95,26 @@ main {
     gap: 0.35rem;
     box-shadow: var(--shadow);
 }
+.config-meta {
+    margin: 0 0 0.5rem;
+    color: var(--muted);
+}
+.config-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 0.8rem;
+}
+.config-link {
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    padding: 0.4rem 1rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+.config-link.secondary {
+    background: var(--surface-strong, #f8faff);
+}
 
 .interfaces-card table {
     width: 100%;
@@ -269,13 +289,25 @@ main {
     <div class="detail-card">
         <div class="config-toolbar">
             <h3 style="margin: 0;">Configuration</h3>
+            {% if latest_config %}
             <button type="button" class="copy-btn" data-copy-target="#device-config">
                 ⧉ Copy
             </button>
+            {% endif %}
         </div>
-        <div class="config-box" id="device-config">
-            {{ device.configuration.config_text|default:"No configuration available." }}
-        </div>
+        {% if latest_config %}
+            <p class="config-meta">
+                Last backup: {{ latest_config.backup_time|date:"Y-m-d H:i" }} ·
+                {% if latest_config.success %}Success{% else %}Failed{% endif %}
+            </p>
+            <pre class="config-box" id="device-config">{{ latest_config_preview|escape }}</pre>
+            <div class="config-actions">
+                <a class="config-link" href="{% url 'device_configuration_history' device.id %}?focus={{ latest_config.id }}">View full configuration</a>
+                <a class="config-link secondary" href="{% url 'device_configuration_history' device.id %}">History</a>
+            </div>
+        {% else %}
+            <p>No configuration backups recorded.</p>
+        {% endif %}
     </div>
 
     <div class="detail-card interfaces-card">
