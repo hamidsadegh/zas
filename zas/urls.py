@@ -1,31 +1,9 @@
 from django.contrib import admin
-from django.urls import path, include
-from django.shortcuts import redirect
 from django.contrib.auth import views as auth_views
+from django.urls import include, path
+
 from dcim.views import device_views
-from dcim.api_views import DeviceConfigurationViewSet
 from accounts.views.system_setting_view import SystemSettingsView
-from rest_framework import routers
-
-
-# -----------------------
-# DRF Router
-# -----------------------
-router = routers.DefaultRouter()
-router.register(r"sites", device_views.SiteViewSet)
-router.register(r"devices", device_views.DeviceViewSet)
-router.register(r"areas", device_views.AreaViewSet)
-router.register(r"racks", device_views.RackViewSet)
-router.register(r"deviceroles", device_views.DeviceRoleViewSet)
-router.register(r"vendors", device_views.VendorViewSet)
-router.register(r"devicetypes", device_views.DeviceTypeViewSet)
-router.register(r"interfaces", device_views.InterfaceViewSet)
-router.register(
-    r"devices/(?P<device_id>[^/.]+)/configurations",
-    DeviceConfigurationViewSet,
-    basename="device-configurations",
-)
-router.register(r"modules", device_views.DeviceModuleViewSet)
 
 # -----------------------
 # HTML Views URL patterns
@@ -47,12 +25,10 @@ html_patterns = [
 # -----------------------
 urlpatterns = [
     path("logout/", auth_views.LogoutView.as_view(next_page="/admin/login/"), name="logout"),
-    path("", include("core.urls")),             # Core app URLs (dashboard as home)
-    path("admin/", admin.site.urls),            # /admin/login/ is default login
-    path("api/", include(router.urls)),         # DRF API
-    path("", include(html_patterns)),           # HTML views
-    path("dcim/", include("dcim.urls")),
+    path("", include("core.urls")),                     # Core app URLs (dashboard as home)
+    path("admin/", admin.site.urls),                    # /admin/login/ is default login
+    path("api/", include("api.urls")),                  # DRF API (versioned)
+    path("", include(html_patterns)),                   # HTML views
+    path("dcim/", include("dcim.urls")),                # DCIM app URLs
     path("api-auth/", include("rest_framework.urls")),  # DRF login/logout for browsable API
-    path("api/automation/", include("automation.urls")),
-
 ]

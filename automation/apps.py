@@ -6,3 +6,4 @@ class AutomationConfig(AppConfig):
 
     def ready(self):
         import automation.scheduler
+        import automation.signals

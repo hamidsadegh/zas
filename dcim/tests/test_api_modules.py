@@ -1,6 +1,6 @@
 import pytest
 from dcim.models import Vendor, Device, Organization, Area, Site, DeviceModule
-from dcim.serializers import DeviceSerializer
+from api.v1.dcim.serializers import DeviceSerializer
 
 
 @pytest.mark.django_db

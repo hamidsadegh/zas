@@ -4,7 +4,7 @@ import pytest # type: ignore
 from rest_framework import serializers # type: ignore
 
 from dcim.models import Area, Device, DeviceType, Organization, Rack, Vendor, Site
-from dcim.serializers import DeviceSerializer
+from api.v1.dcim.serializers import DeviceSerializer
 
 
 def _make_site(name, organization):

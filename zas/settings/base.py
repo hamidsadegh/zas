@@ -129,30 +129,26 @@ INSTALLED_APPS = [
 
 ]
 
-CRONJOBS = [
-    # Every 15 minutes: collect telemetry
-    # ('*/15 * * * *', 'automation.tasks.collect_all_telemetry'),
-    # Every night at 2 AM: run configuration backups
-    # ('5 * * * *', 'automation.scheduler.schedule_configuration_backups'),
-]
 
 # Celery Configuration Options
 CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'  # if using Redis
 CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
-CELERY_BEAT_SCHEDULE = {
-    'check-reachability-poller': {
-        'task': 'automation.scheduler.check_devices_reachability',
-        'schedule': 60.0,  # poll settings every minute; actual interval controlled in System Settings
-    },
-    'configuration-backup-scheduler': {
-        'task': 'automation.scheduler.schedule_configuration_backups',
-        'schedule': 60.0,  # run every hour; actual interval controlled in System Settings
-    },
-}
+CELERY_TIMEZONE = 'Europe/Berlin'
+CELERY_ENABLE_UTC = False
 
+# Tell Celery beat to load schedules from database
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers.DatabaseScheduler'
+
+# Authentication settings
 LOGIN_URL = '/admin/login/'
 LOGOUT_REDIRECT_URL = '/admin/login/'
 
+AUTHENTICATION_BACKENDS = [
+    'accounts.auth_backends.IseTacacsBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_METADATA_CLASS': 'rest_framework.metadata.SimpleMetadata',
     'DEFAULT_PERMISSION_CLASSES': [
@@ -160,10 +156,6 @@ REST_FRAMEWORK = {
     ],
 }
 
-AUTHENTICATION_BACKENDS = [
-    'accounts.auth_backends.IseTacacsBackend',
-    'django.contrib.auth.backends.ModelBackend',
-]
 
 
 MIDDLEWARE = [

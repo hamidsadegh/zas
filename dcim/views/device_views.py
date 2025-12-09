@@ -8,9 +8,6 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count
-from rest_framework import filters, viewsets
-from rest_framework.permissions import IsAuthenticated
-
 from dcim.models import (
     Area,
     Device,
@@ -22,18 +19,6 @@ from dcim.models import (
     Rack,
     Site,
     Vendor,
-)
-
-from ..serializers import (
-    AreaSerializer,
-    DeviceModuleSerializer,
-    DeviceRoleSerializer,
-    DeviceSerializer,
-    DeviceTypeSerializer,
-    InterfaceSerializer,
-    RackSerializer,
-    SiteSerializer,
-    VendorSerializer,
 )
 from automation.engine.diff_engine import generate_diff, generate_visual_diff
 from accounts.models.system_settings import SystemSettings
@@ -336,99 +321,3 @@ def device_configuration_visual_diff(request, device_id, config_id, other_id):
         "dcim/device_configuration_visual_diff.html",
         context,
     )
-
-
-# -----------------------
-# DRF API ViewSets
-# -----------------------
-class SiteViewSet(viewsets.ModelViewSet):
-    queryset = Site.objects.select_related("organization")
-    serializer_class = SiteSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ["name", "organization__name"]
-    ordering_fields = ["name", "organization__name"]
-
-
-class DeviceViewSet(viewsets.ModelViewSet):
-    queryset = Device.objects.select_related(
-        "site",
-        "site__organization",
-        "area",
-        "vendor",
-        "device_type",
-        "role",
-        "rack",
-        "runtime",
-    ).prefetch_related("modules__vendor")
-    serializer_class = DeviceSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = [
-        "name",
-        "management_ip",
-        "serial_number",
-        "inventory_number",
-        "site__name",
-        "site__organization__name",
-    ]
-    ordering_fields = ["name", "management_ip", "created_at", "site__name"]
-
-
-class AreaViewSet(viewsets.ModelViewSet):
-    queryset = Area.objects.select_related("site", "site__organization", "parent")
-    serializer_class = AreaSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ["name", "description", "site__name"]
-    ordering_fields = ["name", "site__name"]
-
-
-class RackViewSet(viewsets.ModelViewSet):
-    queryset = Rack.objects.select_related("area", "area__site")
-    serializer_class = RackSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ["name", "area__name", "area__site__name"]
-    ordering_fields = ["name", "area", "area__site__name"]
-
-    def get_queryset(self):
-        queryset = Rack.objects.all()
-        area_id = self.request.query_params.get("area")
-        if area_id:
-            queryset = queryset.filter(area_id=area_id)
-        return queryset
-
-
-class DeviceRoleViewSet(viewsets.ModelViewSet):
-    queryset = DeviceRole.objects.all()
-    serializer_class = DeviceRoleSerializer
-    permission_classes = [IsAuthenticated]
-
-
-class VendorViewSet(viewsets.ModelViewSet):
-    queryset = Vendor.objects.all()
-    serializer_class = VendorSerializer
-    permission_classes = [IsAuthenticated]
-
-
-
-class DeviceTypeViewSet(viewsets.ModelViewSet):
-    queryset = DeviceType.objects.all()
-    serializer_class = DeviceTypeSerializer
-    permission_classes = [IsAuthenticated]
-
-
-class InterfaceViewSet(viewsets.ModelViewSet):
-    queryset = Interface.objects.all()
-    serializer_class = InterfaceSerializer
-    permission_classes = [IsAuthenticated]
-
-
-class DeviceModuleViewSet(viewsets.ModelViewSet):
-    queryset = DeviceModule.objects.select_related("device", "vendor")
-    serializer_class = DeviceModuleSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ["name", "serial_number", "device__name", "vendor__name"]
-    ordering_fields = ["name", "serial_number", "device"]
