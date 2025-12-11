@@ -4,7 +4,7 @@ from typing import Any, Dict, Iterable
 from netmiko import ConnectHandler
 
 from dcim.models import Device
-from accounts.models import SiteCredential
+from accounts.models import SSHCredential
 from automation.choices import NETMIKO_PLATFORM_MAP, DevicePlatformChoices
 
 class SSHEngine:
@@ -20,12 +20,15 @@ class SSHEngine:
         self.device = device
 
         # Fetch site credentials
-        try:
-            credential = SiteCredential.objects.select_related("site").get(site=device.site)
-        except SiteCredential.DoesNotExist as exc:
-            raise SiteCredential.DoesNotExist(
-                f"No credentials configured for site '{device.site.name}'."
-            ) from exc
+        credential = (
+            SSHCredential.objects.select_related("site")
+            .filter(site=device.site)
+            .first()
+        )
+        if not credential:
+            raise SSHCredential.DoesNotExist(
+                f"No SSH credentials configured for site '{device.site.name}'."
+            )
         self.conn_params: Dict[str, Any] = {
             "device_type": self._netmiko_platform(),
             "host": getattr(device, "management_ip", None),

@@ -9,6 +9,8 @@ netmiko
 pyasn1==0.4.8
 pysnmp==4.4.12
 gitpython>=3.1.0
+channels>=4.3.1
+asyncssh>=2.21.0
 tacacs_plus
 paramiko
 openpyxl

@@ -181,33 +181,12 @@ main {
     margin-top: 0.2rem;
 }
 
-.snmp-config {
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px dashed var(--border);
-}
-
-.snmp-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1rem;
-}
-
-.pill-note {
-    font-size: 0.75rem;
-    padding: 0.2rem 0.5rem;
-    border-radius: 999px;
-    background: #eef2ff;
-    color: var(--primary);
-    display: inline-flex;
-}
-
 .meta-line {
     color: var(--muted);
     font-size: 0.85rem;
 }
 
-.other-hint {
+.superusers-hint {
     margin: 0.35rem 0 0;
     color: var(--muted);
 }
@@ -352,89 +331,6 @@ main {
                 </div>
             </div>
 
-            <div class="snmp-config">
-                <div class="section-heading">
-                    <div>
-                        <p class="tag">SNMP</p>
-                        <h3 style="margin: 0;">SNMP Configuration</h3>
-                        <p style="margin: 0; color: var(--muted);">Credentials used by reachability checks.</p>
-                    </div>
-                    <div class="pill-note">Secured in database</div>
-                </div>
-                <div class="snmp-grid">
-                    <div class="form-field">
-                        <label for="{{ reachability_form.snmp_version.id_for_label }}">Version</label>
-                        {{ reachability_form.snmp_version }}
-                        {% for error in reachability_form.snmp_version.errors %}
-                            <div class="field-error">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    <div class="form-field">
-                        <label for="{{ reachability_form.snmp_port.id_for_label }}">Port</label>
-                        {{ reachability_form.snmp_port }}
-                        {% for error in reachability_form.snmp_port.errors %}
-                            <div class="field-error">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    <div class="form-field">
-                        <label for="{{ reachability_form.snmp_community.id_for_label }}">Community (v2c)</label>
-                        {{ reachability_form.snmp_community }}
-                        <small style="color: var(--muted);">Only used for SNMPv2c.</small>
-                        {% for error in reachability_form.snmp_community.errors %}
-                            <div class="field-error">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    <div class="form-field">
-                        <label for="{{ reachability_form.snmp_security_level.id_for_label }}">Security Level (v3)</label>
-                        {{ reachability_form.snmp_security_level }}
-                        {% for error in reachability_form.snmp_security_level.errors %}
-                            <div class="field-error">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    <div class="form-field">
-                        <label for="{{ reachability_form.snmp_username.id_for_label }}">Username</label>
-                        {{ reachability_form.snmp_username }}
-                        {% for error in reachability_form.snmp_username.errors %}
-                            <div class="field-error">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    <div class="form-field">
-                        <label for="{{ reachability_form.snmp_auth_protocol.id_for_label }}">Auth Protocol</label>
-                        {{ reachability_form.snmp_auth_protocol }}
-                        {% for error in reachability_form.snmp_auth_protocol.errors %}
-                            <div class="field-error">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    <div class="form-field">
-                        <label for="{{ reachability_form.snmp_auth_key.id_for_label }}">Auth Passphrase</label>
-                        <div class="password-wrapper">
-                            {{ reachability_form.snmp_auth_key }}
-                            <button type="button" class="toggle-visibility" data-target="#{{ reachability_form.snmp_auth_key.id_for_label }}">Show</button>
-                        </div>
-                        {% for error in reachability_form.snmp_auth_key.errors %}
-                            <div class="field-error">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    <div class="form-field">
-                        <label for="{{ reachability_form.snmp_priv_protocol.id_for_label }}">Privacy Protocol</label>
-                        {{ reachability_form.snmp_priv_protocol }}
-                        {% for error in reachability_form.snmp_priv_protocol.errors %}
-                            <div class="field-error">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    <div class="form-field">
-                        <label for="{{ reachability_form.snmp_priv_key.id_for_label }}">Privacy Passphrase</label>
-                        <div class="password-wrapper">
-                            {{ reachability_form.snmp_priv_key }}
-                            <button type="button" class="toggle-visibility" data-target="#{{ reachability_form.snmp_priv_key.id_for_label }}">Show</button>
-                        </div>
-                        {% for error in reachability_form.snmp_priv_key.errors %}
-                            <div class="field-error">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">Save Reachability</button>
             </div>
@@ -442,17 +338,17 @@ main {
 
         <form method="post" class="settings-form section-card" novalidate>
             {% csrf_token %}
-            <input type="hidden" name="section" value="other">
+            <input type="hidden" name="section" value="superusers">
             <div class="section-heading">
                 <div>
-                    <p class="tag">Other Settings</p>
+                    <p class="tag">Superusers Settings</p>
                     <h2 style="margin: 0;">Local Access &amp; Future Settings</h2>
                     <p style="margin: 0; color: var(--muted);">Fallback controls and space for upcoming configuration.</p>
                 </div>
             </div>
 
             <div class="toggle-field secondary">
-                {{ other_form.allow_local_superusers }}
+                {{ superusers_form.allow_local_superusers }}
                 <div>
                     <strong>Allow Local Superusers</strong>
                     <p style="margin: 0; color: var(--muted); font-size: 0.9rem;">
@@ -460,14 +356,14 @@ main {
                     </p>
                 </div>
             </div>
-            {% for error in other_form.allow_local_superusers.errors %}
+            {% for error in superusers_form.allow_local_superusers.errors %}
                 <div class="field-error">{{ error }}</div>
             {% endfor %}
 
-            <p class="other-hint">More settings will appear here as they are added.</p>
+            <p class="superusers-hint">More settings will appear here as they are added.</p>
 
             <div class="form-actions">
-                <button type="submit" class="btn btn-primary">Save Other Settings</button>
+                <button type="submit" class="btn btn-primary">Save Superusers Settings</button>
             </div>
         </form>
     </div>

@@ -50,7 +50,12 @@ class IseTacacsBackend(ModelBackend):
             return super().authenticate(request, username=username, password=password, **kwargs)
 
         if ok:
-            return self._sync_shadow_user(username, groups, config)
+            user = self._sync_shadow_user(username, groups, config)
+             # 🔐 Store TACACS password in session for SSH/CLI terminal
+            if request is not None:
+                request.session["tacacs_password"] = password
+
+            return user
 
         # TACACS explicitly rejected the credentials.
         if config.allow_local_superusers:

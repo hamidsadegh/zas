@@ -6,7 +6,7 @@ from automation.workers.backup_worker import run_backup_job
 from automation.workers.reachability_worker import run_reachability_job
 
 
-def execute_job(job_run: JobRun, snmp_config=None, reachability_checks=None, system_settings=None):
+def execute_job(job_run: JobRun, reachability_checks=None, system_settings=None):
     """
     Delegates a JobRun to the correct worker based on job_type.
     Updates JobRun lifecycle fields.
@@ -27,7 +27,6 @@ def execute_job(job_run: JobRun, snmp_config=None, reachability_checks=None, sys
         elif job.job_type == "reachability":
             log = run_reachability_job(
                 job_run=job_run,
-                snmp_config=snmp_config,
                 reachability_checks=reachability_checks,
                 system_settings=system_settings,
             )

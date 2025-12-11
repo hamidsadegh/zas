@@ -9,7 +9,6 @@ from automation.models import AutomationJob, JobRun
 from automation.workers.job_runner import execute_job
 from accounts.services.settings_service import (
     get_reachability_checks,
-    get_snmp_config,
     get_system_settings,
 )
 
@@ -71,10 +70,9 @@ def check_devices_reachability(tags: list = None):
 
     # Delegate the actual execution to the job runner worker
     execute_job(
-        job_run, 
-        snmp_config=get_snmp_config(settings), 
+        job_run,
         reachability_checks=checks,
-        system_settings=settings
+        system_settings=settings,
     )
 
     logger.info("%s: reachability job triggered for tags: %s.", now, tags)

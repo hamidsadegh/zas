@@ -117,6 +117,7 @@ INSTALLED_APPS = [
 
     # Third-party apps
     'rest_framework',
+    'channels',
 
     # Local apps
     'core',
@@ -186,7 +187,19 @@ TEMPLATES =[
     },
 ]
 
+ASGI_APPLICATION = 'zas.asgi.application'
 WSGI_APPLICATION = 'zas.wsgi.application'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [
+                env("REDIS_URL", default="redis://127.0.0.1:6379/1"),
+            ],
+        },
+    },
+}
 
 
 # Database

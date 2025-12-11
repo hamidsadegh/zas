@@ -2,10 +2,9 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, redirect
 from django.views import View
-from accounts.models.system_settings import SystemSettings
 from accounts.services.settings_service import get_system_settings
 from accounts.forms.settings_form import (
-    OtherSettingsForm,
+    AllowLocalSuperusersForm,
     ReachabilitySettingsForm,
     TacacsSettingsForm,
 )
@@ -22,7 +21,7 @@ class SystemSettingsView(LoginRequiredMixin, View):
             "tacacs_form": forms.get("tacacs_form") or TacacsSettingsForm(instance=settings_obj),
             "reachability_form": forms.get("reachability_form")
             or ReachabilitySettingsForm(instance=settings_obj),
-            "other_form": forms.get("other_form") or OtherSettingsForm(instance=settings_obj),
+            "superusers_form": forms.get("superusers_form") or AllowLocalSuperusersForm(instance=settings_obj),
             "settings_obj": settings_obj,
         }
 
@@ -36,7 +35,7 @@ class SystemSettingsView(LoginRequiredMixin, View):
 
         tacacs_form = TacacsSettingsForm(instance=settings_obj)
         reachability_form = ReachabilitySettingsForm(instance=settings_obj)
-        other_form = OtherSettingsForm(instance=settings_obj)
+        superusers_form = AllowLocalSuperusersForm(instance=settings_obj)
 
         if section == "tacacs":
             tacacs_form = TacacsSettingsForm(request.POST, instance=settings_obj)
@@ -50,11 +49,11 @@ class SystemSettingsView(LoginRequiredMixin, View):
                 reachability_form.save()
                 messages.success(request, "Reachability settings saved.")
                 return redirect("system_settings")
-        elif section == "other":
-            other_form = OtherSettingsForm(request.POST, instance=settings_obj)
-            if other_form.is_valid():
-                other_form.save()
-                messages.success(request, "Other settings saved.")
+        elif section == "superusers":
+            superusers_form = AllowLocalSuperusersForm(request.POST, instance=settings_obj)
+            if superusers_form.is_valid():
+                superusers_form.save()
+                messages.success(request, "Superusers settings saved.")
                 return redirect("system_settings")
         else:
             messages.error(request, "Unknown settings section.")
@@ -68,6 +67,6 @@ class SystemSettingsView(LoginRequiredMixin, View):
                 settings_obj,
                 tacacs_form=tacacs_form,
                 reachability_form=reachability_form,
-                other_form=other_form,
+                superusers_form=superusers_form,
             ),
         )

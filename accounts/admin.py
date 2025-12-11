@@ -1,7 +1,8 @@
 # accounts/admin.py
 from django.contrib import admin
-from accounts.models.site_credentials import SiteCredential
+
 from accounts.models.system_settings import SystemSettings
+from .admin_credentials import *  # noqa
 
 
 @admin.register(SystemSettings)
@@ -28,7 +29,6 @@ class SystemSettingsAdmin(admin.ModelAdmin):
             "Reachability Settings",
             {
                 "fields": SystemSettings.REACHABILITY_FIELDS
-                + SystemSettings.SNMP_FIELDS
                 + ("reachability_last_run",),
                 "description": "Periodic device checks.",
             },
@@ -36,14 +36,13 @@ class SystemSettingsAdmin(admin.ModelAdmin):
         (
             "Other Settings",
             {
-                "fields": SystemSettings.OTHER_FIELDS + ("updated_at",),
+                "fields": SystemSettings.ALLOW_LOCAL_SUPERUSERS + ("updated_at",),
                 "description": "Miscellaneous and future settings.",
             },
         ),
     )
 
+    # Prevent addition of multiple instances
+    def has_add_permission(self, request):
+        return False
 
-@admin.register(SiteCredential)
-class SiteCredentialAdmin(admin.ModelAdmin):
-    list_display = ("site", "ssh_username", "ssh_port")
-    search_fields = ("site__name", "ssh_username")

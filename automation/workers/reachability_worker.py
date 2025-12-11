@@ -1,5 +1,3 @@
-
-from datetime import timedelta
 from django.utils import timezone
 
 from automation.engine.reachability_engine import ReachabilityEngine
@@ -7,7 +5,7 @@ from dcim.models import Device
 from accounts.services.settings_service import update_reachability_last_run
 
 
-def run_reachability_job(job_run, snmp_config, reachability_checks, system_settings):
+def run_reachability_job(job_run, reachability_checks, system_settings):
     """
     Executes reachability verification (ping, snmp, ssh, netconf)
     for the devices in JobRun.
@@ -29,7 +27,6 @@ def run_reachability_job(job_run, snmp_config, reachability_checks, system_setti
         check_snmp=reachability_checks.get("snmp"),
         check_ssh=reachability_checks.get("ssh"),
         check_netconf=reachability_checks.get("netconf"),
-        snmp_config=snmp_config,
     )
 
     # Format log messages

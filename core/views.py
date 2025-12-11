@@ -8,6 +8,18 @@ from dcim.models.interface import Interface
 from django.views import View
 
 
+# TEMP BEGIN
+# core/views.py
+from django.http import JsonResponse
+
+def debug_session(request):
+    return JsonResponse({
+        "user": request.user.username if request.user.is_authenticated else None,
+        "has_tacacs_password": "tacacs_password" in request.session,
+    })
+# TEMP END
+
+
 # -----------------------
 # Home View
 # -----------------------

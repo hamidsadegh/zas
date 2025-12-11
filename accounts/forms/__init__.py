@@ -2,12 +2,12 @@ from .settings_form import (
     BaseSystemSettingsForm,
     TacacsSettingsForm,
     ReachabilitySettingsForm,
-    OtherSettingsForm,
+    AllowLocalSuperusersForm,
 )
 
 __all__ = [
     "BaseSystemSettingsForm",
     "TacacsSettingsForm",
     "ReachabilitySettingsForm",
-    "OtherSettingsForm",
+    "AllowLocalSuperusersForm",
 ]
