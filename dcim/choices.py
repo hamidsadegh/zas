@@ -71,6 +71,17 @@ class RackDimensionUnitChoices(ChoiceSet):
     )
 
 
+class RackWeightUnitChoices(ChoiceSet):
+
+    UNIT_KILOGRAM = 'kg'
+    UNIT_POUND = 'lb'
+
+    CHOICES = (
+        (UNIT_KILOGRAM, _('Kilograms')),
+        (UNIT_POUND, _('Pounds')),
+    )
+
+
 class RackElevationDetailRenderChoices(ChoiceSet):
 
     RENDER_JSON = 'json'

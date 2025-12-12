@@ -11,6 +11,7 @@ from dcim.choices import (
     RackAirflowChoices,
     DeviceFaceChoices,
     RackDimensionUnitChoices,
+    RackWeightUnitChoices,
     RackFormFactorChoices,
 )
 from dcim.models import Area
@@ -98,7 +99,7 @@ class RackBase(models.Model):
     weight_unit = models.CharField(
         verbose_name=_('weight unit'),
         max_length=50,
-        choices=RackDimensionUnitChoices,
+        choices=RackWeightUnitChoices,
         blank=True,
         null=True
     )
@@ -206,10 +207,8 @@ class Rack(RackBase):
     )
     area = models.ForeignKey(
         Area,
-        on_delete=models.SET_NULL,
+        on_delete=models.CASCADE,
         related_name='racks',
-        blank=True,
-        null=True
     )
     status = models.CharField(
         verbose_name=_('status'),
