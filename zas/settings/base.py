@@ -9,7 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Initialize environment variables
 env = Env()
-env.read_env(os.path.join(BASE_DIR, ".env"))
+env.read_env(os.path.join(BASE_DIR, '.env'))
  # reads .env
 
 
@@ -20,88 +20,89 @@ env.read_env(os.path.join(BASE_DIR, ".env"))
 SECRET_KEY = 'django-insecure-axas6dz8ha_v$3(xxk3h4&6736=(%yb_bws(9+!ad!64$0ltf&'
 
 # Encryption key for django-encrypted-model-fields
-FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY")
+FIELD_ENCRYPTION_KEY = env('FIELD_ENCRYPTION_KEY')
 
+# Allowed Hosts
+ALLOWED_HOSTS = ['*']
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "standard": {
-            "format": "[{asctime}] {levelname} {name}: {message}",
-            "style": "{",
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'standard': {
+            'format': '[{asctime}] {levelname} {name}: {message}',
+            'style': '{',
         },
     },
-    "handlers": {
+    'handlers': {
         # General application logs (framework, internal actions)
-        "application_file": {
-            "level": "INFO",
-            "class": "logging.FileHandler",
-            "filename": "/var/log/zas/django/application.log",
-            "formatter": "standard",
+        'application_file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': '/var/log/zas/django/application.log',
+            'formatter': 'standard',
         },
         # Errors & exceptions (only ERROR+)
-        "error_file": {
-            "level": "ERROR",
-            "class": "logging.FileHandler",
-            "filename": "/var/log/zas/django/errors.log",
-            "formatter": "standard",
+        'error_file': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': '/var/log/zas/django/errors.log',
+            'formatter': 'standard',
         },
         # HTTP requests (GET/POST/PUT/DELETE)
-        "requests_file": {
-            "level": "INFO",
-            "class": "logging.FileHandler",
-            "filename": "/var/log/zas/django/requests.log",
-            "formatter": "standard",
+        'requests_file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': '/var/log/zas/django/requests.log',
+            'formatter': 'standard',
         },
         # Security logs (auth failures, permissions, CSRF)
-        "security_file": {
-            "level": "INFO",
-            "class": "logging.FileHandler",
-            "filename": "/var/log/zas/django/security.log",
-            "formatter": "standard",
+        'security_file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': '/var/log/zas/django/security.log',
+            'formatter': 'standard',
         },
     },
 
-    "loggers": {
+    'loggers': {
         # Django core
-        "django": {
-            "handlers": ["application_file"],
-            "level": "INFO",
-            "propagate": True,
+        'django': {
+            'handlers': ['application_file'],
+            'level': 'INFO',
+            'propagate': True,
         },
         # ALL HTTP requests (very important!)
-        "django.request": {
-            "handlers": ["requests_file", "error_file"],
-            "level": "INFO",        # ← INFO logs normal requests
-            "propagate": False,
+        'django.request': {
+            'handlers': ['requests_file', 'error_file'],
+            'level': 'INFO',        # ← INFO logs normal requests
+            'propagate': False,
         },
         # Security subsystem
-        "django.security": {
-            "handlers": ["security_file"],
-            "level": "INFO",
-            "propagate": False,
+        'django.security': {
+            'handlers': ['security_file'],
+            'level': 'INFO',
+            'propagate': False,
         },
         # Django server (only used for error tracebacks)
-        "django.server": {
-            "handlers": ["error_file"],
-            "level": "ERROR",
-            "propagate": False,
+        'django.server': {
+            'handlers': ['error_file'],
+            'level': 'ERROR',
+            'propagate': False,
         },
         # Django REST Framework log channel
-        "rest_framework": {
-            "handlers": ["requests_file"],
-            "level": "INFO",
-            "propagate": False,
+        'rest_framework': {
+            'handlers': ['requests_file'],
+            'level': 'INFO',
+            'propagate': False,
         },
     },
 }
 
 
-ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -173,15 +174,15 @@ ROOT_URLCONF = 'zas.urls'
 
 TEMPLATES =[
     {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [os.path.join(BASE_DIR, "zas", "templates")],
-        "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.debug",
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [os.path.join(BASE_DIR, 'zas', 'templates')],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
             ],
         },
     },
@@ -191,11 +192,11 @@ ASGI_APPLICATION = 'zas.asgi.application'
 WSGI_APPLICATION = 'zas.wsgi.application'
 
 CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [
-                env("REDIS_URL", default="redis://127.0.0.1:6379/1"),
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [
+                env('REDIS_URL', default='redis://127.0.0.1:6379/1'),
             ],
         },
     },
@@ -215,7 +216,11 @@ DATABASES = {
         'PORT': env('DATABASE_PORT', default='3306'),
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        }
+            'charset': 'utf8mb4',
+        },
+        'TEST': {
+            'MIRROR': None,
+        },
     }
 }
 
@@ -256,13 +261,13 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [
-    BASE_DIR / "static",
+    BASE_DIR / 'static',
 ]
 
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

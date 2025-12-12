@@ -1,18 +1,12 @@
+# zas/settings/test.py
 from .base import *
 
 DEBUG = True
 
-# Separate test database configuration
 DATABASES["default"]["TEST"] = {
-    "ENGINE": "django.db.backends.mysql",
     "NAME": "test_zas",
-    "USER": "zasuser",
-    "PASSWORD": "zas_pass",
-    "HOST": "127.0.0.1",
-    "PORT": "3306",
+    "MIRROR": None,
+    "CHARSET": "utf8mb4",
+    "COLLATION": "utf8mb4_unicode_ci",
+    "MIGRATE": True,
 }
-
-# Optional: speed up tests
-PASSWORD_HASHERS = [
-    "django.contrib.auth.hashers.MD5PasswordHasher",
-]
