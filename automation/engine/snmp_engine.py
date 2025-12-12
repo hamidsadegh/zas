@@ -1,8 +1,5 @@
 from typing import Optional, Dict
-from pysnmp.hlapi import (
-    SnmpEngine, CommunityData, UdpTransportTarget, ContextData,
-    ObjectType, ObjectIdentity, getCmd
-)
+
 
 
 class SNMPEngine:
@@ -11,6 +8,10 @@ class SNMPEngine:
     """
 
     def check(self, host, config):
+        from pysnmp.hlapi import (
+            SnmpEngine, CommunityData, UdpTransportTarget, ContextData,
+            ObjectType, ObjectIdentity, getCmd
+        )
         if not host:
             return False
 

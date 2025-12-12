@@ -5,5 +5,4 @@ class AutomationConfig(AppConfig):
     name = "automation"
 
     def ready(self):
-        import automation.scheduler
-        import automation.signals
+        pass

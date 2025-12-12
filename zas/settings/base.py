@@ -3,6 +3,17 @@
 from pathlib import Path
 from environ import Env
 import os
+import sys
+
+
+# Check Python Version
+def enforce_python_version():
+    if sys.version_info >= (3, 12):
+        raise RuntimeError(
+            "ZAS currently requires Python < 3.12 due to SNMP (pysnmp/asyncore)."
+        )
+
+    
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
