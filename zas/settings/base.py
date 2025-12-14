@@ -1,7 +1,7 @@
 # Django settings for zas project.
 
 from pathlib import Path
-from environ import Env
+from environ import Env 
 import os
 import sys
 
@@ -142,12 +142,18 @@ INSTALLED_APPS = [
 
 ]
 
+# Internationalization
+# https://docs.djangoproject.com/en/5.2/topics/i18n/
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'Europe/Berlin'
+USE_I18N = True
+USE_TZ = True
 
 # Celery Configuration Options
 CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'  # if using Redis
 CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
-CELERY_TIMEZONE = 'Europe/Berlin'
-CELERY_ENABLE_UTC = False
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_ENABLE_UTC = True
 
 # Tell Celery beat to load schedules from database
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers.DatabaseScheduler'
@@ -252,18 +258,6 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-
-
-# Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
-
-LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'Europe/Berlin'
-
-USE_I18N = True
-
-USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)

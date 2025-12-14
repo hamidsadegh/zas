@@ -1,8 +1,10 @@
+ # automation/scheduler.py
 import logging
 from datetime import timedelta
+from os import name
 
 from celery import shared_task
-from django.utils import timezone
+from django.utils import timezone  
 
 from dcim.models import Device
 from automation.models import AutomationJob, JobRun
@@ -32,7 +34,7 @@ def check_devices_reachability(tags: list = None):
 
     # Default to all tags if none specified
     if tags is None:
-        tags = ["reachability_check"]
+        tags = ["reachability_check_tag"]
 
     # If all checks are disabled → don't schedule job
     if not any(checks.values()):
@@ -86,10 +88,10 @@ def check_devices_reachability(tags: list = None):
 def schedule_configuration_backups():
     """
     Schedules configuration backup tasks for all devices tagged
-    with 'configuration_backup'. Each device is backed up by
+    with 'config_backup_tag'. Each device is backed up by
     an individual Celery task.
     """
-    devices = Device.objects.filter(tags__name="configuration_backup").distinct()
+    devices = Device.objects.filter(tags__name="config_backup_tag").distinct()
 
     for device in devices:
         backup_device_config.delay(str(device.id))

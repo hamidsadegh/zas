@@ -379,6 +379,40 @@ main {
                           aria-label="{% if netconf_enabled %}Netconf reachable: {% if device.runtime.reachable_netconf %}yes{% else %}no{% endif %}{% else %}Netconf check disabled{% endif %}"></span>
                 </div>
                 {% endwith %}
+                <div style="width: 100%; border-top: 1px solid var(--border); margin: 0.75rem 0;"></div>
+                {% if device.tags.all %}
+                <div class="info-item" style="align-items: flex-start; flex-direction: column; gap: 0.4rem;">
+                    <h3 style="margin: 0; color: var(--muted); font-size: 1rem;">Tags</h3>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.35rem;">
+                        {% for tag in device.tags.all %}
+                        <form method="post" style="margin: 0;">
+                            {% csrf_token %}
+                            <input type="hidden" name="tag_action" value="remove">
+                            <input type="hidden" name="tag_id" value="{{ tag.id }}">
+                            <button type="submit" class="tag" style="border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;"
+                                    {% if tag.name == 'reachability_check' or tag.name == 'config_backup' %}disabled title="Managed in admin"{% endif %}>
+                                {{ tag.name }} {% if tag.name != 'reachability_check' and tag.name != 'config_backup' %}✕{% endif %}
+                            </button>
+                        </form>
+                        {% empty %}
+                        <span>—</span>
+                        {% endfor %}
+                    </div>
+                    <form method="post" style="margin-top: 0.5rem; display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                        {% csrf_token %}
+                        <input type="hidden" name="tag_action" value="add">
+                        <select name="tag_id" required style="padding: 0.35rem 0.6rem; border: 1px solid var(--border); border-radius: 10px;">
+                            <option value="" disabled selected>Select tag</option>
+                            {% for tag in available_tags %}
+                                {% if tag not in device.tags.all %}
+                                    <option value="{{ tag.id }}">{{ tag.name }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="copy-btn" style="padding: 0.35rem 0.9rem;">Add</button>
+                    </form>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>

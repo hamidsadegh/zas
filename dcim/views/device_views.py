@@ -12,6 +12,7 @@ from dcim.models import (
     Device,
     DeviceConfiguration,
     Rack,
+    Tag,
     Site,
 )
 from automation.engine.diff_engine import generate_diff, generate_visual_diff
@@ -113,6 +114,35 @@ class DeviceDetailView(LoginRequiredMixin, DetailView):
     template_name = "dcim/device_detail.html"
     context_object_name = "device"
 
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        action = request.POST.get("tag_action")
+        if action == "add":
+            tag_id = request.POST.get("tag_id")
+            if tag_id:
+                try:
+                    tag = Tag.objects.get(id=tag_id)
+                    self.object.tags.add(tag)
+                    messages.success(request, f"Tag '{tag.name}' added.")
+                except Tag.DoesNotExist:
+                    messages.error(request, "Tag not found.")
+        elif action == "remove":
+            tag_id = request.POST.get("tag_id")
+            if tag_id:
+                try:
+                    tag = Tag.objects.get(id=tag_id)
+                    if tag.name in ("reachability_check", "config_backup"):
+                        messages.error(
+                            request,
+                            "This tag can only be removed by an administrator.",
+                        )
+                    else:
+                        self.object.tags.remove(tag)
+                        messages.success(request, f"Tag '{tag.name}' removed.")
+                except Tag.DoesNotExist:
+                    messages.error(request, "Tag not found.")
+        return redirect(request.path)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         device = self.get_object()
@@ -156,6 +186,7 @@ class DeviceDetailView(LoginRequiredMixin, DetailView):
         else:
             context["latest_config"] = None
             context["latest_config_preview"] = ""
+        context["available_tags"] = Tag.objects.all().order_by("name")
         return context
 
 

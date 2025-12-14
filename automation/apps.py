@@ -5,4 +5,4 @@ class AutomationConfig(AppConfig):
     name = "automation"
 
     def ready(self):
-        pass
+        import automation.signals
