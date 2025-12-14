@@ -2,15 +2,18 @@
 
 import logging
 from typing import Optional
+from django.utils import timezone
 
+from automation.models import AutomationSchedule
+from accounts.models.system_settings import SystemSettings
 from django_celery_beat.models import (
     PeriodicTask,
     IntervalSchedule,
     CrontabSchedule,
 )
-from django.utils import timezone
 
-from automation.models import AutomationSchedule
+REACHABILITY_TASK = "automation.scheduler.check_devices_reachability"
+REACHABILITY_NAME = "Reachability Poller"
 
 logger = logging.getLogger(__name__)
 
@@ -48,16 +51,32 @@ def sync_schedule(schedule: AutomationSchedule) -> PeriodicTask:
     pt: Optional[PeriodicTask] = schedule.periodic_task
 
     if pt is None:
-        pt = PeriodicTask.objects.create(
+        # Try to re-use an existing PeriodicTask with the same name
+        pt, created = PeriodicTask.objects.get_or_create(
             name=schedule.name,
-            task=schedule.task_name,
-            interval=interval,
-            crontab=crontab,
-            enabled=schedule.enabled,
+            defaults={
+                "task": schedule.task_name,
+                "interval": interval,
+                "crontab": crontab,
+                "enabled": schedule.enabled,
+            },
         )
+
+        # If it already existed, make sure it is fully synced
+        if not created:
+            pt.task = schedule.task_name
+            pt.interval = interval
+            pt.crontab = crontab
+            pt.enabled = schedule.enabled
+            pt.clocked = None
+            pt.one_off = False
+            pt.start_time = pt.start_time or timezone.now()
+            pt.save()
+
         schedule.periodic_task = pt
         schedule.save(update_fields=["periodic_task"])
-        logger.info("Created PeriodicTask %s for schedule %s", pt.name, schedule.id)
+
+        logger.info("Linked PeriodicTask %s to schedule %s", pt.name, schedule.id)
     else:
         pt.name = schedule.name
         pt.task = schedule.task_name
@@ -71,6 +90,75 @@ def sync_schedule(schedule: AutomationSchedule) -> PeriodicTask:
         logger.info("Updated PeriodicTask %s for schedule %s", pt.name, schedule.id)
 
     return pt
+
+
+def sync_reachability_from_system_settings(settings: SystemSettings) -> AutomationSchedule:
+    """
+    Sync reachability schedule from SystemSettings into AutomationSchedule
+    and ensure celery-beat is updated.
+    """
+    interval_seconds = settings.reachability_interval_minutes * 60
+
+    schedule, _ = AutomationSchedule.objects.get_or_create(
+        task_name="automation.scheduler.check_devices_reachability",
+        defaults={
+            "name": "Reachability Poller",
+            "schedule_type": AutomationSchedule.ScheduleType.INTERVAL,
+            "interval_seconds": interval_seconds,
+            "enabled": True,
+        },
+    )
+
+    changed = False
+
+    if schedule.interval_seconds != interval_seconds:
+        schedule.interval_seconds = interval_seconds
+        changed = True
+
+    if not schedule.enabled:
+        schedule.enabled = True
+        changed = True
+
+    if changed:
+        schedule.save()  # ← NO SIGNALS ANYMORE
+
+    # Explicitly sync celery-beat
+    sync_schedule(schedule)
+
+    return schedule
+
+
+def sync_config_backup_schedule() -> AutomationSchedule:
+    """
+    Ensure the nightly configuration backup schedule exists and is synced.
+    """
+    schedule, _ = AutomationSchedule.objects.get_or_create(
+        name="Nightly Configuration Backup",
+        defaults={
+            "task_name": "automation.scheduler.schedule_configuration_backups",
+            "schedule_type": AutomationSchedule.ScheduleType.CRONTAB,
+            "minute": "0",
+            "hour": "4",
+            "day_of_week": "*",
+            "day_of_month": "*",
+            "month_of_year": "*",
+            "enabled": True,
+        },
+    )
+
+    # If schedule already exists, enforce correct values (idempotent)
+    schedule.task_name = "automation.scheduler.schedule_configuration_backups"
+    schedule.schedule_type = AutomationSchedule.ScheduleType.CRONTAB
+    schedule.minute = "0"
+    schedule.hour = "4"
+    schedule.day_of_week = "*"
+    schedule.day_of_month = "*"
+    schedule.month_of_year = "*"
+    schedule.enabled = True
+    schedule.save()
+
+    sync_schedule(schedule)
+    return schedule
 
 
 def remove_schedule(schedule: AutomationSchedule) -> None:

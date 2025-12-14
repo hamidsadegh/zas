@@ -1,55 +1,35 @@
  # automation/scheduler.py
 import logging
-from datetime import timedelta
 from os import name
-
-from celery import shared_task
-from django.utils import timezone  
 
 from dcim.models import Device
 from automation.models import AutomationJob, JobRun
+from automation.backup_tasks.config_backup import backup_device_config
 from automation.workers.job_runner import execute_job
 from accounts.services.settings_service import (
     get_reachability_checks,
     get_system_settings,
 )
-
-from automation.backup_tasks.config_backup import backup_device_config
+from celery import shared_task
 
 
 logger = logging.getLogger(__name__)
-
 
 # ---------------------------------------------------------------------
 # REACHABILITY SCHEDULER
 # ---------------------------------------------------------------------
 @shared_task
 def check_devices_reachability(tags: list = None):
-    """
-    Periodic scheduler for reachability checks.
-    Creates a JobRun and delegates execution to job_runner.
-    """
-    settings = get_system_settings()
-    checks = get_reachability_checks(settings)
-
-    # Default to all tags if none specified
     if tags is None:
         tags = ["reachability_check_tag"]
+    
+    settings = get_system_settings()
+    checks = get_reachability_checks(settings)
 
     # If all checks are disabled → don't schedule job
     if not any(checks.values()):
         logger.info("Reachability check skipped: all probes disabled.")
         return "disabled"
-
-    # Enforce minimum interval (from system settings)
-    interval = timedelta(minutes=settings.reachability_interval_minutes or 1)
-    now = timezone.now()
-
-    # Check last run time to enforce interval
-    last = settings.reachability_last_run
-    if last and (now - last) < interval:
-        logger.debug("Reachability check waiting for interval window.")
-        return "waiting"
 
     # Ensure the reachability job exists
     job, _ = AutomationJob.objects.get_or_create(
@@ -77,7 +57,7 @@ def check_devices_reachability(tags: list = None):
         system_settings=settings,
     )
 
-    logger.info("%s: reachability job triggered for tags: %s.", now, tags)
+    logger.info(f"Reachability job triggered for tags: {tags}.")
     return "scheduled"
 
 

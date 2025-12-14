@@ -3,6 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, redirect
 from django.views import View
 from accounts.services.settings_service import get_system_settings
+from automation.services.scheduler_sync import sync_reachability_from_system_settings
 from accounts.forms.settings_form import (
     AllowLocalSuperusersForm,
     ReachabilitySettingsForm,
@@ -47,6 +48,7 @@ class SystemSettingsView(LoginRequiredMixin, View):
             reachability_form = ReachabilitySettingsForm(request.POST, instance=settings_obj)
             if reachability_form.is_valid():
                 reachability_form.save()
+                sync_reachability_from_system_settings(settings_obj)
                 messages.success(request, "Reachability settings saved.")
                 return redirect("system_settings")
         elif section == "superusers":
