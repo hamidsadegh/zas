@@ -135,6 +135,25 @@ main {
     padding: 0.35rem 0;
     border-top: 1px solid var(--border);
 }
+.reachability-dot {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 50%;
+    display: inline-block;
+    border: 1px solid var(--border);
+}
+.reachability-dot.ok {
+    background: #22c55e;
+    border-color: #16a34a;
+}
+.reachability-dot.fail {
+    background: #ef4444;
+    border-color: #dc2626;
+}
+.reachability-dot.disabled {
+    background: #e5e7eb;
+    border-color: #d1d5db;
+}
 
 .tag {
     padding: 0.25rem 0.75rem;
@@ -270,16 +289,21 @@ main {
                 <thead>
                     <tr>
                         <th>Device</th>
+                        <th>Reachability</th>
                         <th>Last check</th>
-                        <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for device in recent_checks %}
                     <tr>
                         <td><a href="{% url 'device_detail' device.pk %}">{{ device.name }}</a></td>
-                        <td>{{ device.last_check|date:"M d, H:i" }}</td>
-                        <td>{{ device.status|title }}</td>
+                        <td style="display:flex; gap:0.35rem; align-items:center;">
+                            <span class="reachability-dot {% if device.runtime.reachable_ping %}ok{% else %}fail{% endif %}" title="Ping"></span>
+                            <span class="reachability-dot {% if device.runtime.reachable_ssh %}ok{% else %}fail{% endif %}" title="SSH"></span>
+                            <span class="reachability-dot {% if device.runtime.reachable_snmp %}ok{% else %}fail{% endif %}" title="SNMP"></span>
+                            <span class="reachability-dot {% if device.runtime.reachable_netconf %}ok{% else %}fail{% endif %}" title="Netconf"></span>
+                        </td>
+                        <td>{{ device.runtime.last_check|date:"M d, H:i" }}</td>
                     </tr>
                     {% empty %}
                     <tr>
