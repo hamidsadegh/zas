@@ -4,6 +4,8 @@ from django.shortcuts import render, redirect
 from django.views import View
 from accounts.services.settings_service import get_system_settings
 from automation.services.scheduler_sync import sync_reachability_from_system_settings
+from automation.models.schedule import AutomationSchedule
+from dcim.models.device_config import DeviceConfiguration
 from accounts.forms.settings_form import (
     AllowLocalSuperusersForm,
     ReachabilitySettingsForm,
@@ -18,12 +20,22 @@ class SystemSettingsView(LoginRequiredMixin, View):
         return get_system_settings()
 
     def get_context(self, settings_obj, **forms):
+        backup_schedule = AutomationSchedule.objects.filter(name="Nightly Configuration Backup").select_related(
+            "periodic_task"
+        ).first()
+        latest_backup = (
+            DeviceConfiguration.objects.filter(success=True)
+            .order_by("-backup_time")
+            .first()
+        )
         return {
             "tacacs_form": forms.get("tacacs_form") or TacacsSettingsForm(instance=settings_obj),
             "reachability_form": forms.get("reachability_form")
             or ReachabilitySettingsForm(instance=settings_obj),
             "superusers_form": forms.get("superusers_form") or AllowLocalSuperusersForm(instance=settings_obj),
             "settings_obj": settings_obj,
+            "backup_schedule": backup_schedule,
+            "latest_backup": latest_backup,
         }
 
     def get(self, request):

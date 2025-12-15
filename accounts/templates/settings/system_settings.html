@@ -336,6 +336,55 @@ main {
             </div>
         </form>
 
+        <div class="settings-form section-card" aria-label="Configuration backup status">
+            <div class="section-heading">
+                <div>
+                    <p class="tag">Automation</p>
+                    <h2 style="margin: 0;">Configuration Backup</h2>
+                    <p style="margin: 0; color: var(--muted);">Read-only view of the backup schedule and latest run.</p>
+                </div>
+                <div class="meta-line">
+                    {% if backup_schedule %}
+                        {% if backup_schedule.enabled %}
+                            <span class="tag">Enabled</span>
+                        {% else %}
+                            <span class="tag" style="background:#fef2f2;color:#991b1b;">Disabled</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="tag" style="background:#fef2f2;color:#991b1b;">Backup schedule not initialized</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="info-block">
+                {% if backup_schedule %}
+                <div class="info-item">
+                    <span>Frequency</span>
+                    <span>{{ backup_schedule.schedule_summary|default:"—" }}</span>
+                </div>
+                <div class="info-item">
+                    <span>Last run</span>
+                    <span>{{ backup_schedule.periodic_task.last_run_at|default:"Never" }}</span>
+                </div>
+                <div class="info-item">
+                    <span>Total runs</span>
+                    <span>{{ backup_schedule.periodic_task.total_run_count|default:0 }}</span>
+                </div>
+                {% else %}
+                <p style="margin:0;">No configuration backup schedule has been set up.</p>
+                {% endif %}
+                <div class="info-item">
+                    <span>Last successful backup</span>
+                    <span>
+                        {% if latest_backup %}
+                            {{ latest_backup.backup_time }} ({{ latest_backup.device.name }})
+                        {% else %}
+                            Never
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
         <form method="post" class="settings-form section-card" novalidate>
             {% csrf_token %}
             <input type="hidden" name="section" value="superusers">
