@@ -57,6 +57,10 @@
     color: #fff;
     font-weight: 600;
 }
+.copy-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
 table {
     width: 100%;
     border-collapse: collapse;
@@ -80,8 +84,11 @@ th, td {
         </div>
 
         {% if selected_config %}
-            <h3>Backup from {{ selected_config.backup_time|date:"Y-m-d H:i" }}</h3>
-            <pre class="config-box">{{ selected_config.config_text|default:""|escape }}</pre>
+            <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin-top:0.75rem; justify-content: space-between;">
+                <h3 style="margin:0;">Backup from {{ selected_config.backup_time|date:"Y-m-d H:i" }}</h3>
+                <button type="button" class="copy-btn" data-copy-target="#selected-config-text">⧉ Copy</button>
+            </div>
+            <pre class="config-box" id="selected-config-text">{{ selected_config.config_text|default:""|escape }}</pre>
         {% else %}
             <p>Select a backup entry below to view its content.</p>
         {% endif %}
@@ -139,4 +146,47 @@ th, td {
         </form>
     </div>
 </section>
+<script>
+(function () {
+    const copyButton = document.querySelector('[data-copy-target]');
+    if (!copyButton) {
+        return;
+    }
+    copyButton.addEventListener('click', () => {
+        const targetSelector = copyButton.getAttribute('data-copy-target');
+        const target = document.querySelector(targetSelector);
+        if (!target) {
+            return;
+        }
+        const text = target.textContent || '';
+        const restore = () => setTimeout(() => (copyButton.textContent = '⧉ Copy'), 1500);
+        const ok = () => {
+            copyButton.textContent = 'Copied!';
+            restore();
+        };
+        const fail = () => {
+            copyButton.textContent = 'Copy failed';
+            restore();
+        };
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(ok).catch(fail);
+        } else {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                ok();
+            } catch (e) {
+                fail();
+            } finally {
+                document.body.removeChild(textarea);
+            }
+        }
+    });
+})();
+</script>
 {% endblock %}
