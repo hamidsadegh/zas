@@ -254,7 +254,7 @@ main {
                     <tr>
                         <td><a href="{% url 'device_detail' device.pk %}">{{ device.name }}</a></td>
                         <td>{{ device.area|default:"—" }}</td>
-                        <td>{{ device.vendor|default:"—" }}</td>
+                        <td>{{ device.device_type.vendor|default:"—" }}</td>
                     </tr>
                     {% empty %}
                     <tr>

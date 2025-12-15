@@ -42,7 +42,7 @@ def home(request):
     )
 
     recent_devices = (
-        Device.objects.select_related("area", "vendor", "device_type")
+        Device.objects.select_related("area", "device_type__vendor", "device_type")
         .order_by("-created_at")[:5]
     )
 
@@ -53,7 +53,7 @@ def home(request):
     )
 
     top_vendors = (
-        Vendor.objects.annotate(device_count=Count("devices"))
+        Vendor.objects.annotate(device_count=Count("device_type__devices"))
         .order_by("-device_count")[:5]
     )
 

@@ -5,7 +5,8 @@ from netmiko import ConnectHandler
 
 from dcim.models import Device
 from accounts.models import SSHCredential
-from automation.choices import NETMIKO_PLATFORM_MAP, DevicePlatformChoices
+from automation.choices import NETMIKO_PLATFORM_MAP
+from automation.platform import resolve_platform
 
 class SSHEngine:
     """
@@ -41,13 +42,10 @@ class SSHEngine:
     def _netmiko_platform(self) -> str:
         """
         Map ZAS device attributes to a Netmiko platform string.
-        Returns:
-            Netmiko platform string.
         """
-        # try to use platform slug if available
-        platform = getattr(self.device, "platform", DevicePlatformChoices.UNKNOWN)
+        platform = resolve_platform(self.device)
         return NETMIKO_PLATFORM_MAP.get(platform, "autodetect")
-
+    
     def run_command(self, command: str, timeout: int = 30) -> str:
         """
         Run a single show command and return its output.

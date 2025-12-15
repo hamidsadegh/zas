@@ -195,9 +195,17 @@ class DeviceAdminForm(forms.ModelForm):
         rack_widget = self._base_widget("rack")
 
         if site_id:
-            area_field.queryset = Area.objects.filter(site_id=site_id)
+            qs = Area.objects.filter(site_id=site_id)
+
+            # IMPORTANT: always include current area on change form
+            if area_id:
+                qs = qs | Area.objects.filter(pk=area_id)
+
+            area_field.queryset = qs.distinct()
+
             if area_widget:
                 area_widget.attrs.pop("disabled", None)
+
         else:
             area_field.queryset = Area.objects.none()
             area_field.help_text = "Areas will appear after selecting a Site."
@@ -289,7 +297,6 @@ def export_devices_to_excel(modeladmin, request, queryset):
             "Site": device.site.name if device.site else "-",
             "Area": str(device.area) if device.area else "-",
             "Rack": device.rack.name if device.rack else "-",
-            "Vendor": device.vendor.name if device.vendor else "-",
             "Device Type": device.device_type.model if device.device_type else "-",
             "Role": device.role.name if device.role else "-",
             "Status": device.status,
@@ -334,20 +341,20 @@ class DeviceAdmin(admin.ModelAdmin):
         "management_ip",
         "serial_number",
         "inventory_number",
-        "device_type__model",
-        "vendor__name",
         "area__name",
         "site__name",
-        "site__organization__name",
         "tags__name",
+        "device_type__model",
+        "device_type__vendor",
+        "site__organization__name",
     )
     list_filter = (
         "status",
         "site",
-        "device_type",
-        "vendor",
-        "site__organization",
         "area",
+        "device_type",
+        "device_type__vendor",
+        "site__organization",
         TagFilter,
     )
     actions = [export_devices_to_excel]

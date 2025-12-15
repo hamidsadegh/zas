@@ -137,13 +137,14 @@ class SubdeviceRoleChoices(ChoiceSet):
 # Device
 #
 class DevicePlatformChoices(ChoiceSet):
-    key = 'Device.platform'
+    key = 'Device.device_type.platform'
 
     IOS = 'ios'
     IOS_XE = 'iosxe'
     NX_OS = 'nxos'
-    ROUTER = 'router'
     FIREWALL = 'firewall'
+    ROUTER = 'router'
+    EOS = 'eos'
     AP = 'ap'
     SERVER = 'server'
     UNKNOWN = 'unknown'
@@ -152,8 +153,9 @@ class DevicePlatformChoices(ChoiceSet):
         (IOS, _('Cisco IOS Switch')),
         (IOS_XE, _('Cisco IOS-XE Switch')),
         (NX_OS, _('Cisco NX-OS Switch')),
-        (ROUTER, _('Router')),
         (FIREWALL, _('Firewall')),
+        (ROUTER, _('Router')),
+        (EOS, _('Arista EOS Switche')),
         (AP, _('Access Point')),
         (SERVER, _('Server')),
         (UNKNOWN, _('Unknown Platform')),

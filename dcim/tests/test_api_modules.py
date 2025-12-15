@@ -1,5 +1,7 @@
+import platform
 import pytest
-from dcim.models import Vendor, Device, Organization, Area, Site, DeviceModule
+from zmq import DeviceType
+from dcim.models import Vendor, Device, Organization, Area, Site, DeviceModule, DeviceType
 from api.v1.dcim.serializers import DeviceSerializer
 
 
@@ -9,12 +11,13 @@ def test_device_serializer_includes_modules():
     site = Site.objects.create(name="Site1", organization=org)
     area = Area.objects.create(name="Area1", site=site)
     vendor = Vendor.objects.create(name="Cisco")
+    device_type = DeviceType.objects.create(model="C9300-48P", platform="iosxe", description="Cisco Catalyst 9300 Series Switches", vendor=vendor)
     device = Device.objects.create(
         name="Device-1",
         management_ip="10.0.0.1",
         site=site,
         area=area,
-        vendor=vendor,
+        device_type=device_type,
     )
     DeviceModule.objects.create(
         device=device,

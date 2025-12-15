@@ -340,7 +340,7 @@ main {
             </div>
             <div class="info-block">
                 <h3>Platform</h3>
-                <div class="info-item"><span>Vendor</span><span>{{ device.vendor|default:"—" }}</span></div>
+                <div class="info-item"><span>Vendor</span><span>{{ device.device_type.vendor|default:"—" }}</span></div>
                 <div class="info-item"><span>Device Type</span><span>{{ device.device_type|default:"—" }}</span></div>
                 <div class="info-item"><span>Role</span><span>{{ device.role|default:"—" }}</span></div>
                 <div class="info-item"><span>Image Version</span><span>{{ device.image_version|default:"—" }}</span></div>

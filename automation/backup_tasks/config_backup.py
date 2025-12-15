@@ -7,8 +7,9 @@ from django.utils import timezone
 from dcim.models import Device
 from dcim.models.device_config import DeviceConfiguration
 from automation.engine.ssh_engine import SSHEngine
-from automation.choices import BACKUP_COMMAND_MAP, DevicePlatformChoices
+from automation.choices import BACKUP_COMMAND_MAP
 from automation.storage.git_storage import ConfigBackupGitStorage
+from automation.platform import resolve_platform, PlatformResolutionError
 
 
 logger = logging.getLogger(__name__)
@@ -22,13 +23,28 @@ def backup_device_config(device_id: str):
     Creates a DeviceConfiguration history entry.
     """
     try:
-        device = Device.objects.get(id=device_id)
+        device = (
+            Device.objects
+            .select_related("device_type", "site")
+            .get(id=device_id)
+        )
     except Device.DoesNotExist:
         logger.error(f"Config backup: device {device_id} does not exist.")
         return "device_not_found"
 
-    # Determine Netmiko platform string
-    platform = getattr(device, "platform", DevicePlatformChoices.UNKNOWN)
+    try:
+        platform = resolve_platform(device)
+    except PlatformResolutionError as exc:
+        msg = str(exc)
+        logger.error(msg)
+        DeviceConfiguration.objects.create(
+            device=device,
+            backup_time=timezone.now(),
+            config_text="",
+            success=False,
+            error_message=msg,
+        )
+        return "platform_error"
     command = BACKUP_COMMAND_MAP.get(platform)
 
     if not command:
@@ -47,6 +63,7 @@ def backup_device_config(device_id: str):
 
     try:
         config_text = ssh.run_command(command)
+
         backup = DeviceConfiguration.objects.create(
             device=device,
             backup_time=timezone.now(),

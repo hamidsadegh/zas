@@ -110,10 +110,16 @@ class VendorSerializer(serializers.ModelSerializer):
 # -----------------------
 class DeviceTypeSerializer(serializers.ModelSerializer):
     vendor_name = serializers.CharField(source="vendor.name", read_only=True)
-
     class Meta:
         model = DeviceType
-        fields = ["id", "vendor", "vendor_name", "model", "category", "description"]
+        fields = [
+            "id",
+            "vendor",
+            "vendor_name",
+            "model",
+            "platform",
+            "description",
+        ]
 
 
 # -----------------------
@@ -182,9 +188,10 @@ class InterfaceSerializer(serializers.ModelSerializer):
 # Device Serializer
 # -----------------------
 class DeviceSerializer(serializers.ModelSerializer):
+    # Read-only convenience fields
     area_name = serializers.CharField(source="area.name", read_only=True)
-    vendor_name = serializers.CharField(source="vendor.name", read_only=True)
     device_type_name = serializers.CharField(source="device_type.model", read_only=True)
+    device_type_vendor_name = serializers.CharField(source="device_type.vendor.name",read_only=True)
     role_name = serializers.CharField(source="role.name", read_only=True)
     rack_name = serializers.CharField(source="rack.name", read_only=True)
     site_name = serializers.CharField(source="site.name", read_only=True)
@@ -197,7 +204,11 @@ class DeviceSerializer(serializers.ModelSerializer):
     reachable_netconf = serializers.SerializerMethodField()
     uptime = serializers.SerializerMethodField()
 
-    rack = serializers.PrimaryKeyRelatedField(queryset=Rack.objects.none(), required=False, allow_null=True)
+
+    # Writable relationship fields
+    area = serializers.PrimaryKeyRelatedField(queryset=Area.objects.all(), required=True, help_text="Area where the device is located.")
+    rack = serializers.PrimaryKeyRelatedField(queryset=Rack.objects.none(), required=False, allow_null=True,
+                                              help_text="Rack where the device is mounted (optional).")
 
     class Meta:
         model = Device
@@ -216,10 +227,9 @@ class DeviceSerializer(serializers.ModelSerializer):
             "area_name",
             "rack",
             "rack_name",
-            "vendor",
-            "vendor_name",
             "device_type",
             "device_type_name",
+            "device_type_vendor_name",
             "role",
             "role_name",
             "image_version",

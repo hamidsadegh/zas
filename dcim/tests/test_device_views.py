@@ -1,6 +1,6 @@
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
-from dcim.models import Device, Organization, Site
+from dcim.models import Device, Organization, Site, Area
 
 class TestDeviceViews(TestCase):
     def setUp(self):
@@ -12,10 +12,12 @@ class TestDeviceViews(TestCase):
         # Create minimal objects for Device
         self.org = Organization.objects.create(name="TestOrg")
         site = Site.objects.create(name="Site A", organization=self.org)
+        area = Area.objects.create(name="Data Center 1", site=site)
         self.device = Device.objects.create(
             name="Device01",
             management_ip="192.168.1.1",
             site=site,
+            area=area,
         )
 
     def test_device_list_view(self):

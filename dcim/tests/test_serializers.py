@@ -84,13 +84,14 @@ def test_device_serializer_includes_related_display_fields():
     org = Organization.objects.create(name="Org Base")
     site = _make_site("Site Base", org)
     vendor = Vendor.objects.create(name="Cisco")
+    area = Area.objects.create(name="Arya-1", site=site)
     dtype = DeviceType.objects.create(vendor=vendor, model="C9300")
     device = Device.objects.create(
         name="bcsw01",
         management_ip="192.168.10.10",
         site=site,
-        vendor=vendor,
         device_type=dtype,
+        area=area,
         status="active",
     )
 
@@ -99,5 +100,5 @@ def test_device_serializer_includes_related_display_fields():
 
     assert data["name"] == "bcsw01"
     assert data["management_ip"] == "192.168.10.10"
-    assert data["vendor_name"] == "Cisco"
+    assert data["device_type_vendor_name"] == "Cisco"
     assert data["device_type_name"] == "C9300"

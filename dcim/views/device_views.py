@@ -40,8 +40,8 @@ class DeviceListView(LoginRequiredMixin, ListView):
     
     def get_queryset(self):
         queryset = Device.objects.select_related(
-            "vendor",
             "device_type",
+            "device_type__vendor",
             "area",
             "rack",
             "runtime",
@@ -66,7 +66,7 @@ class DeviceListView(LoginRequiredMixin, ListView):
                 | Q(serial_number__icontains=search)
                 | Q(image_version__icontains=search)
                 | Q(device_type__model__icontains=search)
-                | Q(vendor__name__icontains=search)
+                | Q(device_type__vendor__name__icontains=search)
                 | Q(area__name__icontains=search)
                 | Q(rack__name__icontains=search)
                 | Q(site__name__icontains=search)

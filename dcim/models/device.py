@@ -19,7 +19,6 @@ __all__ = (
     "DeviceType",
     "DeviceRole",
     "DeviceModule",
-    "DevicePlatform",
     "DeviceRuntimeStatus",
 )
 
@@ -41,11 +40,20 @@ class DeviceType(models.Model):
         verbose_name=_('model'),
         max_length=100
         )
+    platform = models.CharField(
+        max_length=50,
+        choices=DevicePlatformChoices.CHOICES,
+        default=DevicePlatformChoices.UNKNOWN,
+        verbose_name=_("platform"),
+        help_text=_("Operating system / platform family (e.g. IOS-XE, NX-OS, Junos)."),
+    )
     vendor = models.ForeignKey(
-        Vendor, 
-        on_delete=models.CASCADE, 
-        related_name="device_types"
-        )
+        Vendor,
+        on_delete=models.PROTECT,
+        related_name="device_type",
+        verbose_name=_("vendor"),
+        help_text=_("Manufacturer of this device model."),
+    )
     description = models.TextField(
         blank=True, 
         null=True
@@ -105,14 +113,16 @@ class DeviceType(models.Model):
         verbose_name=_('weight')
         )
     clone_fields = (
-        'vendor', 'default_platform', 'u_height', 'is_full_depth', 'airflow', 'weight',
+        'vendor', 'platform', 'u_height', 'is_full_depth', 'airflow', 'weight',
         )
+
 
     class Meta:
         unique_together = ("vendor", "model")
 
     def __str__(self):
-        return f"{self.vendor.name} {self.model}"
+        vendor = self.vendor.name if self.vendor else "Unknown Vendor"
+        return f"{vendor} {self.model}"
     
 
 class DeviceRole(models.Model):
@@ -134,11 +144,10 @@ class Device(models.Model):
     # Basic info
     name = models.CharField(
         max_length=100,
-        verbose_name=_('name'),
-        blank=True,
-        null=True,
-        help_text=_("A unique name identifying this device within the organization.")
-        )
+        unique=True,
+        verbose_name=_("name"),
+        help_text=_("Unique name identifying this device."),
+    )
     management_ip = models.GenericIPAddressField(
         verbose_name=_('management IP address'),
         protocol="IPv4", 
@@ -167,26 +176,16 @@ class Device(models.Model):
         help_text=_("An internal inventory or asset tag number.")
         )
     tags = models.ManyToManyField(
-        Tag, 
-        related_name="devices", 
-        blank=True
-        )
+        Tag,
+        related_name="devices",
+        blank=True,
+        help_text=_(
+            "Optional labels used for grouping, filtering, and automation "
+            "(e.g. 'reachability_check_tag', 'datacenter', 'production')."
+        ),
+    )
 
     # Relations
-    area = models.ForeignKey(
-        Area, 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True, 
-        related_name="devices"
-        )
-    vendor = models.ForeignKey(
-        Vendor, 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True, 
-        related_name="devices"
-        )
     device_type = models.ForeignKey(
         DeviceType, 
         on_delete=models.PROTECT, 
@@ -195,19 +194,36 @@ class Device(models.Model):
         related_name="devices"
         )
     role = models.ForeignKey(
-        DeviceRole, 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True, 
-        related_name="devices"
-        )
+        DeviceRole,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="devices",
+        help_text=_(
+            "Functional role of the device in the network "
+            "(e.g. core, access, firewall, spine, leaf)."
+        ),
+    )
+    site = models.ForeignKey(
+        Site,
+        on_delete=models.PROTECT,
+        related_name="devices",
+        help_text=_("Site where this device is installed."),
+    )
+    area = models.ForeignKey(
+        Area,
+        on_delete=models.PROTECT,
+        related_name="devices",
+        help_text=_("Set once the device is physically installed."),
+    )
     rack = models.ForeignKey(
-        Rack, 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True, 
-        related_name="devices"
-        )
+        Rack,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="devices",
+        help_text=_("Rack where the device is mounted (optional)."),
+    )
     is_stacked = models.BooleanField(
         default=False,
         verbose_name=_('is stacked'),
@@ -222,25 +238,12 @@ class Device(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(RACK_U_HEIGHT_MAX + 0.5)],
         help_text=_('The lowest-numbered unit occupied by the device')
         )
-    site = models.ForeignKey(
-        Site,
-        on_delete=models.PROTECT,
-        related_name="devices",
-        help_text=_("Site where this device is installed."),
-    )
     face = models.CharField(
         max_length=5,
         verbose_name=_('rack face'),
         choices=DeviceFaceChoices.CHOICES,
         blank=True,
         null=True,
-        )
-    platform = models.CharField(
-        max_length=100, 
-        choices= DevicePlatformChoices.CHOICES, 
-        blank=True, 
-        null=True, 
-        default="unknown"
         )
     airflow = models.CharField(
         verbose_name=_('airflow'),
@@ -249,7 +252,6 @@ class Device(models.Model):
         blank=True,
         null=True
         )
-
     # Software / operational
     image_version = models.CharField(
         verbose_name=_('image version'),
@@ -278,17 +280,24 @@ class Device(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.name} ({self.management_ip})"
+        label = self.name or str(self.management_ip)
+        return label
 
     def clean(self):
         super().clean()
-        if self.platform:
-            valid_platforms = {choice[0] for choice in DevicePlatformChoices.CHOICES}
-            if self.platform not in valid_platforms:
-                raise ValidationError(
-                    {"platform": f"Platform '{self.platform}' is not supported."}
-                )
-
+        if self.area and self.area.site_id != self.site_id:
+            raise ValidationError(
+                {"area": "Area must belong to the same site as the device."}
+        )
+        if self.rack and self.rack.area_id != self.area_id:
+            raise ValidationError(
+                {"rack": "Rack must belong to the same area as the device."}
+            )
+        if self.device_type and not self.device_type.platform:
+            raise ValidationError(
+                {"device_type": "Device type must define a platform for automation."}
+            )
+    
 
 class DeviceModule(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

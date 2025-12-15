@@ -28,7 +28,6 @@ class TestExport:
             site=site,
             area=area,
             rack=rack,
-            vendor=vendor,
             device_type=device_type,
             role=role,
             status="active",

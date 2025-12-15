@@ -46,7 +46,7 @@ class DeviceViewSet(viewsets.ModelViewSet):
             "site",
             "site__organization",
             "area",
-            "vendor",
+            "device_type__vendor",
             "device_type",
             "role",
             "rack",

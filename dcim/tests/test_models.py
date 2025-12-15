@@ -20,7 +20,6 @@ def test_device_creation():
         management_ip="192.168.49.128",
         site=site,
         area=area,
-        vendor=vendor,
         device_type=device_type,
         role=role,
         status="active",
@@ -28,7 +27,7 @@ def test_device_creation():
 
     # Assertions
     assert device.name == "bcsw01-a324-46"
-    assert device.vendor.name == "Cisco"
     assert device.device_type.model == "C9300-48P"
+    assert device.device_type.vendor.name == "Cisco"
     assert device.status == "active"
     assert device.created_at <= timezone.now()

@@ -257,7 +257,7 @@ main {
             <tr>
                 <td>
                     <a class="device-name" href="{% url 'device_detail' device.id %}">{{ device.name }}</a>
-                    <span class="device-meta">{{ device.vendor|default:"Unknown vendor" }}</span>
+                    <span class="device-meta">{{ device.device_type.vendor|default:"Unknown vendor" }}</span>
                 </td>
                 <td>{{ device.management_ip }}</td>
                 <td>
