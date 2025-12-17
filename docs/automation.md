@@ -1,5 +1,65 @@
 # Automation App Documentation
 
+
+### new 16.12.2025
+## The boring spine (explicitly)
+[ API / UI / Admin ]
+          ↓
+   Application Services
+          ↓
+     Domain Logic
+          ↓
+ Infrastructure (DB / SSH / SNMP / Git / Celery)
+
+# Workflow
+Schedule / API / Admin
+   ↓
+JobService (create job+run)
+   ↓
+JobDispatcher (queue)
+   ↓
+Celery task (glue)
+   ↓
+Worker (exec)
+   ↓
+JobResultService (persist)
+
+# Freeze the write path
+Rule #1 of the spine
+  Models are dumb.
+  Domain services are the only writers.
+
+Example (dcim):
+dcim/
+├── domain
+│   ├── device.py          ← invariants
+│   ├── vlan.py
+│   └── area.py
+├── application
+│   ├── device_service.py  ← CREATE / UPDATE / DELETE
+│   └── vlan_service.py
+
+automation/
+├── application
+│   ├── job_service.py        ← creates jobs, validates intent
+│   ├── job_dispatcher.py     ← queues celery tasks
+│   └── job_result_service.py ← persists results
+├── workers
+│   ├── backup_worker.py      ← executes, never decides
+│   └── ssh_worker.py
+
+A job lifecycle is deterministic
+Application services decide what to do is
+Workers execute
+Engines are pure adapters (pure functions + IO)
+    engine.run()
+    engine.save_to_db()
+    engine.create_diff()
+Models store truth
+
+
+
+
 The `automation` module handles automated tasks such as reachability, backups, configuration changes, and device provisioning.
 
 ## Tasks

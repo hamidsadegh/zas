@@ -1,21 +1,20 @@
-# automation/workers/backup_worker.py
-
 from automation.engine.ssh_engine import SSHEngine
+from automation.application.connection_service import ConnectionService
 
 
-def run_backup_job(job_run):
-    """
-    Executes a configuration backup via SSH.
-    """
-    engine = SSHEngine()
-    logs = []
+def execute_backup(run):
+    artifacts = []
 
-    for device in job_run.devices.all():
-        try:
-            engine.run_command(device, "show running-config")
-            logs.append(f"[{device.name}] backup done.")
-        except Exception as exc:
-            logs.append(f"[{device.name}] backup failed: {exc}")
+    for device in run.devices.all():
+        conn_params = ConnectionService.build_ssh_params(device)
+        ssh = SSHEngine(conn_params)
 
-    return "\n".join(logs)
+        config = ssh.run_command("show running-config")
 
+        artifacts.append({
+            "device_id": str(device.id),
+            "hostname": device.name,
+            "config": config,
+        })
+
+    return artifacts

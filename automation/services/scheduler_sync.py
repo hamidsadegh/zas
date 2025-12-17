@@ -12,7 +12,7 @@ from django_celery_beat.models import (
     CrontabSchedule,
 )
 
-REACHABILITY_TASK = "automation.scheduler.check_devices_reachability"
+REACHABILITY_TASK = "automation.tasks.run_scheduled_reachability"
 REACHABILITY_NAME = "Reachability Poller"
 
 logger = logging.getLogger(__name__)
@@ -100,9 +100,9 @@ def sync_reachability_from_system_settings(settings: SystemSettings) -> Automati
     interval_seconds = settings.reachability_interval_minutes * 60
 
     schedule, _ = AutomationSchedule.objects.get_or_create(
-        task_name="automation.scheduler.check_devices_reachability",
+        task_name=REACHABILITY_TASK,
         defaults={
-            "name": "Reachability Poller",
+            "name": REACHABILITY_NAME,
             "schedule_type": AutomationSchedule.ScheduleType.INTERVAL,
             "interval_seconds": interval_seconds,
             "enabled": True,
@@ -110,6 +110,10 @@ def sync_reachability_from_system_settings(settings: SystemSettings) -> Automati
     )
 
     changed = False
+
+    if schedule.task_name != REACHABILITY_TASK:
+        schedule.task_name = REACHABILITY_TASK
+        changed = True
 
     if schedule.interval_seconds != interval_seconds:
         schedule.interval_seconds = interval_seconds
@@ -135,7 +139,7 @@ def sync_config_backup_schedule() -> AutomationSchedule:
     schedule, _ = AutomationSchedule.objects.get_or_create(
         name="Nightly Configuration Backup",
         defaults={
-            "task_name": "automation.scheduler.schedule_configuration_backups",
+            "task_name": "automation.tasks.run_scheduled_config_backup",
             "schedule_type": AutomationSchedule.ScheduleType.CRONTAB,
             "minute": "0",
             "hour": "4",
@@ -147,7 +151,7 @@ def sync_config_backup_schedule() -> AutomationSchedule:
     )
 
     # If schedule already exists, enforce correct values (idempotent)
-    schedule.task_name = "automation.scheduler.schedule_configuration_backups"
+    schedule.task_name = "automation.tasks.run_scheduled_config_backup"
     schedule.schedule_type = AutomationSchedule.ScheduleType.CRONTAB
     schedule.minute = "0"
     schedule.hour = "4"
@@ -159,6 +163,25 @@ def sync_config_backup_schedule() -> AutomationSchedule:
 
     sync_schedule(schedule)
     return schedule
+
+
+def sync_reachability_cleanup_schedule(days: int = 7):
+    schedule, _ = AutomationSchedule.objects.get_or_create(
+        name="Reachability History Cleanup",
+        defaults={
+            "task_name": "automation.tasks.cleanup_reachability_history",
+            "schedule_type": AutomationSchedule.ScheduleType.CRONTAB,
+            "minute": "30",
+            "hour": "3",
+            "day_of_week": "*",
+            "day_of_month": "*",
+            "month_of_year": "*",
+            "enabled": True,
+        },
+    )
+
+    schedule.save()
+    sync_schedule(schedule)
 
 
 def remove_schedule(schedule: AutomationSchedule) -> None:

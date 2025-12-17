@@ -6,8 +6,15 @@ from automation.models import AutomationJob, JobRun, DeviceTelemetry, Automation
 
 @admin.register(AutomationJob)
 class AutomationJobAdmin(admin.ModelAdmin):
-    list_display = ("name", "job_type", "created_at")
-    search_fields = ("name", "job_type")
+    list_display = (
+        "id",
+        "job_type",
+        "status",
+        "created_at",
+    )
+
+    list_filter = ("job_type", "status")
+    ordering = ("-created_at",)
 
 
 @admin.register(JobRun)

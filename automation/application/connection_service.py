@@ -1,0 +1,30 @@
+from accounts.models import SSHCredential
+from automation.choices import NETMIKO_PLATFORM_MAP
+from automation.platform import resolve_platform
+
+
+class ConnectionService:
+    @staticmethod
+    def build_ssh_params(device):
+        credential = (
+            SSHCredential.objects
+            .select_related("site")
+            .filter(site=device.site)
+            .first()
+        )
+
+        if not credential:
+            raise SSHCredential.DoesNotExist(
+                f"No SSH credentials configured for site '{device.site.name}'."
+            )
+
+        platform = resolve_platform(device)
+
+        return {
+            "device_type": NETMIKO_PLATFORM_MAP.get(platform, "autodetect"),
+            "host": device.management_ip,
+            "username": credential.ssh_username,
+            "password": credential.ssh_password,
+            "port": credential.ssh_port,
+            "timeout": 30,
+        }

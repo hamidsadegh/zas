@@ -3,6 +3,7 @@ from django.core.management.base import BaseCommand
 from automation.services.scheduler_sync import (
     sync_config_backup_schedule,
     sync_reachability_from_system_settings,
+    sync_reachability_cleanup_schedule,
 )
 from accounts.services.settings_service import get_system_settings
 
@@ -24,6 +25,12 @@ class Command(BaseCommand):
         sync_config_backup_schedule()
         self.stdout.write(
             self.style.SUCCESS("✓ Configuration backup schedule synchronized")
+        )
+       
+        # --- Cleanup Reachability Jobs (nightly cron) ---
+        sync_reachability_cleanup_schedule()
+        self.stdout.write(
+            self.style.SUCCESS("✓ Reachability cleanup schedule synchronized")
         )
 
         self.stdout.write(

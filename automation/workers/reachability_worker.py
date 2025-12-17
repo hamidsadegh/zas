@@ -1,44 +1,14 @@
-from django.utils import timezone
-
 from automation.engine.reachability_engine import ReachabilityEngine
-from dcim.models import Device
-from accounts.services.settings_service import update_reachability_last_run
 
 
-def run_reachability_job(job_run, reachability_checks, system_settings):
-    """
-    Executes reachability verification (ping, snmp, ssh, netconf)
-    for the devices in JobRun.
-    """
-
-    enabled_checks = [name for name, enabled in reachability_checks.items() if enabled]
-    if not enabled_checks:
-        return "Reachability skipped: all probes disabled."
-
-    devices = job_run.devices.all()
-    if not devices.exists():
-        devices = Device.objects.all()
-
+def execute_reachability(run, checks: dict) -> dict:
+    devices = run.devices.all()
     engine = ReachabilityEngine()
 
-    results = engine.update_device_status(
+    return engine.measure(
         devices=devices,
-        check_ping=reachability_checks.get("ping"),
-        check_snmp=reachability_checks.get("snmp"),
-        check_ssh=reachability_checks.get("ssh"),
-        check_netconf=reachability_checks.get("netconf"),
+        check_ping=checks.get("ping", True),
+        check_snmp=checks.get("snmp", True),
+        check_ssh=checks.get("ssh", False),
+        check_netconf=checks.get("netconf", False),
     )
-
-    # Format log messages
-    log_lines = []
-    for entry in results:
-        status_str = ", ".join(
-            f"{name.upper()}: {'OK' if result else 'FAIL'}"
-            for name, result in entry["statuses"]
-        )
-        log_lines.append(f"[{entry['device'].name}] {status_str}")
-
-    # Update last run timestamp
-    update_reachability_last_run(system_settings, timezone.now())
-
-    return "\n".join(log_lines) if log_lines else "Reachability executed but no devices were updated."

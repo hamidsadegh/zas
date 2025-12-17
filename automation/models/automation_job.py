@@ -1,21 +1,41 @@
+# automation/models/automation_job.py
+
 import uuid
 from django.db import models
-from django.utils import timezone
+from automation.choices import JobType, JobStatus
+from django.conf import settings
 
 
 class AutomationJob(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    JOB_TYPES = [
-        ('backup', 'Configuration Backup'),
-        ('ztp', 'Zero Touch Provisioning'),
-        ('cli', 'CLI Command Execution'),
-        ('telemetry', 'Telemetry Polling'),
-        ('reachability', 'Reachability Check'),
-    ]
-    name = models.CharField(max_length=100)
-    job_type = models.CharField(max_length=30, choices=JOB_TYPES)
+
+    job_type = models.CharField(
+        max_length=30,
+        choices=JobType.CHOICES,
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=JobStatus.CHOICES,
+        default=JobStatus.PENDING,
+    )
+
     description = models.TextField(blank=True, null=True)
-    created_at = models.DateTimeField(default=timezone.now)
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="automation_jobs",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
 
     def __str__(self):
-        return f"{self.name} ({self.job_type})"
+        creator = self.created_by.username if self.created_by else "System"
+        return f"{self.get_job_type_display()} [{self.status}] by {creator}"
+

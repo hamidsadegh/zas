@@ -25,3 +25,38 @@ BACKUP_COMMAND_MAP = {
     DevicePlatformChoices.EOS: "show running-config",
     DevicePlatformChoices.UNKNOWN: "show running-config",
 }
+
+# ---------------------------------------------------------
+# Types of Jobs for automation
+# ---------------------------------------------------------
+class JobType:
+    CONFIG_BACKUP = "config_backup"
+    REACHABILITY = "reachability"
+    TELEMETRY = "telemetry"
+    COMMAND = "command"
+
+    CHOICES = (
+        (CONFIG_BACKUP, "Configuration Backup"),
+        (REACHABILITY, "Reachability Check"),
+        (TELEMETRY, "Telemetry Snapshot"),
+        (COMMAND, "Run Command"),
+    )
+
+
+# ---------------------------------------------------------
+# Status of Jobs for automation
+# ---------------------------------------------------------
+class JobStatus:
+    PENDING = "pending"
+    QUEUED = "queued"
+    RUNNING = "running"
+    SUCCESS = "success"
+    FAILED = "failed"
+
+    CHOICES = (
+        (PENDING, "Pending"),
+        (QUEUED, "Queued"),
+        (RUNNING, "Running"),
+        (SUCCESS, "Success"),
+        (FAILED, "Failed"),
+    )
