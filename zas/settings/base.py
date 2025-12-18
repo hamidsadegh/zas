@@ -228,22 +228,20 @@ CHANNEL_LAYERS = {
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': env('DATABASE_NAME', default='zas'),
         'USER': env('DATABASE_USER', default='zasuser'),
         'PASSWORD': env('DATABASE_PASSWORD', default='zas_pass'),
         'HOST': env('DATABASE_HOST', default='127.0.0.1'),
-        'PORT': env('DATABASE_PORT', default='3306'),
+        'PORT': env('DATABASE_PORT', default='5432'),
         'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-            'charset': 'utf8mb4',
+            "options": "-c timezone=UTC",
         },
         'TEST': {
             'MIRROR': None,
         },
     }
 }
-SILENCED_SYSTEM_CHECKS = ["models.W036"]
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
