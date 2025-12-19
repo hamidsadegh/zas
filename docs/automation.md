@@ -94,6 +94,15 @@ Celery Beat  →  Celery Worker →  automation.scheduler.schedule_configuration
                                    ↓
                       Save result in DeviceConfig model
 
+### Automation rules by device status
+INVENTORY        → read-only
+PLANNED          → read-only
+STAGED           → discovery updates allowed
+ACTIVE           → config push allowed
+FAILED           → no automation
+DECOMMISSIONING  → teardown only
+
+
 
 
 

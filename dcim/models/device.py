@@ -149,36 +149,36 @@ class Device(models.Model):
         help_text=_("Unique name identifying this device."),
     )
     management_ip = models.GenericIPAddressField(
-        verbose_name=_('management IP address'),
         protocol="IPv4", 
         unique=True,
-        help_text=_("The primary IP address used to manage this device.")
+        verbose_name=_('management IP address'),
+        help_text=_("The primary IP address used to manage this device."),
         )
     mac_address = models.CharField(
         max_length=17, 
         blank=True, 
         null=True,
         verbose_name=_('MAC address'),
-        help_text=_("The MAC address of the device's management interface.")
+        help_text=_("The MAC address of the device's management interface."),
         )
     serial_number = models.CharField(
-        verbose_name=_('serial number'),
         max_length=50, 
         blank=True, 
         null=True,
-        help_text=_("Chassis serial number, assigned by the vendor.")
+        verbose_name=_('serial number'),
+        help_text=_("Chassis serial number, assigned by the vendor."),
         )
     inventory_number = models.CharField(
-        verbose_name=_('inventory number'),
         max_length=100, 
         blank=True, 
         null=True,
-        help_text=_("An internal inventory or asset tag number.")
+        verbose_name=_('inventory number'),
+        help_text=_("An internal inventory or asset tag number."),
         )
     tags = models.ManyToManyField(
         Tag,
-        related_name="devices",
         blank=True,
+        related_name="devices",
         help_text=_(
             "Optional labels used for grouping, filtering, and automation "
             "(e.g. 'reachability_check_tag', 'datacenter', 'production')."
@@ -191,7 +191,8 @@ class Device(models.Model):
         on_delete=models.PROTECT, 
         null=True, 
         blank=True, 
-        related_name="devices"
+        related_name="devices",
+        help_text=_("The specific model of this device."),
         )
     role = models.ForeignKey(
         DeviceRole,
@@ -227,55 +228,72 @@ class Device(models.Model):
     is_stacked = models.BooleanField(
         default=False,
         verbose_name=_('is stacked'),
-        help_text=_('Indicates whether this device is part of a stack or chassis.')
+        help_text=_('Indicates whether this device is part of a stack or chassis.'),
         )
     position = models.DecimalField(
-        verbose_name=_('position (U)'),
         max_digits=4,
         decimal_places=1,
         blank=True,
         null=True,
         validators=[MinValueValidator(1), MaxValueValidator(RACK_U_HEIGHT_MAX + 0.5)],
-        help_text=_('The lowest-numbered unit occupied by the device')
+        verbose_name=_('position (U)'),
+        help_text=_('The lowest-numbered unit occupied by the device'),
         )
     face = models.CharField(
         max_length=5,
-        verbose_name=_('rack face'),
-        choices=DeviceFaceChoices.CHOICES,
         blank=True,
         null=True,
+        choices=DeviceFaceChoices.CHOICES,
+        verbose_name=_('rack face'),
         )
     airflow = models.CharField(
-        verbose_name=_('airflow'),
         max_length=50,
-        choices=DeviceAirflowChoices.CHOICES,
         blank=True,
-        null=True
+        null=True,
+        choices=DeviceAirflowChoices.CHOICES,
+        verbose_name=_('airflow'),
         )
     # Software / operational
     image_version = models.CharField(
-        verbose_name=_('image version'),
         max_length=100, 
         blank=True, 
         null=True,
+        verbose_name=_('image version'),
+        help_text=_("The operating system version running on the device."),
         )
     status = models.CharField(
         max_length=50,
-        default="unknown",
         choices=DeviceStatusChoices,
+        default="unknown",
+    )
+    source = models.CharField(
+        max_length=32,
+        choices=[
+            ("manual", "Manual"),
+            ("discovery", "Discovery"),
+            ("import", "Import"),
+        ],
+        default="manual",
+        db_index=True,
+    )
+    last_seen = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Last time this device was observed by discovery or polling",
     )
     uptime = models.DurationField(
         blank=True, 
         null=True,
         verbose_name=_('uptime'),
-        help_text=_('Total time the device has been operational since last reboot.')
+        help_text=_('Total time the device has been operational since last reboot.'),
         )
     last_reboot = models.DateTimeField(
         blank=True, 
         null=True,
         verbose_name=_('last reboot'),
-        help_text=_('Timestamp of the device\'s last reboot.')
+        help_text=_('Timestamp of the device\'s last reboot.'),
         )
+        
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
