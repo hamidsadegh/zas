@@ -35,12 +35,12 @@ org, created = Organization.objects.get_or_create(
 print(f"Organization '{org.name}' {'created' if created else 'already exists'}.")
 
 # Site creation
-sites = {["Berlin", "Voltastraße 6, 13355 Berlin"], ["Bonn", "Kurt-Schumacher-Straße 3, 53113 Bonn"], ["Standortübergreifend", ""]}
+sites = [["Berlin", "Voltastraße 6, 13355 Berlin"], ["Bonn", "Kurt-Schumacher-Straße 3, 53113 Bonn"], ["Standortübergreifend", ""]]
 for site_name, site_address in sites:
     site, created = Site.objects.get_or_create(
         name=site_name,
         organization=org,
-        defaults={"address": site_address}
+        defaults={"description": site_address}
     )
 print(f"Site '{site.name}' {'created' if created else 'already exists'}.")
 
@@ -70,49 +70,48 @@ def houses(prefix, start, end):
 hierarchy_berlin = []
 
 # # Berlin Altbau
-hierarchy_berlin.append(["Berlin"])
-hierarchy_berlin.append(["Berlin", "BPH"])
-hierarchy_berlin.append(["Berlin", "Altbau"])
-hierarchy_berlin.append(["Berlin", "Altbau", "UG"])
-hierarchy_berlin.append(["Berlin", "Altbau", "EG"])
-hierarchy_berlin.append(["Berlin", "Altbau", "TSU"])
-hierarchy_berlin.append(["Berlin", "Altbau", "EG", "A023A"])
-hierarchy_berlin.append(["Berlin", "Altbau", "EG", "A027"])
+hierarchy_berlin.append(["BPH"])
+hierarchy_berlin.append(["Altbau"])
+hierarchy_berlin.append(["Altbau", "UG"])
+hierarchy_berlin.append(["Altbau", "EG"])
+hierarchy_berlin.append(["Altbau", "TSU"])
+hierarchy_berlin.append(["Altbau", "EG", "A023A"])
+hierarchy_berlin.append(["Altbau", "EG", "A027"])
 
-for floor in floors("OG", 1, 5):
+for floor in floors(1, 5, "OG"):
     hierarchy_berlin.append(["Altbau", floor])
 
-hierarchy_berlin.append(["Berlin", "Altbau", "1OG", "A0198"])
-hierarchy_berlin.append(["Berlin", "Altbau", "1OG", "A120A"])
-hierarchy_berlin.append(["Berlin", "Altbau", "1OG", "A179D"])
-hierarchy_berlin.append(["Berlin", "Altbau", "1OG", "A191B"])
-hierarchy_berlin.append(["Berlin", "Altbau", "3OG", "A307A"])
-hierarchy_berlin.append(["Berlin", "Altbau", "3OG", "A324"])
-hierarchy_berlin.append(["Berlin", "Altbau", "3OG", "A327"])
-hierarchy_berlin.append(["Berlin", "Altbau", "3OG", "A332"])
-hierarchy_berlin.append(["Berlin", "Altbau", "3OG", "A346"])
-hierarchy_berlin.append(["Berlin", "Altbau", "3OG", "A360"])
-hierarchy_berlin.append(["Berlin", "Altbau", "3OG", "A383"])
-hierarchy_berlin.append(["Berlin", "Altbau", "3OG", "A384"])
-hierarchy_berlin.append(["Berlin", "Altbau", "4OG", "A424"])
-hierarchy_berlin.append(["Berlin", "Altbau", "4OG", "A431"])
-hierarchy_berlin.append(["Berlin", "Altbau", "4OG", "A476A"])
-hierarchy_berlin.append(["Berlin", "Altbau", "4OG", "A406A"])
-hierarchy_berlin.append(["Berlin", "Altbau", "4OG", "A406A"])
-hierarchy_berlin.append(["Berlin", "Altbau", "5OG", "A570"])
-hierarchy_berlin.append(["Berlin", "Altbau", "5OG", "A574"])
-hierarchy_berlin.append(["Berlin", "Altbau", "5OG", "A575"])
-hierarchy_berlin.append(["Berlin", "Altbau", "5OG", "A576"])
-hierarchy_berlin.append(["Berlin", "Altbau", "5OG", "A580"])
-hierarchy_berlin.append(["Berlin", "Altbau", "5OG", "A587"])
+hierarchy_berlin.append(["Altbau", "1OG", "A0198"])
+hierarchy_berlin.append(["Altbau", "1OG", "A120A"])
+hierarchy_berlin.append(["Altbau", "1OG", "A179D"])
+hierarchy_berlin.append(["Altbau", "1OG", "A191B"])
+hierarchy_berlin.append(["Altbau", "3OG", "A307A"])
+hierarchy_berlin.append(["Altbau", "3OG", "A324"])
+hierarchy_berlin.append(["Altbau", "3OG", "A327"])
+hierarchy_berlin.append(["Altbau", "3OG", "A332"])
+hierarchy_berlin.append(["Altbau", "3OG", "A346"])
+hierarchy_berlin.append(["Altbau", "3OG", "A360"])
+hierarchy_berlin.append(["Altbau", "3OG", "A383"])
+hierarchy_berlin.append(["Altbau", "3OG", "A384"])
+hierarchy_berlin.append(["Altbau", "4OG", "A424"])
+hierarchy_berlin.append(["Altbau", "4OG", "A431"])
+hierarchy_berlin.append(["Altbau", "4OG", "A476A"])
+hierarchy_berlin.append(["Altbau", "4OG", "A406A"])
+hierarchy_berlin.append(["Altbau", "4OG", "A406A"])
+hierarchy_berlin.append(["Altbau", "5OG", "A570"])
+hierarchy_berlin.append(["Altbau", "5OG", "A574"])
+hierarchy_berlin.append(["Altbau", "5OG", "A575"])
+hierarchy_berlin.append(["Altbau", "5OG", "A576"])
+hierarchy_berlin.append(["Altbau", "5OG", "A580"])
+hierarchy_berlin.append(["Altbau", "5OG", "A587"])
 
 # Berlin Neubau
-hierarchy_berlin.append(["Berlin", "Neubau"])
-hierarchy_berlin.append(["Berlin", "Neubau", "1OG"])
-hierarchy_berlin.append(["Berlin", "Neubau", "1OG", "N1FLEX1"])
-hierarchy_berlin.append(["Berlin", "Neubau", "11OG"])
-hierarchy_berlin.append(["Berlin", "Neubau", "TG"])
-hierarchy_berlin.append(["Berlin", "Neubau", "EG"])
+hierarchy_berlin.append(["Neubau"])
+hierarchy_berlin.append(["Neubau", "1OG"])
+hierarchy_berlin.append(["Neubau", "1OG", "N1FLEX1"])
+hierarchy_berlin.append(["Neubau", "11OG"])
+hierarchy_berlin.append(["Neubau", "TG"])
+hierarchy_berlin.append(["Neubau", "EG"])
 
 for floor in floors(3, 4, "OG"):
     hierarchy_berlin.append(["Neubau", floor])
@@ -120,16 +119,16 @@ for floor in floors(3, 4, "OG"):
 for floor in floors(6, 7, "OG"):
     hierarchy_berlin.append(["Neubau", floor])
 
-hierarchy_berlin.append(["Berlin", "Neubau", "3OG", "N316A"])
-hierarchy_berlin.append(["Berlin", "Neubau", "4OG", "N403B"])
-hierarchy_berlin.append(["Berlin", "Neubau", "4OG", "N414A"])
-hierarchy_berlin.append(["Berlin", "Neubau", "6OG", "N615A"])
-hierarchy_berlin.append(["Berlin", "Neubau", "7OG", "N710A"])
-hierarchy_berlin.append(["Berlin", "Neubau", "9OG", "N908A"])
-hierarchy_berlin.append(["Berlin", "Neubau", "11OG", "N1106"])
-hierarchy_berlin.append(["Berlin", "Neubau", "11OG", "N1107"])
-hierarchy_berlin.append(["Berlin", "Neubau", "11OG", "N1109"])
-hierarchy_berlin.append(["Berlin", "Neubau", "11OG", "N1110"])
+hierarchy_berlin.append(["Neubau", "3OG", "N316A"])
+hierarchy_berlin.append(["Neubau", "4OG", "N403B"])
+hierarchy_berlin.append(["Neubau", "4OG", "N414A"])
+hierarchy_berlin.append(["Neubau", "6OG", "N615A"])
+hierarchy_berlin.append(["Neubau", "7OG", "N710A"])
+hierarchy_berlin.append(["Neubau", "9OG", "N908A"])
+hierarchy_berlin.append(["Neubau", "11OG", "N1106"])
+hierarchy_berlin.append(["Neubau", "11OG", "N1107"])
+hierarchy_berlin.append(["Neubau", "11OG", "N1109"])
+hierarchy_berlin.append(["Neubau", "11OG", "N1110"])
 
 #  Hierarchy Berlin erstellen
 s = Site.objects.get(name="Berlin")
@@ -138,7 +137,6 @@ for h in hierarchy_berlin:
 
 
 hierarchy_bonn = []
-hierarchy_bonn.append(["Bonn"])
 # Bonn Haus 1–9
 for haus in houses("Haus", 1, 9):
     hierarchy_bonn.append([haus])
@@ -153,7 +151,7 @@ print("All area hierarchies created.")
 # -----------------------------
 # Racks
 # -----------------------------
-a = Area.objects.get(name="0198")
+a = Area.objects.get(name="A0198")
 Rack.objects.get_or_create(name=f"RackA1", area=a)
 Rack.objects.get_or_create(name=f"RackB3", area=a)
 Rack.objects.get_or_create(name=f"RackB6", area=a)
@@ -266,51 +264,51 @@ for model, platform, description in device_types_data:
 # -----------------------------
 # Devices
 # -----------------------------
-from dcim.choices import InterfaceStatusChoices  # noqa: E402
+# from dcim.choices import InterfaceStatusChoices  # noqa: E402
 
-all_device_types = list(DeviceType.objects.all())
-all_racks = [r for r in Rack.objects.select_related("area__site").all() if r.area and r.area.site_id]
-all_roles = list(DeviceRole.objects.all())
+# all_device_types = list(DeviceType.objects.all())
+# all_racks = [r for r in Rack.objects.select_related("area__site").all() if r.area and r.area.site_id]
+# all_roles = list(DeviceRole.objects.all())
 
-for i in range(1, 11):
-    if not all_device_types or not all_racks or not all_roles:
-        break
-    dt = random.choice(all_device_types)
-    rack = random.choice(all_racks)
-    role = random.choice(all_roles)
-    device = Device.objects.create(
-        name=f"Device-{i}",
-        management_ip=f"192.168.1.{i}",
-        mac_address=f"00:1A:2B:3C:4D:{i:02X}",
-        serial_number=f"SN{i:04}",
-        inventory_number=f"INV{i:04}",
-        area=rack.area,
-        rack=rack,
-        site=rack.area.site,
-        vendor=dt.vendor,
-        device_type=dt,
-        role=role,
-        image_version="v1.0",
-    )
+# for i in range(1, 11):
+#     if not all_device_types or not all_racks or not all_roles:
+#         break
+#     dt = random.choice(all_device_types)
+#     rack = random.choice(all_racks)
+#     role = random.choice(all_roles)
+#     device = Device.objects.create(
+#         name=f"Device-{i}",
+#         management_ip=f"192.168.1.{i}",
+#         mac_address=f"00:1A:2B:3C:4D:{i:02X}",
+#         serial_number=f"SN{i:04}",
+#         inventory_number=f"INV{i:04}",
+#         area=rack.area,
+#         rack=rack,
+#         site=rack.area.site,
+#         vendor=dt.vendor,
+#         device_type=dt,
+#         role=role,
+#         image_version="v1.0",
+#     )
 
-    # Device Configuration
-    DeviceConfiguration.objects.create(
-        device=device,
-        config_text=f"Sample configuration for {device.name}",
-        backup_time=timezone.now(),
-        success=True,
-    )
+#     # Device Configuration
+#     DeviceConfiguration.objects.create(
+#         device=device,
+#         config_text=f"Sample configuration for {device.name}",
+#         backup_time=timezone.now(),
+#         success=True,
+#     )
 
-    # Interfaces
-    for j in range(1, 5):
-        Interface.objects.create(
-            name=f"Gig0/{j}",
-            device=device,
-            description=f"Interface {j}",
-            mac_address=f"00:1A:2B:3C:{i:02X}:{j:02X}",
-            ip_address=f"10.0.{i}.{j}",
-            status=random.choice(
-                [choice[0] for choice in InterfaceStatusChoices.CHOICES]
-            ),
-            speed=random.choice([100, 1000, 10000]),
-        )
+#     # Interfaces
+#     for j in range(1, 5):
+#         Interface.objects.create(
+#             name=f"Gig0/{j}",
+#             device=device,
+#             description=f"Interface {j}",
+#             mac_address=f"00:1A:2B:3C:{i:02X}:{j:02X}",
+#             ip_address=f"10.0.{i}.{j}",
+#             status=random.choice(
+#                 [choice[0] for choice in InterfaceStatusChoices.CHOICES]
+#             ),
+#             speed=random.choice([100, 1000, 10000]),
+#         )

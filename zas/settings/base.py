@@ -237,9 +237,6 @@ DATABASES = {
         'OPTIONS': {
             "options": "-c timezone=UTC",
         },
-        'TEST': {
-            'MIRROR': None,
-        },
     }
 }
 

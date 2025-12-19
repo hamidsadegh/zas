@@ -4,7 +4,7 @@ django-environ
 django-celery-beat
 django-crontab
 django-encrypted-model-fields
-mysqlclient
+psycopg==3.3.2
 netmiko
 pysnmp
 tacacs_plus
