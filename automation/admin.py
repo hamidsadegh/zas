@@ -20,8 +20,8 @@ class AutomationJobAdmin(admin.ModelAdmin):
 @admin.register(JobRun)
 class JobRunAdmin(admin.ModelAdmin):
     list_display = ("job", "status", "started_at", "finished_at")
-    search_fields = ("job__name", "status")
-    list_filter = ("status",)
+    search_fields = ("job__job_type", "status")
+    list_filter = ("status", "job__job_type")
 
 
 @admin.register(DeviceTelemetry)
