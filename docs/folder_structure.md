@@ -1,3 +1,180 @@
+### actuel 
+.
+├── accounts
+│   ├── domain
+│   │   └── __pycache__
+│   ├── forms
+│   │   └── __pycache__
+│   ├── migrations
+│   │   └── __pycache__
+│   ├── models
+│   │   └── __pycache__
+│   ├── __pycache__
+│   ├── services
+│   │   └── __pycache__
+│   ├── templates
+│   │   ├── accounts
+│   │   └── settings
+│   ├── tests
+│   │   └── __pycache__
+│   └── views
+│       └── __pycache__
+├── api
+│   ├── __pycache__
+│   └── v1
+│       ├── accounts
+│       │   └── __pycache__
+│       ├── automation
+│       │   └── __pycache__
+│       ├── dcim
+│       │   └── __pycache__
+│       ├── ipam
+│       │   └── __pycache__
+│       └── __pycache__
+├── automation
+│   ├── application
+│   │   └── __pycache__
+│   ├── backup_tasks
+│   │   └── __pycache__
+│   ├── engine
+│   │   └── __pycache__
+│   ├── management
+│   │   └── commands
+│   │       └── __pycache__
+│   ├── migrations
+│   │   └── __pycache__
+│   ├── models
+│   │   └── __pycache__
+│   ├── __pycache__
+│   ├── services
+│   │   └── __pycache__
+│   ├── static
+│   │   └── automation
+│   │       └── js
+│   ├── storage
+│   │   └── __pycache__
+│   ├── templates
+│   │   └── automation
+│   ├── tests
+│   │   └── __pycache__
+│   └── workers
+│       └── __pycache__
+├── backup
+├── celerybeat
+├── core
+│   ├── migrations
+│   │   └── __pycache__
+│   ├── __pycache__
+│   └── templates
+│       └── core
+├── data
+│   ├── backups
+│   ├── exports
+│   ├── imports
+│   └── pcap
+├── db_init
+├── dcim
+│   ├── forms
+│   │   └── __pycache__
+│   ├── management
+│   │   ├── commands
+│   │   │   └── __pycache__
+│   │   └── __pycache__
+│   ├── migrations
+│   │   └── __pycache__
+│   ├── models
+│   │   └── __pycache__
+│   ├── __pycache__
+│   ├── services
+│   │   └── ipmort_export
+│   ├── templates
+│   │   └── dcim
+│   ├── tests
+│   │   └── __pycache__
+│   ├── utils
+│   └── views
+│       └── __pycache__
+├── docs
+│   ├── AI
+│   ├── redis
+│   └── zas
+├── infrastructure
+│   ├── grafana
+│   ├── logrotate
+│   ├── nginx
+│   └── systemd
+├── ipam
+│   ├── migrations
+│   │   └── __pycache__
+│   ├── models
+│   │   └── __pycache__
+│   ├── __pycache__
+│   └── services
+│       └── __pycache__
+├── llm
+│   ├── chains
+│   ├── embeddings
+│   ├── prompts
+│   ├── __pycache__
+│   └── tools
+├── logs
+├── monitoring
+│   ├── collectors
+│   ├── exporters
+│   ├── __pycache__
+│   └── services
+├── network
+│   ├── adapters
+│   ├── __pycache__
+│   └── services
+├── scripts
+├── services
+│   └── __pycache__
+├── static
+│   ├── css
+│   ├── dcim
+│   │   └── js
+│   ├── images
+│   └── img
+├── staticfiles
+│   ├── admin
+│   │   ├── css
+│   │   │   └── vendor
+│   │   │       └── select2
+│   │   ├── img
+│   │   │   └── gis
+│   │   └── js
+│   │       ├── admin
+│   │       └── vendor
+│   │           ├── jquery
+│   │           ├── select2
+│   │           │   └── i18n
+│   │           └── xregexp
+│   ├── css
+│   ├── dcim
+│   │   └── js
+│   ├── images
+│   ├── img
+│   └── rest_framework
+│       ├── css
+│       ├── docs
+│       │   ├── css
+│       │   ├── img
+│       │   └── js
+│       ├── fonts
+│       ├── img
+│       └── js
+├── utilities
+│   └── __pycache__
+└── zas
+    ├── __pycache__
+    ├── settings
+    │   └── __pycache__
+    └── templates
+        └── admin
+
+
+### Old 
 zas/
 ├── manage.py
 ├── zas/                      # Django project config

@@ -2,7 +2,8 @@ import ipaddress
 
 from django.core.exceptions import ValidationError
 
-from ipam.models import IPAddress, IPAddressRoleChoices, IPAddressStatusChoices
+from ipam.models import IPAddress
+from ipam.choices import IPAddressRoleChoices, IPAddressStatusChoices
 
 
 class IPAddressValidationService:
