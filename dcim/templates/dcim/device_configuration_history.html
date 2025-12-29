@@ -85,12 +85,12 @@ th, td {
 
         {% if selected_config %}
             <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin-top:0.75rem; justify-content: space-between;">
-                <h3 style="margin:0;">Backup from {{ selected_config.backup_time|date:"Y-m-d H:i" }}</h3>
+                <h3 style="margin:0;">Configuration from {{ selected_config.collected_at|date:"Y-m-d H:i" }}</h3>
                 <button type="button" class="copy-btn" data-copy-target="#selected-config-text">⧉ Copy</button>
             </div>
             <pre class="config-box" id="selected-config-text">{{ selected_config.config_text|default:""|escape }}</pre>
         {% else %}
-            <p>Select a backup entry below to view its content.</p>
+            <p>Select a configuration entry below to view its content.</p>
         {% endif %}
     </div>
 
@@ -113,7 +113,7 @@ th, td {
                         <td>
                             <input type="checkbox" name="compare" value="{{ config.id }}">
                         </td>
-                        <td>{{ config.backup_time|date:"Y-m-d H:i" }}</td>
+                        <td>{{ config.collected_at|date:"Y-m-d H:i" }}</td>
                         <td>
                             {% if config.success %}
                                 <span class="tag" style="background:#dcfce7;color:#166534;">Success</span>
@@ -123,17 +123,18 @@ th, td {
                         </td>
                         <td>
                             <a class="config-link" href="?focus={{ config.id }}">View</a>
+                            {% if previous %}
+                                <a class="config-link" href="{% url 'device_configuration_visual_diff' device.id config.id previous.id %}">Diff against previous</a>
+                            {% endif %}
                             {% if selected_config and selected_config.id != config.id %}
                                 <a class="config-link" href="{% url 'device_configuration_visual_diff' device.id selected_config.id config.id %}">Advanced diff</a>
-                            {% elif previous %}
-                                <a class="config-link" href="{% url 'device_configuration_visual_diff' device.id config.id previous.id %}">Diff against previous</a>
                             {% endif %}
                         </td>
                     </tr>
                     {% endwith %}
                     {% empty %}
                     <tr>
-                        <td colspan="4" style="text-align:center;">No configuration backups found.</td>
+                        <td colspan="4" style="text-align:center;">No configurations found.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

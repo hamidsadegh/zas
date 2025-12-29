@@ -336,12 +336,12 @@ main {
             </div>
         </form>
 
-        <div class="settings-form section-card" aria-label="Configuration backup status">
+        <div class="settings-form section-card" aria-label="Configuration collection status">
             <div class="section-heading">
                 <div>
                     <p class="tag">Automation</p>
-                    <h2 style="margin: 0;">Configuration Backup</h2>
-                    <p style="margin: 0; color: var(--muted);">Read-only view of the backup schedule and latest run.</p>
+                    <h2 style="margin: 0;">Configuration Collection</h2>
+                    <p style="margin: 0; color: var(--muted);">Read-only view of the configuration schedule and latest run.</p>
                 </div>
                 <div class="meta-line">
                     {% if backup_schedule %}
@@ -351,7 +351,7 @@ main {
                             <span class="tag" style="background:#fef2f2;color:#991b1b;">Disabled</span>
                         {% endif %}
                     {% else %}
-                        <span class="tag" style="background:#fef2f2;color:#991b1b;">Backup schedule not initialized</span>
+                        <span class="tag" style="background:#fef2f2;color:#991b1b;">Configuration schedule not initialized</span>
                     {% endif %}
                 </div>
             </div>
@@ -370,13 +370,13 @@ main {
                     <span>{{ backup_schedule.periodic_task.total_run_count|default:0 }}</span>
                 </div>
                 {% else %}
-                <p style="margin:0;">No configuration backup schedule has been set up.</p>
+                <p style="margin:0;">No configuration collection schedule has been set up.</p>
                 {% endif %}
                 <div class="info-item">
-                    <span>Last successful backup</span>
+                    <span>Last successful configuration</span>
                     <span>
                         {% if latest_backup %}
-                            {{ latest_backup.backup_time }} ({{ latest_backup.device.name }})
+                            {{ latest_backup.collected_at }} ({{ latest_backup.device.name }})
                         {% else %}
                             Never
                         {% endif %}

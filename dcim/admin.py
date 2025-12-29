@@ -122,19 +122,56 @@ class DeviceModuleAdmin(admin.ModelAdmin):
 
 @admin.register(DeviceConfiguration)
 class DeviceConfigurationAdmin(admin.ModelAdmin):
-    list_display = ("device", "backup_time", "success", "source")
-    list_filter = ("success", "source", "device__site")
-    search_fields = ("device__name",)
-    readonly_fields = ("config_text", "error_message", "backup_time")
+    list_display = (
+        "device",
+        "collected_at",
+        "source",
+        "success",
+        "short_hash",
+    )
+
+    readonly_fields = (
+        "device",
+        "config_text",
+        "collected_at",
+        "collected_by",
+        "source",
+        "config_hash",
+        "previous",
+        "success",
+        "error_message",
+        "created_at",
+    )
+
+    ordering = ("-collected_at",)
+    search_fields = ("device__name", "config_hash")
+    list_filter = ("source", "success")
+
+    def short_hash(self, obj):
+        return obj.config_hash[:12]
+
+    short_hash.short_description = "Config hash"
 
 
 # -----------------------
 # Inline DeviceConfiguration for DeviceAdmin
 # -----------------------
-class DeviceConfigurationInline(admin.StackedInline):
+class DeviceConfigurationInline(admin.TabularInline):
     model = DeviceConfiguration
     extra = 0
-    readonly_fields = ["created_at", "updated_at"]
+    can_delete = False
+
+    readonly_fields = (
+        "collected_at",
+        "source",
+        "success",
+    )
+
+    fields = (
+        "collected_at",
+        "source",
+        "success",
+    )
 
 
 class DeviceModuleInline(admin.TabularInline):

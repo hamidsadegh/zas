@@ -25,7 +25,7 @@ class SystemSettingsView(LoginRequiredMixin, View):
         ).first()
         latest_backup = (
             DeviceConfiguration.objects.filter(success=True)
-            .order_by("-backup_time")
+            .order_by("-collected_at")
             .first()
         )
         return {

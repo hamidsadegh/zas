@@ -53,17 +53,17 @@ Celery Architecture
 │                          │
 │  Registered tasks:       │
 │                          │
-│  - automation.scheduler. │
-│    check_devices_        │
+│  - automation.tasks.     │
+│    run_scheduled_        │
 │    reachability          │
 │                          │
-│  - automation.scheduler. │
-│    schedule_configuration│
-│    _backups               │
+│  - automation.tasks.     │
+│    run_scheduled_        │
+│    config_backup         │
 │                          │
-│  - automation.backup_    │
-│    tasks.config_backup.  │
-│    backup_device_config  │
+│  - automation.tasks.     │
+│    cleanup_reachability_ │
+│    history               │
 └─────────────┬────────────┘
               │
               │ calls
@@ -116,7 +116,7 @@ django-celery-beat mirrors it into PeriodicTask
 Celery Beat wakes up
 Sends task name + args to Redis
 Example:
-automation.scheduler.check_devices_reachability
+automation.tasks.run_scheduled_reachability
 
 3️⃣ Execution
 Celery Worker receives the task

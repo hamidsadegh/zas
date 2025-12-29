@@ -1,10 +1,15 @@
 from automation.engine.ssh_engine import SSHEngine
 from automation.application.connection_service import ConnectionService
-from dcim.services.configuration_persistence_service import ConfigurationPersistenceService
+from dcim.services.configuration_persistence_service import (
+    ConfigurationPersistenceService,
+)
 
 
 def execute_backup(run):
     artifacts = []
+
+    source = "scheduled" if run.job.created_by is None else "manual"
+    collected_by = run.job.created_by
 
     for device in run.devices.all():
         try:
@@ -13,11 +18,11 @@ def execute_backup(run):
 
             config = ssh.run_command("show running-config")
 
-            # 🔑 THIS WAS MISSING
-            ConfigurationPersistenceService.persist(
+            cfg = ConfigurationPersistenceService.persist(
                 device=device,
                 config_text=config,
-                source="scheduled" if run.job.created_by is None else "manual",
+                source=source,
+                collected_by=collected_by,
                 success=True,
             )
 
@@ -25,13 +30,18 @@ def execute_backup(run):
                 "device_id": str(device.id),
                 "hostname": device.name,
                 "status": "success",
+                "stored": cfg is not None,          # 🔑 new vs unchanged
+                "config_id": str(cfg.id) if cfg else None,
             })
 
         except Exception as exc:
+            # IMPORTANT:
+            # We record the failure, but we do NOT create a fake configuration.
             ConfigurationPersistenceService.persist(
                 device=device,
                 config_text="",
-                source="scheduled",
+                source=source,
+                collected_by=collected_by,
                 success=False,
                 error_message=str(exc),
             )

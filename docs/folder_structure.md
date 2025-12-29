@@ -282,7 +282,6 @@ zas/
 │   ├── admin.py
 │   ├── tasks/
 │   │   ├── reachability.py
-│   │   ├── config_backup.py
 │   │   ├── telemetry_polling.py
 │   │   └── cli_commands.py
 │   ├── services/

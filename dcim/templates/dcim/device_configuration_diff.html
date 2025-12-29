@@ -72,7 +72,7 @@ pre.diff {
             </div>
         </div>
         <p class="diff-meta">
-            Comparing {{ secondary_config.backup_time|date:"Y-m-d H:i" }} ➜ {{ primary_config.backup_time|date:"Y-m-d H:i" }}
+            Comparing {{ secondary_config.collected_at|date:"Y-m-d H:i" }} ➜ {{ primary_config.collected_at|date:"Y-m-d H:i" }}
         </p>
         <pre class="diff">{{ diff|default:"No differences found."|escape }}</pre>
     </div>

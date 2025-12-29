@@ -1,13 +1,11 @@
 import random
 
 import pytest
-from django.utils import timezone
 
 from dcim.choices import InterfaceStatusChoices
 from dcim.models import (
     Area,
     Device,
-    DeviceConfiguration,
     DeviceModule,
     DeviceRole,
     DeviceType,
@@ -16,6 +14,9 @@ from dcim.models import (
     Rack,
     Site,
     Vendor,
+)
+from dcim.services.configuration_persistence_service import (
+    ConfigurationPersistenceService,
 )
 
 
@@ -91,12 +92,11 @@ def test_create_object():
                 description=f"{module_name} installed in {device.name}",
             )
 
-        # Device Configuration
-        DeviceConfiguration.objects.create(
+        # Device Configuration (persist via domain service)
+        ConfigurationPersistenceService.persist(
             device=device,
             config_text=f"Sample configuration for {device.name}",
-            backup_time=timezone.now(),
-            success=True,
+            source="test",
         )
 
         # Interfaces

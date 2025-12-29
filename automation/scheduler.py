@@ -1,10 +1,8 @@
  # automation/scheduler.py
 import logging
-from os import name
 
 from dcim.models import Device
 from automation.models import AutomationJob, JobRun
-from automation.backup_tasks.config_backup import backup_device_config
 from automation.workers.job_runner import execute_job
 from accounts.services.settings_service import (
     get_reachability_checks,
@@ -61,20 +59,4 @@ def check_devices_reachability(tags: list = None):
     return "scheduled"
 
 
-# ---------------------------------------------------------------------
-# BACKUP SCHEDULER
-# ---------------------------------------------------------------------
-@shared_task
-def schedule_configuration_backups():
-    """
-    Schedules configuration backup tasks for all devices tagged
-    with 'config_backup_tag'. Each device is backed up by
-    an individual Celery task.
-    """
-    devices = Device.objects.filter(tags__name="config_backup_tag").distinct()
-
-    for device in devices:
-        backup_device_config.delay(str(device.id))
-
-    logger.info(f"Scheduled configuration backups for {devices.count()} devices.")
-    return "scheduled"
+# Legacy backup scheduler removed in favor of automation.tasks.run_scheduled_config_backup

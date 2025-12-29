@@ -133,7 +133,7 @@ class DeviceConfigurationViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         queryset = DeviceConfiguration.objects.select_related("device").order_by(
-            "-backup_time"
+            "-collected_at"
         )
         device_id = self.kwargs.get("device_id")
         if device_id:

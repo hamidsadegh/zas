@@ -4,8 +4,9 @@
 
 {% block styles %}
 .visual-diff-wrapper {
-    width: 95%;
+    width: min(99vw, 1600px);
     margin: 0 auto;
+    padding: 0 1rem; /* ensures content stays inside viewport and centered */
 }
 .detail-card {
     background: var(--surface);
@@ -13,33 +14,41 @@
     padding: 1.5rem;
     box-shadow: var(--shadow);
 }
-.diff-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1rem;
-}
-.diff-column {
+.diff-scroll {
+    max-height: 70vh;
+    overflow-y: auto;
     border: 1px solid var(--border);
     border-radius: 16px;
-    overflow: auto;
-    max-height: 32rem;
+    margin: 0; /* keep inside viewport */
+    padding: 0 1rem;
 }
-.diff-column header {
+.diff-headings {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
     padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--border);
-    font-weight: 600;
     background: #f8faff;
+    font-weight: 600;
 }
-.diff-line {
+.diff-grid {
+    display: block;
+}
+.diff-row {
     display: grid;
-    grid-template-columns: 4rem 1fr;
-    gap: 0.5rem;
-    padding: 0.25rem 1rem;
+    grid-template-columns: 3.5rem 1fr 3.5rem 1fr;
+    gap: 0.75rem;
+    padding: 0.35rem 0.75rem;
     font-family: "Fira Code", "SFMono-Regular", Menlo, monospace;
-    white-space: pre-wrap;
+    line-height: 1.45;
 }
-.diff-line .line-number {
+.diff-row .line-number {
     color: var(--muted);
+    text-align: right;
+}
+.diff-cell {
+    white-space: pre;
+    overflow-x: auto;
 }
 .diff-added {
     background: #d4ffd4;
@@ -86,7 +95,7 @@
                 <p class="tag">Advanced Diff</p>
                 <h1 style="margin:0;">{{ device.name }}</h1>
                 <p style="margin:0;color:var(--muted);">
-                    {{ secondary_config.backup_time|date:"Y-m-d H:i" }} → {{ primary_config.backup_time|date:"Y-m-d H:i" }}
+                    {{ secondary_config.collected_at|date:"Y-m-d H:i" }} → {{ primary_config.collected_at|date:"Y-m-d H:i" }}
                 </p>
             </div>
             <div>
@@ -97,22 +106,18 @@
     </div>
 
     <div class="detail-card">
-        <div class="diff-grid">
-            <div class="diff-column">
-                <header>Old Configuration</header>
-                {% for left_line, left_class, _, _ in diff_rows %}
-                <div class="diff-line {{ left_class }}">
-                    <span class="line-number">{{ forloop.counter }}</span>
-                    <code>{{ left_line|default:""|escape }}</code>
-                </div>
-                {% endfor %}
+        <div class="diff-scroll">
+            <div class="diff-headings">
+                <div>Old Configuration</div>
+                <div>New Configuration</div>
             </div>
-            <div class="diff-column">
-                <header>New Configuration</header>
-                {% for _, _, right_line, right_class in diff_rows %}
-                <div class="diff-line {{ right_class }}">
+            <div class="diff-grid">
+                {% for left_line, left_class, right_line, right_class in diff_rows %}
+                <div class="diff-row">
                     <span class="line-number">{{ forloop.counter }}</span>
-                    <code>{{ right_line|default:""|escape }}</code>
+                    <code class="diff-cell {{ left_class }}">{{ left_line|default:""|escape }}</code>
+                    <span class="line-number">{{ forloop.counter }}</span>
+                    <code class="diff-cell {{ right_class }}">{{ right_line|default:""|escape }}</code>
                 </div>
                 {% endfor %}
             </div>

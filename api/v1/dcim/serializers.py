@@ -147,7 +147,7 @@ class DeviceConfigurationSerializer(serializers.ModelSerializer):
             "id",
             "device",
             "device_name",
-            "backup_time",
+            "collected_at",
             "success",
             "error_message",
             "config_text",

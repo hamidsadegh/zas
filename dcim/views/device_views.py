@@ -176,7 +176,7 @@ class DeviceDetailView(LoginRequiredMixin, DetailView):
         context['reachability_checks'] = get_reachability_checks(get_system_settings())
         latest_config = (
             DeviceConfiguration.objects.filter(device=device)
-            .order_by("-backup_time")
+            .order_by("-collected_at")
             .first()
         )
         if latest_config:
@@ -259,13 +259,12 @@ def areas_for_site(request):
 @login_required
 def device_configuration_history(request, device_id):
     device = get_object_or_404(Device, id=device_id)
-    queryset = DeviceConfiguration.objects.filter(device=device).order_by("-backup_time")
+    queryset = DeviceConfiguration.objects.filter(device=device).order_by("-collected_at")
     configurations = list(queryset)
     config_rows = []
-    previous = None
-    for config in configurations:
+    for idx, config in enumerate(configurations):
+        previous = configurations[idx + 1] if idx + 1 < len(configurations) else None
         config_rows.append({"config": config, "previous": previous})
-        previous = config
     focus_id = request.GET.get("focus")
     selected_config = None
     if focus_id:
@@ -284,7 +283,7 @@ def device_configuration_history(request, device_id):
                 config_id=selected[0],
                 other_id=selected[1],
             )
-        messages.error(request, "Select two configuration backups to compare.")
+        messages.error(request, "Select two configurations to compare.")
 
     context = {
         "device": device,

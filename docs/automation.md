@@ -77,7 +77,7 @@ Celery Task  →  Worker  →  Engines  →  DB Models
 - Device Reachability in Detail:
 Celery Beat (schedule) 
   → Celery Worker (task) 
-    → automation.scheduler.check_devices_reachability
+    → automation.tasks.run_scheduled_reachability
       → JobRun created/loaded
         → execute_job(job_run) in workers.job_runner
           → ReachabilityEngine.update_device_status(...)
@@ -86,13 +86,13 @@ Celery Beat (schedule)
           → JobRun.log + status updated
 
 - Configuration Backup:
-Celery Beat  →  Celery Worker →  automation.scheduler.schedule_configuration_backups
+Celery Beat  →  Celery Worker →  automation.tasks.run_scheduled_config_backup
                                    ↓
-                             SSHEngine (Netmiko wrapper)
+                          JobService / JobDispatcher
                                    ↓
-                          Command Map (per platform/type)
+                      automation.workers.backup_worker.execute_backup
                                    ↓
-                      Save result in DeviceConfig model
+              dcim.services.configuration_persistence_service.persist
 
 ### Automation rules by device status
 INVENTORY        → read-only
@@ -101,7 +101,6 @@ STAGED           → discovery updates allowed
 ACTIVE           → config push allowed
 FAILED           → no automation
 DECOMMISSIONING  → teardown only
-
 
 
 

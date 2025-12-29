@@ -426,7 +426,7 @@ main {
         </div>
         {% if latest_config %}
             <p class="config-meta">
-                Last backup: {{ latest_config.backup_time|date:"Y-m-d H:i" }} ·
+                Last configuration: {{ latest_config.collected_at|date:"Y-m-d H:i" }} ·
                 {% if latest_config.success %}Success{% else %}Failed{% endif %}
             </p>
             <pre class="config-box" id="device-config">{{ latest_config_preview|escape }}</pre>
@@ -435,7 +435,7 @@ main {
                 <a class="config-link secondary" href="{% url 'device_configuration_history' device.id %}">History</a>
             </div>
         {% else %}
-            <p>No configuration backups recorded.</p>
+            <p>No configurations recorded.</p>
         {% endif %}
     </div>
 
