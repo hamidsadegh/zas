@@ -171,8 +171,7 @@
             <a href="{% url 'dashboard' %}">Dashboard</a>
             <a href="{% url 'device_list' %}">Devices</a>
             <a href="{% url 'vlan_list' %}">VLANs</a>
-            <!-- <a href="{% url 'area_list' %}">Areas</a>
-            <a href="{% url 'rack_list' %}">Racks</a> -->
+            <a href="{% url 'organization_home' %}" {% if request.path|slice:":13" == '/organization' %}class="active"{% endif %}>Organization</a>
             <a href="{% url 'system_settings' %}">Settings</a>
             <a href="/admin/">Admin</a>
         </nav>

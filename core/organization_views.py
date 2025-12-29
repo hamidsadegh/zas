@@ -1,0 +1,338 @@
+from collections import defaultdict
+from typing import List
+
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse, HttpResponseBadRequest
+from django.shortcuts import get_object_or_404, render
+from django.template.loader import render_to_string
+from django.urls import reverse
+from django.utils.decorators import method_decorator
+from django.views.generic import TemplateView
+
+from core.forms.organization_forms import (
+    OrganizationForm,
+    SiteForm,
+    AreaForm,
+    RackForm,
+)
+from dcim.models import Organization, Site, Area, Rack
+
+
+def _build_area_tree(areas):
+    """Return a nested tree structure from a flat area queryset."""
+    children = defaultdict(list)
+    area_map = {}
+    roots: List[Area] = []
+
+    for area in areas:
+        area_map[area.id] = area
+        children[area.parent_id].append(area)
+
+    for area in areas:
+        if area.parent_id is None:
+            roots.append(area)
+
+    def build(node):
+        return {
+            "area": node,
+            "children": [build(child) for child in sorted(children[node.id], key=lambda a: a.name)],
+        }
+
+    return [build(root) for root in sorted(roots, key=lambda a: a.name)]
+
+
+def _render_site_detail(request, site, selected_area_id=None, error=None):
+    areas = (
+        site.areas.select_related("parent")
+        .prefetch_related("children")
+        .order_by("name")
+    )
+
+    selected_area = None
+    selected_area_id = selected_area_id or request.GET.get("area")
+    if selected_area_id:
+        selected_area = areas.filter(id=selected_area_id).first()
+    if selected_area is None:
+        selected_area = areas.first()
+
+    area_tree = _build_area_tree(areas)
+    rack_edit_id = request.GET.get("rack")
+    rack_edit = None
+    if rack_edit_id:
+        try:
+            rack_edit = Rack.objects.get(id=rack_edit_id, area__site=site)
+        except Rack.DoesNotExist:
+            rack_edit = None
+
+    racks = Rack.objects.filter(area=selected_area).order_by("name") if selected_area else []
+
+    context = {
+        "site": site,
+        "area_tree": area_tree,
+        "selected_area": selected_area,
+        "areas_exist": areas.exists(),
+        "area_form": AreaForm(instance=selected_area) if selected_area else AreaForm(),
+        "child_area_form": AreaForm(),
+        "rack_form": RackForm(),
+        "racks": racks,
+        "rack_edit": rack_edit,
+        "error": error,
+        "oob": False,
+    }
+    return render(request, "core/organization/_site_detail.html", context)
+
+
+def _render_site_list(request, organization, selected_site=None, include_detail=False):
+    sites = organization.sites.order_by("name") if organization else Site.objects.none()
+    site_list_html = render_to_string(
+        "core/organization/_site_list.html",
+        {"sites": sites, "selected_site": selected_site, "organization": organization},
+        request=request,
+    )
+
+    if include_detail and selected_site:
+        detail_html = render_to_string(
+            "core/organization/_site_detail.html",
+            {
+                **_site_detail_context(request, selected_site),
+                "oob": True,
+            },
+            request=request,
+        )
+        return HttpResponse(site_list_html + detail_html)
+
+    return HttpResponse(site_list_html)
+
+
+def _site_detail_context(request, site):
+    areas = (
+        site.areas.select_related("parent")
+        .prefetch_related("children")
+        .order_by("name")
+    )
+    selected_area_id = request.GET.get("area")
+    selected_area = None
+    if selected_area_id:
+        selected_area = areas.filter(id=selected_area_id).first()
+    if selected_area is None:
+        selected_area = areas.first()
+
+    area_tree = _build_area_tree(areas)
+    rack_edit_id = request.GET.get("rack")
+    rack_edit = None
+    if rack_edit_id:
+        try:
+            rack_edit = Rack.objects.get(id=rack_edit_id, area__site=site)
+        except Rack.DoesNotExist:
+            rack_edit = None
+    racks = Rack.objects.filter(area=selected_area).order_by("name") if selected_area else []
+
+    return {
+        "site": site,
+        "area_tree": area_tree,
+        "selected_area": selected_area,
+        "areas_exist": areas.exists(),
+        "area_form": AreaForm(instance=selected_area) if selected_area else AreaForm(),
+        "child_area_form": AreaForm(),
+        "rack_form": RackForm(),
+        "racks": racks,
+        "rack_edit": rack_edit,
+        "error": None,
+    }
+
+
+@method_decorator(login_required, name="dispatch")
+class OrganizationHomeView(TemplateView):
+    template_name = "core/organization/index.html"
+
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+        if request.headers.get("HX-Request"):
+            return render(request, "core/organization/_page.html", context)
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        organization = Organization.objects.order_by("name").first()
+        selected_site_id = self.request.GET.get("site")
+        sites = organization.sites.order_by("name") if organization else Site.objects.none()
+        selected_site = None
+        if selected_site_id:
+            selected_site = sites.filter(id=selected_site_id).first()
+        if selected_site is None:
+            selected_site = sites.first()
+
+        context.update(
+            {
+                "organization": organization,
+                "organization_form": OrganizationForm(instance=organization),
+                "sites": sites,
+                "selected_site": selected_site,
+                **(_site_detail_context(self.request, selected_site) if selected_site else {}),
+            }
+        )
+        return context
+
+
+@login_required
+def organization_update(request, org_id):
+    organization = get_object_or_404(Organization, id=org_id)
+    form = OrganizationForm(request.POST, instance=organization)
+    if form.is_valid():
+        form.save()
+        response = HttpResponse(status=204)
+        response["HX-Redirect"] = reverse("organization_home")
+        return response
+
+    html = render_to_string(
+        "core/organization/_organization_card.html",
+        {"organization": organization, "organization_form": form},
+        request=request,
+    )
+    return HttpResponse(html, status=400)
+
+
+@login_required
+def site_detail(request, site_id):
+    site = get_object_or_404(Site, id=site_id)
+    return _render_site_detail(request, site, request.GET.get("area"))
+
+
+@login_required
+def site_create(request):
+    organization = Organization.objects.order_by("name").first()
+    if not organization:
+        return HttpResponseBadRequest("Organization is required.")
+
+    form = SiteForm(request.POST)
+    if form.is_valid():
+        site = form.save(commit=False)
+        site.organization = organization
+        site.save()
+        response = HttpResponse(status=204)
+        response["HX-Redirect"] = reverse("organization_home") + f"?site={site.id}"
+        return response
+
+    sites = organization.sites.order_by("name")
+    html = render_to_string(
+        "core/organization/_site_list.html",
+        {"sites": sites, "selected_site": None, "organization": organization, "site_form": form},
+        request=request,
+    )
+    return HttpResponse(html, status=400)
+
+
+@login_required
+def site_edit_form(request, site_id):
+    site = get_object_or_404(Site, id=site_id)
+    form = SiteForm(instance=site)
+    html = render_to_string(
+        "core/organization/_site_row_form.html",
+        {"form": form, "site": site},
+        request=request,
+    )
+    return HttpResponse(html)
+
+
+@login_required
+def site_update(request, site_id):
+    site = get_object_or_404(Site, id=site_id)
+    form = SiteForm(request.POST, instance=site)
+    if form.is_valid():
+        form.save()
+        response = HttpResponse(status=204)
+        response["HX-Redirect"] = reverse("organization_home") + f"?site={site.id}"
+        return response
+
+    html = render_to_string(
+        "core/organization/_site_row_form.html",
+        {"form": form, "site": site},
+        request=request,
+    )
+    return HttpResponse(html, status=400)
+
+
+@login_required
+def site_delete(request, site_id):
+    site = get_object_or_404(Site, id=site_id)
+    site.delete()
+    response = HttpResponse(status=204)
+    response["HX-Redirect"] = reverse("organization_home")
+    return response
+
+
+@login_required
+def area_create(request):
+    site_id = request.POST.get("site_id")
+    site = get_object_or_404(Site, id=site_id)
+    parent_id = request.POST.get("parent_id")
+    parent = None
+    if parent_id:
+        parent = get_object_or_404(Area, id=parent_id, site=site)
+
+    form = AreaForm(request.POST)
+    if form.is_valid():
+        area = form.save(commit=False)
+        area.site = site
+        area.parent = parent
+        area.save()
+        return _render_site_detail(request, site, selected_area_id=area.id)
+
+    return _render_site_detail(request, site, selected_area_id=parent.id if parent else None, error="Invalid area data.")
+
+
+@login_required
+def area_update(request, area_id):
+    area = get_object_or_404(Area, id=area_id)
+    site = area.site
+    form = AreaForm(request.POST, instance=area)
+    if form.is_valid():
+        form.save()
+        return _render_site_detail(request, site, selected_area_id=area.id)
+    return _render_site_detail(request, site, selected_area_id=area.id, error="Unable to update area.")
+
+
+@login_required
+def area_delete(request, area_id):
+    area = get_object_or_404(Area, id=area_id)
+    site = area.site
+    if area.children.exists():
+        return _render_site_detail(request, site, selected_area_id=area.id, error="Cannot delete an area that has child areas.")
+
+    area.delete()
+    return _render_site_detail(request, site)
+
+
+@login_required
+def rack_create(request):
+    area_id = request.POST.get("area_id")
+    area = get_object_or_404(Area, id=area_id)
+    site = area.site
+    form = RackForm(request.POST)
+    if form.is_valid():
+        rack = form.save(commit=False)
+        rack.area = area
+        rack.save()
+        return _render_site_detail(request, site, selected_area_id=area.id)
+    return _render_site_detail(request, site, selected_area_id=area.id, error="Unable to create rack.")
+
+
+@login_required
+def rack_update(request, rack_id):
+    rack = get_object_or_404(Rack, id=rack_id)
+    area = rack.area
+    site = area.site
+    form = RackForm(request.POST, instance=rack)
+    if form.is_valid():
+        form.save()
+        return _render_site_detail(request, site, selected_area_id=area.id)
+    return _render_site_detail(request, site, selected_area_id=area.id, error="Unable to update rack.")
+
+
+@login_required
+def rack_delete(request, rack_id):
+    rack = get_object_or_404(Rack, id=rack_id)
+    area = rack.area
+    site = area.site
+    rack.delete()
+    return _render_site_detail(request, site, selected_area_id=area.id)

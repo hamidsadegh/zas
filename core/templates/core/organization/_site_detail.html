@@ -1,0 +1,197 @@
+{% if oob %}<div class="card" id="site-detail" hx-swap-oob="true">{% endif %}
+<div class="section-title">
+    <div>
+        <h3>{{ site.name }}</h3>
+        <div class="muted">{{ site.description|default:"No description provided." }}</div>
+    </div>
+    <span class="pill">Site</span>
+</div>
+
+{% if not areas_exist %}
+    <div class="notice">No areas created for this site. Add the first area below.</div>
+    <form
+        method="post"
+        hx-post="{% url 'organization_area_create' %}"
+        hx-target="#site-detail"
+        hx-swap="innerHTML"
+        class="stacked"
+        style="margin-top:0.75rem;"
+    >
+        {% csrf_token %}
+        <input type="hidden" name="site_id" value="{{ site.id }}">
+        <label class="muted" for="id_root_area_name">New area</label>
+        <input id="id_root_area_name" name="name" class="input" required placeholder="Area name">
+        <textarea name="description" class="textarea" placeholder="Description (optional)"></textarea>
+        <button type="submit" class="btn btn-primary" style="width: fit-content;">Create Area</button>
+    </form>
+{% else %}
+    <div class="org-shell" style="grid-template-columns: 320px 1fr;">
+        <div class="card" style="padding:1rem; box-shadow:none;">
+            <div class="section-title" style="margin-bottom:0.5rem;">
+                <h4 style="margin:0;">Areas</h4>
+                <span class="pill">{{ area_tree|length }} roots</span>
+            </div>
+            <div class="area-tree">
+                {% include "core/organization/_area_tree.html" with nodes=area_tree site=site selected_area=selected_area %}
+            </div>
+        </div>
+
+        <div class="card" style="padding:1rem; box-shadow:none;">
+            {% if error %}
+                <div class="notice" style="background:#fef2f2;color:#991b1b;border-color:#fca5a5;">{{ error }}</div>
+            {% endif %}
+            {% if selected_area %}
+            <div class="section-title">
+                <div>
+                    <h4 style="margin:0;">Area: {{ selected_area.name }}</h4>
+                    <div class="muted">{{ selected_area.description|default:"No description" }}</div>
+                </div>
+            </div>
+            <div class="stacked" style="margin-bottom:1rem;">
+                <form
+                    method="post"
+                    hx-post="{% url 'organization_area_update' selected_area.id %}"
+                    hx-target="#site-detail"
+                    hx-swap="innerHTML"
+                    class="stacked"
+                >
+                    {% csrf_token %}
+                    <input type="hidden" name="site_id" value="{{ site.id }}">
+                    <label class="muted" for="id_area_name">Rename area</label>
+                    <input id="id_area_name" name="name" class="input" value="{{ area_form.name.value|default:selected_area.name }}" required>
+                    <textarea name="description" class="textarea">{{ area_form.description.value|default:selected_area.description }}</textarea>
+                    <button type="submit" class="btn btn-primary" style="width: fit-content;">Save</button>
+                </form>
+                <form
+                    method="post"
+                    hx-post="{% url 'organization_area_delete' selected_area.id %}"
+                    hx-confirm="Delete area '{{ selected_area.name }}'?"
+                    hx-target="#site-detail"
+                    hx-swap="innerHTML"
+                    style="margin:0;"
+                >
+                    {% csrf_token %}
+                    <button type="submit" class="btn-ghost">Delete area</button>
+                </form>
+            </div>
+
+            <div class="stacked" style="margin-bottom:1rem;">
+                <h4 style="margin:0;">Add child area</h4>
+                <form
+                    method="post"
+                    hx-post="{% url 'organization_area_create' %}"
+                    hx-target="#site-detail"
+                    hx-swap="innerHTML"
+                    class="stacked"
+                >
+                    {% csrf_token %}
+                    <input type="hidden" name="site_id" value="{{ site.id }}">
+                    <input type="hidden" name="parent_id" value="{{ selected_area.id }}">
+                    <input name="name" class="input" placeholder="Child area name" required>
+                    <textarea name="description" class="textarea" placeholder="Description (optional)"></textarea>
+                    <button type="submit" class="btn btn-primary" style="width: fit-content;">Create</button>
+                </form>
+            </div>
+
+            <div class="stacked">
+                <div class="section-title" style="margin-bottom:0.5rem;">
+                    <h4 style="margin:0;">Racks</h4>
+                    <span class="pill">{{ racks|length }}</span>
+                </div>
+                <table style="width:100%; border-collapse: collapse; font-size:0.95rem;">
+                    <thead>
+                        <tr class="muted">
+                            <th style="text-align:left; padding:0.35rem;">Name</th>
+                            <th style="text-align:left; padding:0.35rem;">Height (U)</th>
+                            <th style="text-align:left; padding:0.35rem;">Description</th>
+                            <th style="text-align:right; padding:0.35rem;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rack in racks %}
+                        {% if rack_edit and rack_edit.id == rack.id %}
+                        <tr>
+                            <td colspan="4">
+                                <form
+                                    method="post"
+                                    hx-post="{% url 'organization_rack_update' rack.id %}"
+                                    hx-target="#site-detail"
+                                    hx-swap="innerHTML"
+                                    style="display:grid; gap:0.5rem;"
+                                >
+                                    {% csrf_token %}
+                                    <input type="hidden" name="area_id" value="{{ selected_area.id }}">
+                                    <input name="name" class="input" value="{{ rack.name }}" required>
+                                    <input type="number" name="u_height" class="input" value="{{ rack.u_height }}" min="1">
+                                    <textarea name="description" class="textarea" placeholder="Description (optional)">{{ rack.description }}</textarea>
+                                    <div class="site-actions" style="justify-content:flex-end;">
+                                        <button type="submit" class="btn btn-primary">Save</button>
+                                        <button
+                                            type="button"
+                                            class="btn-ghost"
+                                            hx-get="{% url 'organization_site_detail' site.id %}?area={{ selected_area.id }}"
+                                            hx-target="#site-detail"
+                                            hx-swap="innerHTML"
+                                        >Cancel</button>
+                                    </div>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr style="border-top:1px solid var(--border);">
+                            <td style="padding:0.35rem;">{{ rack.name }}</td>
+                            <td style="padding:0.35rem;">{{ rack.u_height }}</td>
+                            <td style="padding:0.35rem;">{{ rack.description|default:"" }}</td>
+                            <td style="padding:0.35rem; text-align:right; display:flex; gap:0.35rem; justify-content:flex-end;">
+            <button
+                class="btn-ghost"
+                hx-get="{% url 'organization_home' %}?site={{ site.id }}&area={{ selected_area.id }}&rack={{ rack.id }}"
+                hx-target="#organization-page"
+                hx-swap="outerHTML"
+                hx-push-url="true"
+            >Edit</button>
+                                <form
+                                    method="post"
+                                    hx-post="{% url 'organization_rack_delete' rack.id %}"
+                                    hx-target="#site-detail"
+                                    hx-swap="innerHTML"
+                                    hx-confirm="Delete rack '{{ rack.name }}'?"
+                                    style="margin:0;"
+                                >
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-ghost">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" style="padding:0.5rem;" class="muted">No racks yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <div class="stacked" style="margin-top:0.75rem;">
+                    <h4 style="margin:0;">Add rack</h4>
+                    <form
+                        method="post"
+                        hx-post="{% url 'organization_rack_create' %}"
+                        hx-target="#site-detail"
+                        hx-swap="innerHTML"
+                        class="stacked"
+                    >
+                        {% csrf_token %}
+                        <input type="hidden" name="area_id" value="{{ selected_area.id }}">
+                        <input name="name" class="input" placeholder="Rack name" required>
+                        <input type="number" name="u_height" class="input" placeholder="Height (U)" min="1">
+                        <textarea name="description" class="textarea" placeholder="Description (optional)"></textarea>
+                        <button type="submit" class="btn btn-primary" style="width: fit-content;">Create Rack</button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}
+{% if oob %}</div>{% endif %}

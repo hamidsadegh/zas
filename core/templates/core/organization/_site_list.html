@@ -1,0 +1,65 @@
+<div class="section-title">
+    <h3>Sites</h3>
+    <span class="muted">{{ sites|length }} total</span>
+</div>
+{% if site_form and site_form.errors %}
+    <div class="notice" style="background:#fef2f2;color:#991b1b;border-color:#fca5a5;">
+        {% for field, errors in site_form.errors.items %}
+            {{ errors|join:", " }}
+        {% endfor %}
+    </div>
+{% endif %}
+<div class="site-list">
+    {% for site in sites %}
+    <div class="site-row {% if selected_site and site.id == selected_site.id %}active{% endif %}">
+        <button
+            hx-get="{% url 'organization_home' %}?site={{ site.id }}"
+            hx-target="#organization-page"
+            hx-swap="outerHTML"
+            hx-push-url="true"
+        >
+            {{ site.name }}
+        </button>
+        <div class="site-actions">
+            <button
+                class="btn-ghost"
+                hx-get="{% url 'organization_site_edit_form' site.id %}"
+                hx-target="closest .site-row"
+                hx-swap="outerHTML"
+            >Edit</button>
+            <form
+                method="post"
+                hx-post="{% url 'organization_site_delete' site.id %}"
+                hx-confirm="Delete site '{{ site.name }}'?"
+                hx-target="#site-list"
+                hx-swap="outerHTML"
+                style="margin:0;"
+            >
+                {% csrf_token %}
+                <button type="submit" class="btn-ghost">Delete</button>
+            </form>
+        </div>
+    </div>
+    {% empty %}
+    <div class="notice">No sites yet. Create the first site below.</div>
+    {% endfor %}
+</div>
+
+{% if organization %}
+    <form
+        class="stacked"
+        style="margin-top:0.75rem;"
+        method="post"
+        hx-post="{% url 'organization_site_create' %}"
+        hx-target="#site-list"
+        hx-swap="outerHTML"
+    >
+        {% csrf_token %}
+        <label class="muted" for="id_site_name">Add Site</label>
+        <input id="id_site_name" type="text" name="name" class="input" placeholder="Site name" required>
+        <textarea name="description" class="textarea" placeholder="Description (optional)"></textarea>
+        <button type="submit" class="btn btn-primary" style="width: fit-content;">Create Site</button>
+    </form>
+{% else %}
+    <div class="notice">Create an organization in admin before adding sites.</div>
+{% endif %}

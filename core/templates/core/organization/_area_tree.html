@@ -1,0 +1,22 @@
+<ul style="list-style:none; padding-left:0.5rem; margin:0;">
+    {% for node in nodes %}
+    <li style="margin-bottom:0.25rem;">
+        <div class="site-row {% if selected_area and node.area.id == selected_area.id %}active{% endif %}" style="padding:0.45rem 0.6rem;">
+            <button
+                hx-get="{% url 'organization_home' %}?site={{ site.id }}&area={{ node.area.id }}"
+                hx-target="#organization-page"
+                hx-swap="outerHTML"
+                hx-push-url="true"
+                style="font-weight:600;"
+            >
+                {{ node.area.name }}
+            </button>
+        </div>
+        {% if node.children %}
+            <div style="margin-left:1rem; border-left: 1px dashed var(--border); padding-left:0.75rem;">
+                {% include "core/organization/_area_tree.html" with nodes=node.children site=site selected_area=selected_area %}
+            </div>
+        {% endif %}
+    </li>
+    {% endfor %}
+</ul>

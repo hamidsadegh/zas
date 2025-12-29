@@ -1,0 +1,15 @@
+<div id="organization-page" class="stacked" style="gap:1.5rem;">
+    {% include "core/organization/_organization_card.html" with organization=organization organization_form=organization_form %}
+    <div class="org-shell">
+        <div id="site-list" class="card">
+            {% include "core/organization/_site_list.html" with sites=sites selected_site=selected_site organization=organization %}
+        </div>
+        <div id="site-detail" class="card">
+            {% if selected_site %}
+                {% include "core/organization/_site_detail.html" with site=selected_site area_tree=area_tree selected_area=selected_area areas_exist=areas_exist area_form=area_form child_area_form=child_area_form rack_form=rack_form racks=racks rack_edit=rack_edit %}
+            {% else %}
+                <p class="muted">No sites have been created yet. Add a site to begin managing areas and racks.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
