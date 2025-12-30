@@ -138,16 +138,17 @@
                             </td>
                         </tr>
                         {% else %}
-                        <tr style="border-top:1px solid var(--border);">
-                            <td style="padding:0.35rem;">{{ rack.name }}</td>
-                            <td style="padding:0.35rem;">{{ rack.u_height }}</td>
-                            <td style="padding:0.35rem;">{{ rack.description|default:"" }}</td>
-                            <td style="padding:0.35rem; text-align:right; display:flex; gap:0.35rem; justify-content:flex-end;">
-            <button
-                class="btn-ghost"
-                hx-get="{% url 'organization_home' %}?site={{ site.id }}&area={{ selected_area.id }}&rack={{ rack.id }}"
-                hx-target="#organization-page"
-                hx-swap="outerHTML"
+                                <tr style="border-top:1px solid var(--border);">
+                                    <td style="padding:0.35rem;">{{ rack.name }}</td>
+                                    <td style="padding:0.35rem;">{{ rack.u_height }}</td>
+                                    <td style="padding:0.35rem;">{{ rack.description|default:"" }}</td>
+                                    <td style="padding:0.35rem; text-align:right; display:flex; gap:0.35rem; justify-content:flex-end;">
+                                        <a class="btn-ghost" href="{% url 'organization_rack_detail' rack.id %}">View</a>
+                                        <button
+                                            class="btn-ghost"
+                                            hx-get="{% url 'organization_home' %}?site={{ site.id }}&area={{ selected_area.id }}&rack={{ rack.id }}"
+                                            hx-target="#organization-page"
+                                            hx-swap="outerHTML"
                 hx-push-url="true"
             >Edit</button>
                                 <form

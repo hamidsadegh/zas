@@ -15,7 +15,7 @@ from core.forms.organization_forms import (
     AreaForm,
     RackForm,
 )
-from dcim.models import Organization, Site, Area, Rack
+from dcim.models import Organization, Site, Area, Rack, Device
 
 
 def _build_area_tree(areas):
@@ -172,6 +172,84 @@ class OrganizationHomeView(TemplateView):
             }
         )
         return context
+
+
+@method_decorator(login_required, name="dispatch")
+class RackDetailView(TemplateView):
+    """Read-only rack visualization for audits/planning."""
+
+    template_name = "core/organization/rack_detail.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        rack_id = kwargs.get("rack_id")
+        rack = get_object_or_404(
+            Rack.objects.select_related("area__site", "rack_type").prefetch_related(
+                "devices__device_type", "devices__role"
+            ),
+            id=rack_id,
+        )
+        show_devices = self.request.user.has_perm("dcim.view_device")
+
+        devices = list(
+            rack.devices.all().order_by("position", "name")
+        ) if show_devices else []
+
+        layout = self._build_layout(rack, devices) if show_devices else []
+
+        context.update(
+            {
+                "rack": rack,
+                "show_devices": show_devices,
+                "layout": layout,
+                "device_list": devices,
+                "has_positions": bool(layout),
+            }
+        )
+        return context
+
+    def _build_layout(self, rack, devices):
+        """Return rack units from top to bottom with device occupancy."""
+        if not rack.u_height or not devices:
+            return []
+
+        occupancy = {}
+        for device in devices:
+            if device.position is None or not device.device_type:
+                continue
+            try:
+                start = int(device.position)  # lowest-numbered unit occupied
+                height = int(device.device_type.u_height or 1)
+            except (TypeError, ValueError):
+                continue
+            if start < 1 or start > int(rack.u_height):
+                continue  # outside rack bounds
+
+            head = min(int(rack.u_height), start + height - 1)
+            effective_height = head - start + 1
+
+            # Mark all occupied units with a pointer to the head index
+            for unit in range(start, head + 1):
+                occupancy[unit] = {
+                    "device": device,
+                    "start": start,
+                    "height": effective_height,
+                    "head": head,
+                }
+
+        units = []
+        for unit in range(int(rack.u_height), 0, -1):
+            block = occupancy.get(unit)
+            is_head = block and block.get("head") == unit
+            units.append(
+                {
+                    "unit": unit,
+                    "device": block["device"] if is_head else None,
+                    "height": block["height"] if is_head else None,
+                    "occupied": bool(block),
+                }
+            )
+        return units
 
 
 @login_required

@@ -1,0 +1,221 @@
+{% extends "core/base.html" %}
+
+{% block title %}Rack {{ rack.name }}{% endblock %}
+
+{% block styles %}
+.rack-shell {
+    max-width: 3600px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 360px 3fr;
+    gap: 1.5rem;
+}
+.card {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 1.25rem;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+}
+.rack-meta h2 { margin: 0 0 0.35rem 0; }
+.pill {
+    background: #e9f1ff;
+    color: #1e3a8a;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.8rem;
+}
+.muted { color: var(--muted); }
+.rack-viewport {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #f8fafc;
+    padding: 0.75rem;
+}
+.rack-views {
+    display: grid;
+    grid-template-columns: 4fr;
+    gap: 1rem;
+    width: 100%;
+}
+.units {
+    display: grid;
+    grid-template-columns: 70px 1fr;
+    gap: 0.35rem;
+    align-items: start;
+}
+.unit-row {
+    display: contents;
+}
+.unit-label {
+    font-family: "Fira Code", monospace;
+    color: var(--muted);
+    text-align: right;
+    padding-right: 0.35rem;
+}
+.unit-slot {
+    min-height: 32px;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    background: #fff;
+    padding: 0.4rem 0.6rem;
+}
+.device-block {
+    border-radius: 10px;
+    padding: 0.5rem 0.65rem;
+    color: #0f172a;
+    border: 1px solid var(--border);
+    box-shadow: 0 6px 14px rgba(15,29,64,0.08);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 0.25rem;
+    overflow: hidden;
+}
+.device-name { font-weight: 700; }
+.device-role { font-size: 0.85rem; color: var(--muted); }
+.device-img {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    margin-top: 0;
+    border-radius: 6px;
+    background: #fff;
+}
+.legend {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+}
+.legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: #fff;
+}
+.color-chip {
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    display: inline-block;
+}
+@media (max-width: 960px) { .rack-shell { grid-template-columns: 1fr; } }
+@media (min-width: 960px) { .rack-views { grid-template-columns: 1fr 1fr; } }
+{% endblock %}
+
+{% block content %}
+<div class="rack-shell">
+    <div class="card rack-meta">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
+            <div>
+                <div class="pill" style="display:inline-block;margin-bottom:0.3rem;">Rack</div>
+                <h2>{{ rack.name }}</h2>
+                <div class="muted">{{ rack.area.name }} · {{ rack.area.site.name }}</div>
+            </div>
+            <a class="btn-ghost" href="{% url 'organization_home' %}?site={{ rack.area.site.id }}&area={{ rack.area.id }}">Back</a>
+        </div>
+        <div style="margin-top:0.75rem;">
+            <div class="muted">Height</div>
+            <div><strong>{{ rack.u_height|default:"N/A" }}</strong> U</div>
+        </div>
+        {% if rack.description %}
+        <div style="margin-top:0.75rem;">
+            <div class="muted">Description</div>
+            <div>{{ rack.description }}</div>
+        </div>
+        {% endif %}
+        <div class="legend">
+            <span><span class="color-chip" style="background:#c7d2fe;"></span>Device</span>
+            <span><span class="color-chip" style="background:#f3f4f6;"></span>Empty space</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-top:0;">Rack View</h3>
+        {% if not show_devices %}
+            <p class="muted">You do not have permission to view device details in this rack.</p>
+        {% else %}
+            {% if has_positions %}
+            <div class="rack-views">
+                <div class="rack-viewport">
+                    <div class="muted" style="margin-bottom:0.4rem;">Front</div>
+                    <div class="units">
+                        {% for row in layout %}
+                            <div class="unit-row">
+                                <div class="unit-label">{% if not row.occupied %}U{{ row.unit }}{% endif %}</div>
+                                <div class="unit-slot" style="{% if row.occupied and not row.device %}background: transparent; border: none; padding:0; min-height:0;{% endif %}" >
+                                    {% if row.device %}
+                                    <div class="device-block" style="background:#eef2ff; border-color:#cbd5f5; height: calc({{ row.height }} * 36px);">
+                                        <div class="device-name">
+                                            <a href="{% url 'device_detail' row.device.id %}">{{ row.device.name }}</a>
+                                        </div>
+                                        <div class="device-role">
+                                            {{ row.device.device_type.model|default:"" }}
+                                            {% if row.device.role %} · {{ row.device.role.name }}{% endif %}
+                                        </div>
+                                        <div class="muted" style="font-size:0.85rem;">Spans {{ row.height }}U</div>
+                                        {% if row.device.device_type.front_image %}
+                                            <img src="{{ row.device.device_type.front_image.url }}" alt="{{ row.device.name }} front" class="device-img">
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="rack-viewport">
+                    <div class="muted" style="margin-bottom:0.4rem;">Rear</div>
+                    <div class="units">
+                        {% for row in layout %}
+                            <div class="unit-row">
+                                <div class="unit-label">{% if not row.occupied %}U{{ row.unit }}{% endif %}</div>
+                                <div class="unit-slot" style="{% if row.occupied and not row.device %}background: transparent; border: none; padding:0; min-height:0;{% endif %}">
+                                    {% if row.device %}
+                                    <div class="device-block" style="background:#eef2ff; border-color:#cbd5f5; height: calc({{ row.height }} * 36px);">
+                                        <div class="device-name">
+                                            <a href="{% url 'device_detail' row.device.id %}">{{ row.device.name }}</a>
+                                        </div>
+                                        <div class="device-role">
+                                            {{ row.device.device_type.model|default:"" }}
+                                            {% if row.device.role %} · {{ row.device.role.name }}{% endif %}
+                                        </div>
+                                        <div class="muted" style="font-size:0.85rem;">Spans {{ row.height }}U</div>
+                                        {% if row.device.device_type.rear_image %}
+                                            <img src="{{ row.device.device_type.rear_image.url }}" alt="{{ row.device.name }} rear" class="device-img">
+                                        {% elif row.device.device_type.front_image %}
+                                            <img src="{{ row.device.device_type.front_image.url }}" alt="{{ row.device.name }} front" class="device-img">
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+                <p class="muted">No unit positions available. Showing devices as a simple list.</p>
+                <ul style="padding-left:1rem; margin:0;">
+                    {% for device in device_list %}
+                        <li style="margin-bottom:0.35rem;">
+                            <strong>{{ device.name }}</strong>
+                            {% if device.device_type %} — {{ device.device_type.model }}{% endif %}
+                            {% if device.role %}<span class="muted">({{ device.role.name }})</span>{% endif %}
+                        </li>
+                    {% empty %}
+                        <li class="muted">No devices assigned to this rack.</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

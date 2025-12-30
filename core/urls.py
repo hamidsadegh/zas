@@ -21,4 +21,5 @@ urlpatterns = [
     path("organization/racks/create/", organization_views.rack_create, name="organization_rack_create"),
     path("organization/racks/<uuid:rack_id>/update/", organization_views.rack_update, name="organization_rack_update"),
     path("organization/racks/<uuid:rack_id>/delete/", organization_views.rack_delete, name="organization_rack_delete"),
+    path("organization/racks/<uuid:rack_id>/", organization_views.RackDetailView.as_view(), name="organization_rack_detail"),
 ]
