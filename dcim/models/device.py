@@ -105,6 +105,12 @@ class DeviceType(models.Model):
         upload_to='devicetype-images',
         blank=True
         )
+    front_svg = models.FileField(
+        upload_to="device-type-svg",
+        blank=True,
+        null=True,
+        help_text="Auto-generated flat front SVG for rack elevations.",
+    )
     weight = models.DecimalField(
         max_digits=8,
         decimal_places=2,

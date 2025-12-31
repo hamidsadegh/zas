@@ -161,7 +161,9 @@
                                             {% if row.device.role %} · {{ row.device.role.name }}{% endif %}
                                         </div>
                                         <div class="muted" style="font-size:0.85rem;">Spans {{ row.height }}U</div>
-                                        {% if row.device.device_type.front_image %}
+                                        {% if row.device.device_type.front_svg %}
+                                            <img src="{{ row.device.device_type.front_svg.url }}" alt="{{ row.device.name }} front" class="device-img">
+                                        {% elif row.device.device_type.front_image %}
                                             <img src="{{ row.device.device_type.front_image.url }}" alt="{{ row.device.name }} front" class="device-img">
                                         {% endif %}
                                     </div>
@@ -190,6 +192,8 @@
                                         <div class="muted" style="font-size:0.85rem;">Spans {{ row.height }}U</div>
                                         {% if row.device.device_type.rear_image %}
                                             <img src="{{ row.device.device_type.rear_image.url }}" alt="{{ row.device.name }} rear" class="device-img">
+                                        {% elif row.device.device_type.front_svg %}
+                                            <img src="{{ row.device.device_type.front_svg.url }}" alt="{{ row.device.name }} front" class="device-img">
                                         {% elif row.device.device_type.front_image %}
                                             <img src="{{ row.device.device_type.front_image.url }}" alt="{{ row.device.name }} front" class="device-img">
                                         {% endif %}

@@ -6,6 +6,7 @@ from io import BytesIO
 from django import forms
 import pandas as pd  # pyright: ignore[reportMissingModuleSource, reportMissingImports]
 from django.utils.timezone import localtime
+from django.utils.safestring import mark_safe
 
 from .models import (
     Organization,
@@ -105,9 +106,31 @@ class VendorAdmin(admin.ModelAdmin):
 # -----------------------
 @admin.register(DeviceType)
 class DeviceTypeAdmin(admin.ModelAdmin):
-    list_display = ("model", "vendor",)
+    list_display = ("model", "vendor", "front_svg_preview",)
     list_filter = ("vendor",)
     search_fields = ("model",)
+    readonly_fields = ("front_svg_preview",)
+    actions = ["regenerate_front_svg"]
+
+    def front_svg_preview(self, obj):
+        if obj.front_svg:
+            return mark_safe(f'<img src="{obj.front_svg.url}" style="max-width:280px;max-height:120px;" />')
+        return "No SVG"
+
+    front_svg_preview.short_description = "Front SVG"
+
+    def regenerate_front_svg(self, request, queryset):
+        from dcim.svg.front_panel import FrontPanelRenderer, build_front_svg_filename
+        from django.core.files.base import ContentFile
+
+        renderer = FrontPanelRenderer()
+        for dt in queryset:
+            res = renderer.render(dt)
+            filename = build_front_svg_filename(dt)
+            dt.front_svg.save(filename, ContentFile(res.svg.encode("utf-8")), save=True)
+        self.message_user(request, f"Regenerated SVGs for {queryset.count()} device types.")
+
+    regenerate_front_svg.short_description = "Regenerate front SVG"
 
 
 # -----------------------
