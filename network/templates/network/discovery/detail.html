@@ -1,0 +1,169 @@
+{% extends "core/base.html" %}
+{% block title %}Discovery Candidate{% endblock %}
+
+{% block styles %}
+main { max-width: 900px; }
+.detail-shell {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: var(--shadow);
+}
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+.muted { color: var(--muted); }
+.tag {
+    display: inline-block;
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+.link-btn { font-weight: 700; color: var(--primary); }
+.meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+}
+.meta-card {
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #f8faff;
+}
+.meta-label {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+.meta-value { font-weight: 700; font-size: 1.1rem; margin-top: 0.2rem; }
+.status-chip {
+    padding: 0.35rem 0.8rem;
+    border-radius: 999px;
+    font-weight: 700;
+    display: inline-block;
+}
+.status-exact { background: #ecfdf3; color: #065f46; }
+.status-mismatch { background: #fff7ed; color: #c2410c; }
+.status-new { background: #eef2ff; color: #1d4ed8; }
+.status-unclassified { background: #e5e7eb; color: #374151; }
+.reachability {
+    display: inline-flex;
+    gap: 0.4rem;
+    align-items: center;
+}
+.reachability-dot {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    display: inline-block;
+    border: 1px solid var(--border);
+}
+.reachability-dot.ok { background: #22c55e; border-color: #16a34a; }
+.reachability-dot.disabled { background: #e5e7eb; border-color: #d1d5db; }
+.card {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+.info-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.6rem;
+}
+@media (max-width: 720px) {
+    .section-header { flex-direction: column; align-items: flex-start; }
+}
+{% endblock %}
+
+{% block content %}
+<section class="detail-shell">
+    <div class="section-header">
+        <div>
+            <p class="tag">Discovery</p>
+            <h1 style="margin: 0.2rem 0;">Candidate detail</h1>
+            <p class="muted">Context for why this endpoint was recorded.</p>
+        </div>
+        <a class="link-btn" href="{% url 'network:discovery_candidates' %}">← Back to candidates</a>
+    </div>
+
+    <div class="meta-grid">
+        <div class="meta-card">
+            <div class="meta-label">Site</div>
+            <div class="meta-value">{{ candidate.site.name }}</div>
+        </div>
+        <div class="meta-card">
+            <div class="meta-label">IP address</div>
+            <div class="meta-value">{{ candidate.ip_address }}</div>
+        </div>
+        <div class="meta-card">
+            <div class="meta-label">Hostname</div>
+            <div class="meta-value">{{ candidate.hostname|default:"—" }}</div>
+        </div>
+        <div class="meta-card">
+            <div class="meta-label">Last seen</div>
+            <div class="meta-value">{{ candidate.last_seen|date:"M d, H:i" }}</div>
+        </div>
+    </div>
+
+    <div class="meta-grid" style="margin-top: 0;">
+        <div class="meta-card">
+            <div class="meta-label">Classification</div>
+            <div class="meta-value">
+                <span class="status-chip status-{{ classification }}">
+                    {% if classification == "exact" %}Exact match{% elif classification == "mismatch" %}Mismatch{% elif classification == "new" %}New{% else %}Unclassified{% endif %}
+                </span>
+            </div>
+        </div>
+        <div class="meta-card">
+            <div class="meta-label">Reachability</div>
+            <div class="meta-value">
+                <div class="reachability">
+                    <span class="reachability-dot {% if candidate.reachable_ping %}ok{% else %}disabled{% endif %}" title="Ping"></span>
+                    <span class="reachability-dot {% if candidate.reachable_ssh %}ok{% else %}disabled{% endif %}" title="SSH"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin: 0 0 0.25rem;">Why this candidate exists</h3>
+        <p class="muted" style="margin: 0 0 0.4rem;">{{ explanation }}</p>
+    </div>
+
+    <div class="card">
+        <h3 style="margin: 0 0 0.5rem;">Matching devices</h3>
+        <ul class="info-list">
+            <li>
+                <strong>By IP:</strong>
+                {% if device_by_ip %}
+                    <a href="{% url 'device_detail' device_by_ip.id %}">{{ device_by_ip.name }}</a>
+                {% else %}
+                    <span class="muted">None</span>
+                {% endif %}
+            </li>
+            <li>
+                <strong>By hostname:</strong>
+                {% if device_by_name %}
+                    <a href="{% url 'device_detail' device_by_name.id %}">{{ device_by_name.name }}</a>
+                {% else %}
+                    <span class="muted">None</span>
+                {% endif %}
+            </li>
+        </ul>
+    </div>
+</section>
+{% endblock %}

@@ -141,6 +141,7 @@ INSTALLED_APPS = [
     'core',
     'ipam',
     'dcim',
+    'network',
     'accounts',
     'automation',
     'django_crontab',

@@ -2,11 +2,11 @@
 
 ## Overview
 
-ZAS is built using Django with REST API endpoints and web templates. It connects to a MySQL database
+ZAS is built using Django with REST API endpoints and web templates. It connects to a PostgreSQL database
 and can be deployed using Docker.
 
 +-----------------+ +-----------------+ +-----------------+
-| Web Client | <----> | Django App | <----> | MySQL |------ Long term Plan ----->   PostgreSQL
+| Web Client | <----> | Django App | <----> | PostgreSQL
 | (HTML/JS/REST) | | devices/automation| | Database |
 +-----------------+ +-----------------+ +-----------------+
 

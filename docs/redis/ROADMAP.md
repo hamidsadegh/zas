@@ -4,7 +4,7 @@ Celery broker + backend
 Django cache backend
 Basic status storage
 
-Phase 2 – LATER
+Phase 2 – SOON
 Rate-limiting
 Event streaming
 Real-time dashboards

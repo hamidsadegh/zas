@@ -1,0 +1,199 @@
+{% extends "core/base.html" %}
+{% block title %}Discovery{% endblock %}
+
+{% block styles %}
+main { max-width: 1200px; }
+.tag {
+    display: inline-block;
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+.discovery-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+.hero-actions { display: flex; align-items: center; }
+.discovery-hero h1 { margin: 0.2rem 0 0.4rem; }
+.muted { color: var(--muted); }
+.primary-btn {
+    background: var(--primary);
+    color: #fff;
+    border-radius: 999px;
+    padding: 0.65rem 1.3rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    box-shadow: var(--shadow);
+}
+.primary-btn:hover { color: #fff; background: var(--primary-dark); }
+.metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+.metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 1.25rem;
+    box-shadow: var(--shadow);
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+.metric-card .label {
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+.metric-card .value { font-size: 2rem; font-weight: 700; }
+.metric-card .value.small { font-size: 1.3rem; }
+.metric-card .hint { color: var(--muted); font-size: 0.95rem; }
+.metric-card.warning { background: #fff7ed; border-color: #fed7aa; }
+.metric-card.success { background: #ecfdf3; border-color: #bbf7d0; }
+.metric-card.new { background: #f0f9ff; border-color: #bae6fd; }
+.overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-top: 1.75rem;
+}
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 1.25rem;
+    box-shadow: var(--shadow);
+}
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+.link-btn {
+    font-weight: 600;
+    color: var(--primary);
+}
+.site-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.8rem;
+}
+.site-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+}
+.site-name { font-weight: 700; }
+.guidance {
+    list-style: disc;
+    padding-left: 1.2rem;
+    margin: 0.3rem 0 0;
+    color: var(--muted);
+    display: grid;
+    gap: 0.4rem;
+}
+@media (max-width: 900px) {
+    .discovery-hero { flex-direction: column; }
+    .overview-grid { grid-template-columns: 1fr; }
+}
+{% endblock %}
+
+{% block content %}
+<section class="discovery-hero">
+    <div>
+        <p class="tag">Discovery</p>
+        <h1>Network Discovery</h1>
+        <p class="muted">Nightly scans surface new endpoints. Everything here stays observational until you choose an action.</p>
+    </div>
+    <div class="hero-actions">
+        <a class="primary-btn" href="{% url 'network:discovery_candidates' %}">Review candidates →</a>
+    </div>
+</section>
+
+<div class="metric-grid">
+    <a class="metric-card" href="{% url 'network:discovery_candidates' %}">
+        <span class="label">Total candidates</span>
+        <span class="value">{{ total }}</span>
+        <span class="hint">Across all sites</span>
+    </a>
+    <a class="metric-card new" href="{% url 'network:discovery_candidates' %}?status=new">
+        <span class="label">New / unclassified</span>
+        <span class="value">{{ new_or_unclassified }}</span>
+        <span class="hint">{{ unclassified }} pending classification</span>
+    </a>
+    <a class="metric-card success" href="{% url 'network:discovery_candidates' %}?status=exact">
+        <span class="label">Exact matches</span>
+        <span class="value">{{ exact_matches }}</span>
+        <span class="hint">IP and hostname already tracked</span>
+    </a>
+    <a class="metric-card warning" href="{% url 'network:discovery_candidates' %}?status=mismatch">
+        <span class="label">Mismatches</span>
+        <span class="value">{{ mismatches }}</span>
+        <span class="hint">Requires operator review</span>
+    </a>
+    <div class="metric-card">
+        <span class="label">SSH reachable</span>
+        <span class="value">{{ ssh_ok }}</span>
+        <span class="hint">Ping reachable: {{ ping_ok }}</span>
+    </div>
+    <div class="metric-card">
+        <span class="label">Last discovery run</span>
+        <span class="value small">
+            {% if last_seen %}{{ last_seen.last_seen|date:"M d, H:i" }}{% else %}Not recorded{% endif %}
+        </span>
+        <span class="hint">{% if last_seen %}Most recent candidate update{% else %}Waiting for first scan{% endif %}</span>
+    </div>
+</div>
+
+<div class="overview-grid">
+    <div class="card">
+        <div class="section-header">
+            <h3>By site</h3>
+            <a class="link-btn" href="{% url 'network:discovery_candidates' %}">All candidates →</a>
+        </div>
+        <ul class="site-list">
+            {% for site in site_breakdown %}
+            <li>
+                <div>
+                    <div class="site-name">{{ site.site__name }}</div>
+                    <div class="muted">Candidates: {{ site.count_site }}</div>
+                </div>
+                <a class="link-btn" href="{% url 'network:discovery_candidates' %}?site={{ site.site__id }}">Open</a>
+            </li>
+            {% empty %}
+            <li class="muted" style="border: none; padding-left: 0;">No discovery data yet.</li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="card">
+        <div class="section-header">
+            <h3>Operator guidance</h3>
+        </div>
+        <ul class="guidance">
+            <li>Discovery is observational; nothing auto-creates devices.</li>
+            <li>Exact matches only update runtime status; actions stay disabled.</li>
+            <li>Mismatches and new endpoints wait for explicit review.</li>
+            <li>Use bulk actions cautiously to keep an auditable trail.</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

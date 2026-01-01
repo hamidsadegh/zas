@@ -1,13 +1,10 @@
 from django.urls import path
+
 from . import views
 from . import organization_views
-from .views import debug_session
 
 urlpatterns = [
     path("", views.home, name="dashboard"),
-    # TEMP URL for testing
-    path("debug-session/", debug_session, name="debug-session"),
-    # TEMP END
     path("organization/", organization_views.OrganizationHomeView.as_view(), name="organization_home"),
     path("organization/org/<uuid:org_id>/update/", organization_views.organization_update, name="organization_update"),
     path("organization/sites/create/", organization_views.site_create, name="organization_site_create"),

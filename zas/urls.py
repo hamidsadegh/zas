@@ -31,4 +31,5 @@ urlpatterns = [
     path("", include(html_patterns)),                   # HTML views
     path("dcim/", include("dcim.urls")),                # DCIM app URLs
     path("api-auth/", include("rest_framework.urls")),  # DRF login/logout for browsable API
+    path("", include(("network.urls", "network"), namespace="network")),
 ]

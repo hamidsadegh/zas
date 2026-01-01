@@ -1,0 +1,339 @@
+{% extends "core/base.html" %}
+{% block title %}Discovery Candidates{% endblock %}
+
+{% block styles %}
+main { max-width: 1250px; }
+.discovery-wrapper {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+}
+.tag {
+    display: inline-block;
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+.list-header h1 { margin: 0.2rem 0; }
+.muted { color: var(--muted); }
+.pill-group {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+.pill {
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #1d4ed8;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+.pill.warning { background: #fff7ed; color: #c2410c; }
+.pill.success { background: #ecfdf3; color: #065f46; }
+.filters {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin: 1.25rem 0;
+}
+.filters select {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.5rem 0.75rem;
+    min-width: 180px;
+}
+.filters label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: 600;
+}
+.filters button {
+    border: none;
+    border-radius: 999px;
+    padding: 0.55rem 1.2rem;
+    font-weight: 700;
+    background: var(--primary);
+    color: #fff;
+    box-shadow: var(--shadow);
+}
+.link-btn {
+    font-weight: 600;
+    color: var(--primary);
+}
+.action-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #f8faff;
+    margin-bottom: 1rem;
+}
+.actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.btn {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.5rem 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: #fff;
+}
+.btn.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+.btn.ghost { background: #fff; }
+.btn.danger { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+.table-card { overflow-x: auto; }
+.candidate-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+.candidate-table th {
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.75rem;
+    color: var(--muted);
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+}
+.candidate-table td {
+    padding: 0.75rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+}
+.candidate-table tr:hover { background: #f8fafc; }
+.checkbox-cell { width: 40px; }
+.status-pill {
+    padding: 0.25rem 0.8rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: capitalize;
+}
+.status-exact { background: #ecfdf3; color: #065f46; }
+.status-mismatch { background: #fff7ed; color: #c2410c; }
+.status-new { background: #eef2ff; color: #1d4ed8; }
+.status-unclassified { background: #e5e7eb; color: #374151; }
+.reachability {
+    display: inline-flex;
+    gap: 0.35rem;
+    align-items: center;
+}
+.reachability-dot {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 50%;
+    display: inline-block;
+    border: 1px solid var(--border);
+}
+.reachability-dot.ok { background: #22c55e; border-color: #16a34a; }
+.reachability-dot.disabled { background: #e5e7eb; border-color: #d1d5db; }
+.table-actions a {
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    padding: 0.35rem 0.8rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+.pagination-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+}
+.pagination {
+    list-style: none;
+    display: flex;
+    gap: 0.35rem;
+    padding: 0;
+    margin: 0;
+}
+.pagination a, .pagination span {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.35rem 0.75rem;
+    color: var(--text);
+}
+.pagination .active span {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+@media (max-width: 900px) {
+    .list-header { flex-direction: column; }
+    .action-bar { flex-direction: column; align-items: flex-start; }
+}
+{% endblock %}
+
+{% block content %}
+<section class="discovery-wrapper">
+    <div class="list-header">
+        <div>
+            <p class="tag">Discovery</p>
+            <h1>Discovery Candidates</h1>
+            <p class="muted">Manual review of discovered endpoints. Exact matches are read-only.</p>
+        </div>
+        <div class="pill-group">
+            <span class="pill">Total {{ summary.total }}</span>
+            <span class="pill success">Exact {{ summary.exact }}</span>
+            <span class="pill warning">Mismatch {{ summary.mismatch }}</span>
+            <span class="pill">New {{ summary.new }}</span>
+        </div>
+    </div>
+
+    <form method="get" class="filters">
+        <select name="site" onchange="this.form.submit()">
+            {% for key, label in site_choices %}
+                <option value="{{ key }}" {% if site_filter == key %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <select name="status" onchange="this.form.submit()">
+            {% for key, label in status_choices %}
+                <option value="{{ key }}" {% if status_filter == key %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <label>
+            <input type="checkbox" name="ssh_only" value="1" {% if ssh_only %}checked{% endif %} onchange="this.form.submit()"> SSH reachable only
+        </label>
+        <button type="submit">Apply</button>
+        {% if site_filter != "all" or status_filter != "all" or ssh_only %}
+            <a class="link-btn" href="{% url 'network:discovery_candidates' %}">Clear filters</a>
+        {% endif %}
+    </form>
+
+    <form method="post" action="{% url 'network:discovery_candidates_action' %}" class="bulk-form">
+        {% csrf_token %}
+        <div class="action-bar">
+            <div>
+                <strong>Bulk actions</strong>
+                <p class="muted">Exact matches cannot be selected.</p>
+            </div>
+            <div class="actions">
+                <button type="submit" name="action" value="ignore" class="btn danger">Mark as ignored</button>
+                <button type="submit" name="action" value="resolve" class="btn ghost">Resolve mismatch (placeholder)</button>
+                <button type="submit" name="action" value="create_device" class="btn primary">Create device (placeholder)</button>
+            </div>
+        </div>
+
+        <div class="table-card">
+            <table class="candidate-table">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Site</th>
+                        <th>IP address</th>
+                        <th>Hostname</th>
+                        <th>Reachability</th>
+                        <th>Status</th>
+                        <th>Last seen</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in page_obj %}
+                    <tr>
+                        <td class="checkbox-cell">
+                            {% if c.accepted is True %}
+                                <input type="checkbox" disabled title="Exact matches cannot be changed">
+                            {% else %}
+                                <input type="checkbox" name="ids" value="{{ c.id }}">
+                            {% endif %}
+                        </td>
+                        <td>{{ c.site.name }}</td>
+                        <td>{{ c.ip_address }}</td>
+                        <td>{{ c.hostname|default:"—" }}</td>
+                        <td>
+                            <div class="reachability" title="Ping / SSH">
+                                <span class="reachability-dot {% if c.reachable_ping %}ok{% else %}disabled{% endif %}" title="Ping"></span>
+                                <span class="reachability-dot {% if c.reachable_ssh %}ok{% else %}disabled{% endif %}" title="SSH"></span>
+                            </div>
+                        </td>
+                        <td>
+                            {% if c.accepted is True %}
+                                <span class="status-pill status-exact">Exact</span>
+                            {% elif c.accepted is False %}
+                                <span class="status-pill status-mismatch">Mismatch</span>
+                            {% elif c.classified %}
+                                <span class="status-pill status-new">New</span>
+                            {% else %}
+                                <span class="status-pill status-unclassified">Unclassified</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ c.last_seen|date:"M d, H:i" }}</td>
+                        <td class="table-actions">
+                            {% if c.accepted is False %}
+                                <a href="{% url 'network:resolve_discovery_mismatch' c.id %}">Resolve mismatch</a>
+                            {% elif c.accepted is None %}
+                                <a href="{% url 'network:create_device_from_candidate' c.id %}">Create device</a>
+                            {% else %}
+                                <a href="{% url 'network:discovery_candidate_detail' c.id %}">Details</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" style="text-align:center; padding: 1.5rem; color: var(--muted);">
+                            No discovery candidates found for the current filters.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </form>
+
+    <div class="pagination-wrapper">
+        <div class="range-info muted">
+            {% if page_obj.paginator.count %}
+                Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} filtered candidates ({{ summary.total }} total)
+            {% else %}
+                No candidates to display for the current filters.
+            {% endif %}
+        </div>
+        {% if page_obj %}
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+                <li><a href="?site={{ site_filter }}&status={{ status_filter }}{% if ssh_only %}&ssh_only=1{% endif %}&page={{ page_obj.previous_page_number }}">Previous</a></li>
+            {% else %}
+                <li><span>Previous</span></li>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="active"><span>{{ num }}</span></li>
+                {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+                    <li><a href="?site={{ site_filter }}&status={{ status_filter }}{% if ssh_only %}&ssh_only=1{% endif %}&page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+                <li><a href="?site={{ site_filter }}&status={{ status_filter }}{% if ssh_only %}&ssh_only=1{% endif %}&page={{ page_obj.next_page_number }}">Next</a></li>
+            {% else %}
+                <li><span>Next</span></li>
+            {% endif %}
+        </ul>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
