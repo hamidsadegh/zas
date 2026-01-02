@@ -30,7 +30,7 @@ main { max-width: 900px; }
 .link-btn { font-weight: 700; color: var(--primary); }
 .meta-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 1rem;
     margin: 1rem 0;
 }
@@ -47,6 +47,7 @@ main { max-width: 900px; }
     color: var(--muted);
 }
 .meta-value { font-weight: 700; font-size: 1.1rem; margin-top: 0.2rem; }
+.meta-value.nowrap { white-space: nowrap; overflow-x: auto; display: block; }
 .status-chip {
     padding: 0.35rem 0.8rem;
     border-radius: 999px;
@@ -111,7 +112,7 @@ main { max-width: 900px; }
         </div>
         <div class="meta-card">
             <div class="meta-label">Hostname</div>
-            <div class="meta-value">{{ candidate.hostname|default:"—" }}</div>
+            <div class="meta-value nowrap">{{ candidate.hostname|default:"—" }}</div>
         </div>
         <div class="meta-card">
             <div class="meta-label">Last seen</div>

@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import models, transaction
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from network.models.discovery import DiscoveryCandidate
 from dcim.models import (
@@ -23,7 +24,19 @@ class CandidateDeviceForm(forms.ModelForm):
 
     class Meta:
         model = Device
-        fields = ["name", "management_ip", "site", "area", "rack", "role", "device_type", "status"]
+        fields = [
+            "name",
+            "management_ip",
+            "site",
+            "area",
+            "rack",
+            "role",
+            "device_type",
+            "status",
+            "inventory_number",
+            "tags",
+            "position",
+        ]
 
     def __init__(self, candidate, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -45,6 +58,8 @@ class CandidateDeviceForm(forms.ModelForm):
         self.fields["area"].required = True
 
         area_id = self.data.get("area") or (self.initial.get("area").id if self.initial.get("area") else None)
+        rack_id = self.data.get("rack") or (self.initial.get("rack").id if self.initial.get("rack") else None)
+
         if area_id:
             self.fields["rack"].queryset = Rack.objects.filter(area_id=area_id).order_by("name")
         else:
@@ -55,17 +70,43 @@ class CandidateDeviceForm(forms.ModelForm):
         self.fields["device_type"].queryset = DeviceType.objects.all().order_by("vendor__name", "model")
         self.fields["status"].required = True
         self.fields["status"].initial = Device._meta.get_field("status").default
+        self.fields["inventory_number"].required = False
+        self.fields["tags"].required = False
+        self.fields["tags"].queryset = Tag.objects.all().order_by("name")
+        self.fields["position"].required = False
+        self.fields["area"].widget.attrs["data-racks-url"] = reverse("racks_for_area")
+        self.fields["rack"].widget.attrs["data-current"] = str(rack_id) if rack_id else ""
+
+        self.order_fields(
+            [
+                "name",
+                "management_ip",
+                "site",
+                "area",
+                "rack",
+                "position",
+                "role",
+                "device_type",
+                "status",
+                "inventory_number",
+                "tags",
+            ]
+        )
 
     def clean(self):
         cleaned = super().clean()
         area = cleaned.get("area")
         rack = cleaned.get("rack")
+        position = cleaned.get("position")
 
         if area and area.site_id != self.candidate.site_id:
             self.add_error("area", "Area must belong to the same site as the candidate.")
 
         if rack and area and rack.area_id != area.id:
             self.add_error("rack", "Rack must belong to the selected area.")
+
+        if position and not rack:
+            self.add_error("position", "Set a rack before assigning a position.")
 
         return cleaned
 
@@ -91,7 +132,19 @@ def discovery_dashboard(request):
 
 @login_required
 def discovery_candidates(request):
-    qs = DiscoveryCandidate.objects.select_related("site").order_by("-last_seen")
+    qs = (
+        DiscoveryCandidate.objects.select_related("site")
+        .annotate(
+            status_order=models.Case(
+                models.When(accepted=False, then=models.Value(0)),
+                models.When(accepted__isnull=True, then=models.Value(1)),
+                models.When(accepted=True, then=models.Value(2)),
+                default=models.Value(3),
+                output_field=models.IntegerField(),
+            )
+        )
+        .order_by("status_order", "-last_seen")
+    )
 
     site_filter = request.GET.get("site", "all")
     status_filter = request.GET.get("status", "all")
@@ -374,7 +427,7 @@ def create_device_from_candidate(request, pk):
             candidate.classified = True
             candidate.accepted = False
             candidate.save(update_fields=["classified", "accepted"])
-            messages.info(request, "Candidate marked as ignored. No device created.")
+            messages.info(request, "Candidate marked as ignored. No device assigned.")
             return redirect("network:discovery_candidates")
 
         if action == "create":
@@ -393,6 +446,7 @@ def create_device_from_candidate(request, pk):
                     device.source = "discovery"
                     device.last_seen = candidate.last_seen
                     device.save()
+                    form.save_m2m()
 
                     tag_new, _ = Tag.objects.get_or_create(name="discovered-new")
                     device.tags.add(tag_new)
@@ -407,7 +461,7 @@ def create_device_from_candidate(request, pk):
                     candidate.accepted = True
                     candidate.save(update_fields=["classified", "accepted"])
 
-                    messages.success(request, "Device created from discovery candidate.")
+                    messages.success(request, "Device assigned from discovery candidate.")
                     return redirect("device_detail", pk=device.id)
 
         messages.error(request, "Please correct the errors below.")
@@ -416,4 +470,4 @@ def create_device_from_candidate(request, pk):
         "candidate": candidate,
         "form": form,
     }
-    return render(request, "network/discovery/create_device.html", context)
+    return render(request, "network/discovery/assign_device.html", context)

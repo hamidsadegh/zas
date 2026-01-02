@@ -287,7 +287,7 @@ main { max-width: 1250px; }
                             {% if c.accepted is False %}
                                 <a href="{% url 'network:resolve_discovery_mismatch' c.id %}">Resolve mismatch</a>
                             {% elif c.accepted is None %}
-                                <a href="{% url 'network:create_device_from_candidate' c.id %}">Create device</a>
+                                <a href="{% url 'network:create_device_from_candidate' c.id %}">Assign device</a>
                             {% else %}
                                 <a href="{% url 'network:discovery_candidate_detail' c.id %}">Details</a>
                             {% endif %}

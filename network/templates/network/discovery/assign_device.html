@@ -1,5 +1,5 @@
 {% extends "core/base.html" %}
-{% block title %}Create Device from Discovery{% endblock %}
+{% block title %}Assign Device from Discovery{% endblock %}
 
 {% block styles %}
 main { max-width: 1100px; }
@@ -58,10 +58,14 @@ main { max-width: 1100px; }
 }
 .form-field label { font-weight: 700; color: var(--muted); }
 .form-field input,
-.form-field select {
+.form-field select,
+.form-field textarea {
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 0.6rem 0.8rem;
+}
+.form-field select[multiple] {
+    min-height: 110px;
 }
 .form-actions {
     display: flex;
@@ -89,8 +93,8 @@ main { max-width: 1100px; }
 <section style="display:flex; flex-direction:column; gap:1rem;">
     <div class="card">
         <p class="tag">Discovery</p>
-        <h1 style="margin: 0.2rem 0;">Create device from candidate</h1>
-        <p class="muted" style="margin:0;">This device was discovered on the network. It will not be added to inventory unless you explicitly confirm.</p>
+        <h1 style="margin: 0.2rem 0;">Assign device from candidate</h1>
+        <p class="muted" style="margin:0;">This device was discovered on the network. It will not be added to inventory unless you explicitly confirm assignment.</p>
     </div>
 
     <div class="card">
@@ -128,7 +132,10 @@ main { max-width: 1100px; }
         <div class="form-grid">
             {% for field in form %}
                 <div class="form-field">
-                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    <label for="{{ field.id_for_label }}">
+                        {{ field.label }}
+                        {% if field.field.required %}<span class="muted" aria-hidden="true">*</span>{% endif %}
+                    </label>
                     {{ field }}
                     {% if field.help_text %}<small class="muted">{{ field.help_text }}</small>{% endif %}
                     {% if field.errors %}
@@ -141,10 +148,57 @@ main { max-width: 1100px; }
             <div class="error" style="margin-top:0.6rem;">{{ form.non_field_errors|striptags }}</div>
         {% endif %}
         <div class="form-actions">
-            <button type="submit" name="action" value="create" class="btn primary">✅ Create Device</button>
+            <button type="submit" name="action" value="create" class="btn primary">✅ Assign Device</button>
             <button type="submit" name="action" value="ignore" class="btn danger" formnovalidate>🚫 Ignore Candidate</button>
             <a href="{% url 'network:discovery_candidates' %}" class="btn ghost">❌ Cancel</a>
         </div>
     </form>
 </section>
+<script>
+(() => {
+    const area = document.getElementById("id_area");
+    const rack = document.getElementById("id_rack");
+    if (!area || !rack) return;
+
+    const racksUrl = area.dataset.racksUrl;
+    const initialArea = area.value;
+    const initialRack = rack.dataset.current || "";
+
+    const renderRacks = (racks, preserveSelection=false) => {
+        const selected = preserveSelection ? (rack.value || initialRack) : "";
+        rack.innerHTML = "";
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "Select rack (optional)";
+        rack.appendChild(placeholder);
+        racks.forEach(({id, name}) => {
+            const opt = document.createElement("option");
+            opt.value = id;
+            opt.textContent = name;
+            if (selected && selected === String(id)) opt.selected = true;
+            rack.appendChild(opt);
+        });
+    };
+
+    const loadRacks = async (areaId, preserveSelection=false) => {
+        renderRacks([], preserveSelection);
+        if (!areaId || !racksUrl) return;
+        try {
+            const resp = await fetch(`${racksUrl}?area=${areaId}`);
+            const data = await resp.json();
+            renderRacks(data.results || [], preserveSelection);
+        } catch (e) {
+            renderRacks([], preserveSelection);
+        }
+    };
+
+    area.addEventListener("change", () => {
+        loadRacks(area.value, false);
+    });
+
+    if (initialArea && rack.options.length <= 1) {
+        loadRacks(initialArea, true);
+    }
+})();
+</script>
 {% endblock %}

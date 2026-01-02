@@ -14,7 +14,7 @@ urlpatterns = [
     path("discovery/", discovery_dashboard, name="discovery_dashboard"),
     path("discovery/candidates/", discovery_candidates, name="discovery_candidates"),
     path(
-        "discovery/candidates/<uuid:pk>/create-device/",
+        "discovery/candidates/<uuid:pk>/assign-device/",
         create_device_from_candidate,
         name="create_device_from_candidate",
     ),
