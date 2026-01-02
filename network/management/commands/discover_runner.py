@@ -55,7 +55,7 @@ class Command(BaseCommand):
                 f"  Alive found    : {stats['alive']}\n"
                 f"  Exact matches  : {stats.get('exact', 0)}\n"
                 f"  Mismatches     : {stats.get('mismatch', 0)}\n"
-                f"  New endpoints  : {stats.get('new', 0)}"
+                f"  New devices  : {stats.get('new', 0)}"
             )
         )
 

@@ -331,8 +331,7 @@ class DeviceModule(models.Model):
     vendor = models.ForeignKey(
         Vendor, on_delete=models.SET_NULL, blank=True, null=True, related_name="modules"
     )
-    serial_number = models.CharField(max_length=100)
-
+    serial_number = models.CharField(max_length=100, blank=True, null=True)
     class Meta:
         verbose_name = "Device Module"
         verbose_name_plural = "Device Modules"

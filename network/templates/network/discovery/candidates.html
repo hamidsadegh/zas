@@ -55,6 +55,12 @@ main { max-width: 1250px; }
     padding: 0.5rem 0.75rem;
     min-width: 180px;
 }
+.filters input[type="text"] {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.5rem 0.75rem;
+    min-width: 220px;
+}
 .filters label {
     display: inline-flex;
     align-items: center;
@@ -210,6 +216,7 @@ main { max-width: 1250px; }
                 <option value="{{ key }}" {% if site_filter == key %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
+        <input type="text" name="search" value="{{ search_query }}" placeholder="Search hostname or IP">
         <select name="status" onchange="this.form.submit()">
             {% for key, label in status_choices %}
                 <option value="{{ key }}" {% if status_filter == key %}selected{% endif %}>{{ label }}</option>
@@ -219,7 +226,7 @@ main { max-width: 1250px; }
             <input type="checkbox" name="ssh_only" value="1" {% if ssh_only %}checked{% endif %} onchange="this.form.submit()"> SSH reachable only
         </label>
         <button type="submit">Apply</button>
-        {% if site_filter != "all" or status_filter != "all" or ssh_only %}
+        {% if site_filter != "all" or status_filter != "all" or ssh_only or search_query %}
             <a class="link-btn" href="{% url 'network:discovery_candidates' %}">Clear filters</a>
         {% endif %}
     </form>
@@ -316,7 +323,7 @@ main { max-width: 1250px; }
         {% if page_obj %}
         <ul class="pagination">
             {% if page_obj.has_previous %}
-                <li><a href="?site={{ site_filter }}&status={{ status_filter }}{% if ssh_only %}&ssh_only=1{% endif %}&page={{ page_obj.previous_page_number }}">Previous</a></li>
+                <li><a href="?site={{ site_filter }}&status={{ status_filter }}{% if ssh_only %}&ssh_only=1{% endif %}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}&page={{ page_obj.previous_page_number }}">Previous</a></li>
             {% else %}
                 <li><span>Previous</span></li>
             {% endif %}
@@ -324,11 +331,11 @@ main { max-width: 1250px; }
                 {% if page_obj.number == num %}
                     <li class="active"><span>{{ num }}</span></li>
                 {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
-                    <li><a href="?site={{ site_filter }}&status={{ status_filter }}{% if ssh_only %}&ssh_only=1{% endif %}&page={{ num }}">{{ num }}</a></li>
+                    <li><a href="?site={{ site_filter }}&status={{ status_filter }}{% if ssh_only %}&ssh_only=1{% endif %}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}&page={{ num }}">{{ num }}</a></li>
                 {% endif %}
             {% endfor %}
             {% if page_obj.has_next %}
-                <li><a href="?site={{ site_filter }}&status={{ status_filter }}{% if ssh_only %}&ssh_only=1{% endif %}&page={{ page_obj.next_page_number }}">Next</a></li>
+                <li><a href="?site={{ site_filter }}&status={{ status_filter }}{% if ssh_only %}&ssh_only=1{% endif %}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}&page={{ page_obj.next_page_number }}">Next</a></li>
             {% else %}
                 <li><span>Next</span></li>
             {% endif %}

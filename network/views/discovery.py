@@ -149,6 +149,7 @@ def discovery_candidates(request):
     site_filter = request.GET.get("site", "all")
     status_filter = request.GET.get("status", "all")
     ssh_only = request.GET.get("ssh_only") == "1"
+    search_query = request.GET.get("search", "").strip()
     page_number = request.GET.get("page", 1)
 
     if site_filter != "all":
@@ -163,6 +164,13 @@ def discovery_candidates(request):
 
     if ssh_only:
         qs = qs.filter(reachable_ssh=True)
+
+    if search_query:
+        qs = qs.filter(
+            models.Q(ip_address__icontains=search_query)
+            | models.Q(hostname__icontains=search_query)
+            | models.Q(site__name__icontains=search_query)
+        )
 
     paginator = Paginator(qs, 25)
     try:
@@ -200,6 +208,7 @@ def discovery_candidates(request):
         "site_filter": site_filter,
         "status_filter": status_filter,
         "ssh_only": ssh_only,
+        "search_query": search_query,
         "summary": summary,
     }
     return render(request, "network/discovery/candidates.html", context)
