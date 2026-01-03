@@ -13,12 +13,12 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             "--berlin",
-            default=os.path.join(settings.BASE_DIR, "docs", "ADRESSKONZEPT_BERLIN.xlsx"),
+            default=os.path.join(settings.BASE_DIR, "data/imports/vlans/", "berlin.xlsx"),
             help="Path to Berlin Excel file",
         )
         parser.add_argument(
             "--bonn",
-            default=os.path.join(settings.BASE_DIR, "docs", "ADRESSKONZEPT_BONN.xls"),
+            default=os.path.join(settings.BASE_DIR, "data/imports/vlans/", "bonn.xls"),
             help="Path to Bonn Excel file",
         )
 

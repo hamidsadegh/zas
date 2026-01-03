@@ -378,6 +378,10 @@ main {
                           aria-label="{% if netconf_enabled %}Netconf reachable: {% if device.runtime.reachable_netconf %}yes{% else %}no{% endif %}{% else %}Netconf check disabled{% endif %}"></span>
                 </div>
                 {% endwith %}
+                <div class="info-item" style="font-size: 0.85rem; color: var(--muted);">
+                    <span>Last check</span>
+                    <span>{{ device.runtime.last_check|default:"—" }}</span>
+                </div>
                 <div style="width: 100%; border-top: 1px solid var(--border); margin: 0.75rem 0;"></div>
                 {% if device.tags.all %}
                 <div class="info-item" style="align-items: flex-start; flex-direction: column; gap: 0.4rem;">
