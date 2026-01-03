@@ -1,0 +1,5 @@
+Value RAUM (\w+)
+Value RACK (\w+)
+
+Start
+  ^sys location:\s${RAUM}\s${RACK} -> Record

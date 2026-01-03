@@ -89,11 +89,13 @@ class SyncService:
             )
             if isinstance(serial, list):
                 serial = serial[0] if serial else ""
-            image = entry.get("running_image") or entry.get("version")
+            image = entry.get("version") or entry.get("running_image")
             uptime_seconds = self._parse_uptime(entry.get("uptime"))
         else:
             serial = self._parse_serial_from_text(raw)
             uptime_seconds = self._parse_uptime(self._extract_uptime_line(raw))
+            image_match = self._parse_image_from_text(raw)
+            image = image_match if image_match else None
 
         now = self.now
         update_fields = ["last_seen"]
@@ -267,3 +269,8 @@ class SyncService:
             if "uptime is" in line.lower():
                 return line
         return ""
+    
+    @staticmethod
+    def _parse_image_from_text(raw: str):
+        match = re.search(r"\bVersion\s+([0-9]+(?:\.[0-9]+)*(?:\([^)]+\))?[A-Za-z0-9.]*)", raw, re.MULTILINE)
+        return match.group(1) if match else None

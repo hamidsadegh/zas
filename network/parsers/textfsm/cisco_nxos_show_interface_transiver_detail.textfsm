@@ -1,0 +1,6 @@
+Value TYPE (.*)
+Value SN ([\w+\d+]+)
+
+Start
+  ^\s+type is\s${TYPE}
+  ^\s+serial number is\s${SN} -> Record

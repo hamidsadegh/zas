@@ -1,0 +1,10 @@
+Value TOTAL (\d*)
+Value USED (\d*)
+Value FREE (\d*)
+Value STATUS (\S*)
+
+Start
+  ^Memory usage:\s+${TOTAL}\S\s*\S*\s*${USED}\S\s*\S*\s*${FREE}
+  ^Current memory status: ${STATUS} -> Record
+#\s*${USED}\sFree:\s+${FREE}
+#\sUsed:\s+${USED}\d+Free:\s+${FREE

@@ -1,0 +1,9 @@
+Value TOTAL (\d*)
+Value USED (\d*)
+Value FREE (\d*)
+
+Start
+  ^Processor\s+\S+\s+${TOTAL}\s*${USED}\s*${FREE} -> Record
+
+#\s*${USED}\sFree:\s+${FREE}
+#\sUsed:\s+${USED}\d+Free:\s+${FREE

@@ -1,0 +1,9 @@
+Value TOTAL (\d*)
+Value USED (\d*)
+Value FREE (\d*)
+
+Start  
+  ^Processor Pool Total:\s${TOTAL}\sUsed:\s*${USED}\sFree:\s+${FREE} -> Record
+
+#PID:\s+${PID}.*,.*VID:\s+${VID},.*SN:\s+${SN}
+#\sUsed:\s+${USED}\d+Free:\s+${FREE

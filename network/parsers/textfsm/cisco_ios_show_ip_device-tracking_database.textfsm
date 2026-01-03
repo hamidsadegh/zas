@@ -1,0 +1,13 @@
+Value IP (\S+)
+Value MAC (\S+)
+Value INTERFACE (\S+)
+Value VLAN (\S+)
+Value PRLVL (\S+)
+Value AGE (\S+)
+Value STATE (\S+)
+Value TIME_LEFT (.*)
+
+Start
+  ^\s+Network\sLayer\sAddress\s+Link\sLayer\sAddress\s+Interface\s+vlan\s+prlvl\s+age\s+state\s+Time\sleft -> Continue
+  ^ARP\s${IP}\s+${MAC}\s+${INTERFACE}\s+${VLAN}\s+${PRLVL}\s+${AGE}\s+${STATE}\s+${TIME_LEFT} -> Record
+  #\s+${MAC}\s+${INTERFACE}\s+${VLAN}s+${PRLVL}\s+${AGE}\s+${STATE}

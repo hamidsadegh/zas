@@ -32,7 +32,7 @@ class Command(BaseCommand):
             site = self._get_site_by_name(site_name, org_name)
         else:
             raise CommandError(
-                "You must provide either --site-id or --site (optionally with --org)"
+                "You must provide --site <name> (optionally with --org)"
             )
 
         self.stdout.write(
