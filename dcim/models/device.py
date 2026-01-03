@@ -37,8 +37,9 @@ class DeviceType(models.Model):
         editable=False
         )
     model = models.CharField(
+        max_length=100,
         verbose_name=_('model'),
-        max_length=100
+        help_text=_('Model name as assigned by the vendor.'),
         )
     platform = models.CharField(
         max_length=50,
@@ -116,7 +117,43 @@ class DeviceType(models.Model):
         decimal_places=2,
         blank=True,
         null=True,
-        verbose_name=_('weight')
+        verbose_name=_('weight'),
+        help_text=_('Weight of the device with default power supply in kilograms.'),
+        )
+    dimensions = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name=_('dimensions'),
+        help_text=_('Physical dimensions (L x W x H) in standard units, e.g. inches or mm.')
+        )
+    default_ac_power_supply_watts = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        verbose_name=_('default AC power supply (watts)'),
+        help_text=_('Default power capacity of a single AC power supply for this device type.'),
+        )
+    switching_capacity_gbps = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        verbose_name=_('switching capacity (Gbps)'),
+        help_text=_('Total switching capacity of the device in gigabits per second.'),
+        )
+    forwarding_rate_mpps = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        verbose_name=_('forwarding rate (Mpps)'),
+        help_text=_('Packet forwarding rate in millions of packets per second.'),
+        )
+    datasheet = models.URLField(
+        blank=True,
+        null=True,
+        verbose_name=_('datasheet'),
+        help_text=_('URL to the manufacturer\'s datasheet for this device type.'),
         )
     clone_fields = (
         'vendor', 'platform', 'u_height', 'is_full_depth', 'airflow', 'weight',
