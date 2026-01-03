@@ -1,7 +1,6 @@
 import contextlib
 
 from netmiko import ConnectHandler
-from netmiko.ssh_autodetect import SSHDetect
 
 from automation.application.connection_service import ConnectionService
 
@@ -16,9 +15,10 @@ class NetmikoAdapter(contextlib.AbstractContextManager):
     def __enter__(self):
         params = ConnectionService.build_ssh_params(self.device)
         if params.get("device_type") == "autodetect":
-            guesser = SSHDetect(**params)
-            best_match = guesser.autodetect()
-            params["device_type"] = best_match
+                device_type = self.device.device_type
+                if device_type and device_type.platform:
+                    params["device_type"] = device_type.platform
+                    print(f"INFO: Auto-detected platform for device '{self.device}': {params['device_type']}")
         self.connection = ConnectHandler(**params)
         return self
 
