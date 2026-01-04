@@ -4,7 +4,8 @@
 
 {% block styles %}
 .rack-shell {
-    max-width: 3600px;
+    max-width: none;
+    width: 80vw;
     margin: 0 auto;
     display: grid;
     grid-template-columns: 360px 3fr;
@@ -71,7 +72,6 @@
     flex-direction: column;
     height: 100%;
     gap: 0.25rem;
-    overflow: hidden;
 }
 .device-name { font-weight: 700; }
 .device-role { font-size: 0.85rem; color: var(--muted); }
@@ -79,8 +79,10 @@
     flex: 1 1 auto;
     min-height: 0;
     width: 100%;
-    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
     object-fit: contain;
+    height: auto;
     margin-top: 0;
     border-radius: 6px;
     background: #fff;
@@ -108,6 +110,11 @@
 }
 @media (max-width: 960px) { .rack-shell { grid-template-columns: 1fr; } }
 @media (min-width: 960px) { .rack-views { grid-template-columns: 1fr 1fr; } }
+main {
+    max-width: none;
+    width: 95vw;
+    margin: 0 auto;
+}
 {% endblock %}
 
 {% block content %}
@@ -152,7 +159,7 @@
                                 <div class="unit-label">{% if not row.occupied %}U{{ row.unit }}{% endif %}</div>
                                 <div class="unit-slot" style="{% if row.occupied and not row.device %}background: transparent; border: none; padding:0; min-height:0;{% endif %}" >
                                     {% if row.device %}
-                                    <div class="device-block" style="background:#eef2ff; border-color:#cbd5f5; height: calc({{ row.height }} * 36px);">
+                                    <div class="device-block" style="background:#eef2ff; border-color:#cbd5f5; min-height: {{ row.render_height_px }}px; height: auto;">
                                         <div class="device-name">
                                             <a href="{% url 'device_detail' row.device.id %}">{{ row.device.name }}</a>
                                         </div>
@@ -181,7 +188,7 @@
                                 <div class="unit-label">{% if not row.occupied %}U{{ row.unit }}{% endif %}</div>
                                 <div class="unit-slot" style="{% if row.occupied and not row.device %}background: transparent; border: none; padding:0; min-height:0;{% endif %}">
                                     {% if row.device %}
-                                    <div class="device-block" style="background:#eef2ff; border-color:#cbd5f5; height: calc({{ row.height }} * 36px);">
+                                    <div class="device-block" style="background:#eef2ff; border-color:#cbd5f5; min-height: {{ row.render_height_px }}px; height: auto;">
                                         <div class="device-name">
                                             <a href="{% url 'device_detail' row.device.id %}">{{ row.device.name }}</a>
                                         </div>

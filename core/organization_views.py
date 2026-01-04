@@ -249,6 +249,7 @@ class RackDetailView(TemplateView):
                     "unit": unit,
                     "device": block["device"] if is_head else None,
                     "height": block["height"] if is_head else None,
+                    "render_height_px": (block["height"] * 36) if is_head else None,
                     "occupied": bool(block),
                 }
             )
