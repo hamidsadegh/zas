@@ -194,11 +194,17 @@ class RackDetailView(TemplateView):
         )
         show_devices = self.request.user.has_perm("dcim.view_device")
 
-        devices = list(
-            rack.devices.all().order_by("position", "name")
-        ) if show_devices else []
+        devices = list(rack.devices.all().order_by("position", "name"))
 
         layout = self._build_layout(rack, devices) if show_devices else []
+        rack_power_watts = 0
+        rack_weight_kg = 0
+        for d in devices:
+            dt = d.device_type
+            if not dt:
+                continue
+            rack_power_watts += (dt.default_ac_power_supply_watts or 0)
+            rack_weight_kg += float(dt.weight or 0)
 
         context.update(
             {
@@ -207,6 +213,8 @@ class RackDetailView(TemplateView):
                 "layout": layout,
                 "device_list": devices,
                 "has_positions": bool(layout),
+                "rack_power_watts": rack_power_watts,
+                "rack_weight_kg": rack_weight_kg,
             }
         )
         return context
