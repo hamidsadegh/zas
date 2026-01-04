@@ -18,7 +18,7 @@ from core.forms.organization_forms import (
 from dcim.models import Organization, Site, Area, Rack, Device
 
 
-def _build_area_tree(areas):
+def _build_area_tree(areas, selected_area_id=None):
     """Return a nested tree structure from a flat area queryset."""
     children = defaultdict(list)
     area_map = {}
@@ -33,9 +33,12 @@ def _build_area_tree(areas):
             roots.append(area)
 
     def build(node):
+        child_nodes = [build(child) for child in sorted(children[node.id], key=lambda a: a.name)]
+        is_open = node.id == selected_area_id or any(c["open"] for c in child_nodes)
         return {
             "area": node,
-            "children": [build(child) for child in sorted(children[node.id], key=lambda a: a.name)],
+            "children": child_nodes,
+            "open": is_open,
         }
 
     return [build(root) for root in sorted(roots, key=lambda a: a.name)]
@@ -55,7 +58,7 @@ def _render_site_detail(request, site, selected_area_id=None, error=None):
     if selected_area is None:
         selected_area = areas.first()
 
-    area_tree = _build_area_tree(areas)
+    area_tree = _build_area_tree(areas, selected_area.id if selected_area else None)
     rack_edit_id = request.GET.get("rack")
     rack_edit = None
     if rack_edit_id:
@@ -117,7 +120,7 @@ def _site_detail_context(request, site):
     if selected_area is None:
         selected_area = areas.first()
 
-    area_tree = _build_area_tree(areas)
+    area_tree = _build_area_tree(areas, selected_area.id if selected_area else None)
     rack_edit_id = request.GET.get("rack")
     rack_edit = None
     if rack_edit_id:

@@ -25,6 +25,18 @@
         <button type="submit" class="btn btn-primary" style="width: fit-content;">Create Area</button>
     </form>
 {% else %}
+    <style>
+    .area-tree { list-style: none; padding-left: 0; margin: 0; }
+    .area-node { margin: 0; padding: 0.1rem 0; }
+    .area-row { display: flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.45rem; border-radius: 10px; transition: background 0.15s ease, border-color 0.15s ease; }
+    .area-row:hover { background: #f8fafc; }
+    .area-node.active .area-row { background: #e0ebff; border: 1px solid #bcd3ff; }
+    .area-toggle { border: none; background: none; padding: 0; width: 1.2rem; cursor: pointer; color: var(--muted); font-weight: 700; }
+    .area-toggle.placeholder { visibility: hidden; cursor: default; }
+    .area-link { border: none; background: none; text-align: left; padding: 0; margin: 0; font-weight: 600; cursor: pointer; color: var(--text); }
+    .area-link:hover { color: var(--primary); }
+    .area-children { list-style: none; margin: 0; padding-left: 1.2rem; border-left: 1px dashed var(--border); }
+    </style>
     <div class="org-shell" style="grid-template-columns: 320px 1fr;">
         <div class="card" style="padding:1rem; box-shadow:none;">
             <div class="section-title" style="margin-bottom:0.5rem;">
@@ -34,6 +46,24 @@
             <div class="area-tree">
                 {% include "core/organization/_area_tree.html" with nodes=area_tree site=site selected_area=selected_area %}
             </div>
+            <script>
+            (() => {
+                document.querySelectorAll(".area-toggle").forEach(btn => {
+                    if (btn.classList.contains("placeholder")) return;
+                    btn.addEventListener("click", () => {
+                        const li = btn.closest(".area-node");
+                        if (!li) return;
+                        const children = li.querySelector(":scope > .area-children");
+                        if (children) {
+                            const isOpen = li.classList.toggle("open");
+                            children.style.display = isOpen ? "block" : "none";
+                            const caret = btn.querySelector(".caret");
+                            if (caret) caret.textContent = isOpen ? "▼" : "▶";
+                        }
+                    });
+                });
+            })();
+            </script>
         </div>
 
         <div class="card" style="padding:1rem; box-shadow:none;">
