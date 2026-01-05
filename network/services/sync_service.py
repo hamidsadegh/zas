@@ -23,6 +23,8 @@ class SyncService:
     IF_STATUS_CMD = "show interfaces status"
     IF_IP_BRIEF_CMD = "show ip interface brief"
     RUNNING_CONFIG_CMD = "show running-config"
+    IF_DESC_CMD = "show interfaces description"
+
 
     def __init__(self, *, site):
         self.site = site
@@ -42,6 +44,7 @@ class SyncService:
                         self.VERSION_CMD: ssh.run_command(self.VERSION_CMD),
                         self.INVENTORY_CMD: ssh.run_command(self.INVENTORY_CMD),
                         self.IF_STATUS_CMD: ssh.run_command(self.IF_STATUS_CMD),
+                        self.IF_DESC_CMD: ssh.run_command(self.IF_DESC_CMD),
                         self.IF_IP_BRIEF_CMD: ssh.run_command(self.IF_IP_BRIEF_CMD),
                     }
                     if include_config:
@@ -58,7 +61,7 @@ class SyncService:
 
             self._apply_version(device, runtime, results[self.VERSION_CMD])
             self._apply_inventory(device, results[self.INVENTORY_CMD])
-            self._apply_interfaces(device, results[self.IF_STATUS_CMD], results[self.IF_IP_BRIEF_CMD])
+            self._apply_interfaces(device, results[self.IF_STATUS_CMD], results[self.IF_DESC_CMD], results[self.IF_IP_BRIEF_CMD])
             if include_config:
                 config_result = results.get(self.RUNNING_CONFIG_CMD, {})
                 self._record_config(
@@ -138,15 +141,45 @@ class SyncService:
                 defaults={"description": description or "", "vendor": None},
             )
 
-    def _apply_interfaces(self, device: Device, status_result: dict, ip_result: dict):
+    def _apply_interfaces(self, device: Device, status_result: dict, desc_result: dict, ip_result: dict):
+        # Build description map
+        desc_map = {}
+        parsed_desc = desc_result.get("parsed") if isinstance(desc_result, dict) else None
+        if parsed_desc:
+            for entry in parsed_desc:
+                iface = entry.get("port") or entry.get("interface")
+                desc = entry.get("description")
+                if iface:
+                    desc_map[iface.strip()] = (desc or "").strip()
+        # Build IP address map
         ip_map = {}
         parsed_ip = ip_result.get("parsed") if isinstance(ip_result, dict) else None
+
         if parsed_ip and isinstance(parsed_ip, (list, tuple)):
             for entry in parsed_ip:
                 iface = entry.get("intf") or entry.get("interface")
                 ipaddr = entry.get("ipaddr") or entry.get("ip_address")
-                if iface and ipaddr and ipaddr.lower() != "unassigned":
-                    ip_map[iface.strip()] = ipaddr.strip()
+                if iface:
+                    iface = iface.strip()
+                    if ipaddr and ipaddr.lower() != "unassigned":
+                        ip_map[iface] = ipaddr.strip()
+
+                    # Create VLAN interfaces
+                    if iface.lower().startswith("vlan"):
+                        Interface.objects.get_or_create(
+                            device=device,
+                            name=iface,
+                            defaults={
+                                "status": InterfaceStatusChoices.UP,
+                                "is_virtual": True,   # if you have / add this field
+                            },
+                        )
+
+        for iface_name, ip in ip_map.items():
+            iface = Interface.objects.filter(device=device, name=iface_name).first()
+            if iface:
+                iface.ip_address = ip
+                iface.save(update_fields=["ip_address"])
 
         parsed_status = status_result.get("parsed") if isinstance(status_result, dict) else None
         if not parsed_status or not isinstance(parsed_status, (list, tuple)):
@@ -157,7 +190,7 @@ class SyncService:
             if not name:
                 continue
 
-            alias = (entry.get("name") or "").strip()
+            alias = desc_map.get(name) or ""
             vlan_value = (entry.get("vlan") or "").strip().lower()
             status_raw = (entry.get("status") or "").strip().lower()
             speed_raw = entry.get("speed") or ""
@@ -203,12 +236,40 @@ class SyncService:
     # -------------------------------------------------
     @staticmethod
     def _parse_speed(speed_raw):
+        """
+        Normalize interface speed to Mbps (int).
+
+        Examples:
+        '10G'     -> 10000
+        '40G'     -> 40000
+        '100G'    -> 100000
+        '1000'    -> 1000
+        'a-1000'  -> 1000
+        'a-40G'   -> 40000
+        'auto'    -> None
+        """
         if not speed_raw:
             return None
-        try:
-            return int(re.sub(r"[^\d]", "", str(speed_raw)))
-        except ValueError:
+
+        s = str(speed_raw).lower()
+
+        # auto / unknown
+        if s in {"auto", "a-auto", "unknown", "n/a"}:
             return None
+
+        # extract number + unit
+        match = re.search(r"(\d+)\s*(g|m)?", s)
+        if not match:
+            return None
+
+        value = int(match.group(1))
+        unit = match.group(2)
+
+        if unit == "g":
+            return value * 1000  # Gbps → Mbps
+
+        return value  # already Mbps
+
 
     @staticmethod
     def _map_status(status_raw: str):
