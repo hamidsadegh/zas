@@ -30,7 +30,7 @@ class PrefixListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["form"] = PrefixForm()
-        ctx["prefix_lengths"] = [24, 25, 26, 27, 28, 29, 30, 31, 32]
+        ctx["prefix_lengths"] = [8, 10, 12, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
         return ctx
 
 

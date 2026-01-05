@@ -13,6 +13,8 @@ class PrefixRoleChoices(models.TextChoices):
     LOOPBACK = "loopback", "Loopback"
     TRANSIT = "transit", "Transit"
     INFRA = "infra", "Infrastructure"
+    CAMPUS = "campus", "Campus"
+    WAN = "wan", "WAN"
 
 
 class IPAddressStatusChoices(models.TextChoices):
