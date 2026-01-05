@@ -11,9 +11,15 @@ class VRF(models.Model):
         Site,
         on_delete=models.PROTECT,
         related_name="vrfs",
-    )
-    rd = models.CharField(max_length=100, blank=True, null=True)
-    description = models.TextField(blank=True, null=True)
+        )
+    rd = models.CharField(
+        max_length=100, 
+        blank=True, 
+        null=True,
+        verbose_name="Route Distinguisher",
+        help_text="Route Distinguisher for the VRF",
+        )
+    description = models.TextField(blank=True, null=True)   
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -1,74 +1,72 @@
-from ipaddress import ip_network, ip_address
+import ipaddress
 from rest_framework import serializers
 from ipam.models import VRF, Prefix, IPAddress
 
+
 class VRFSerializer(serializers.ModelSerializer):
+    prefix_count = serializers.IntegerField(source="prefixes.count", read_only=True)
+
     class Meta:
         model = VRF
-        fields = ["id", "name", "rd", "description", "created_at", "updated_at"]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        fields = ["id", "name", "site", "rd", "description", "created_at", "prefix_count"]
+        read_only_fields = ["id", "created_at", "prefix_count"]
+
 
 class PrefixSerializer(serializers.ModelSerializer):
+    ip_count = serializers.IntegerField(source="ip_addresses.count", read_only=True)
+
     class Meta:
         model = Prefix
         fields = [
-            "id", "vrf", "prefix", "status", "role", "description",
-            "is_pool", "created_at", "updated_at"
+            "id",
+            "cidr",
+            "site",
+            "vrf",
+            "vlan",
+            "parent",
+            "status",
+            "role",
+            "description",
+            "created_at",
+            "ip_count",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "ip_count"]
 
-    def validate_prefix(self, value):
-        # Ensure canonical CIDR formatting (Postgres inet/cidr also helps, but keep API strict)
+    def validate_cidr(self, value):
         try:
-            net = ip_network(str(value), strict=True)
-        except ValueError as e:
-            raise serializers.ValidationError(str(e))
+            net = ipaddress.ip_network(value, strict=True)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc))
         return str(net)
 
-    def validate(self, attrs):
-        # Overlap protection (v1: block overlap within same VRF)
-        vrf = attrs.get("vrf") or getattr(self.instance, "vrf", None)
-        prefix = attrs.get("prefix") or getattr(self.instance, "prefix", None)
-
-        if vrf and prefix:
-            net = ip_network(str(prefix), strict=True)
-            qs = Prefix.objects.filter(vrf=vrf)
-            if self.instance:
-                qs = qs.exclude(pk=self.instance.pk)
-
-            for other in qs.only("id", "prefix"):
-                other_net = ip_network(str(other.prefix), strict=True)
-                if net.overlaps(other_net):
-                    raise serializers.ValidationError({
-                        "prefix": f"Overlaps with existing prefix {other.prefix} (id={other.id})."
-                    })
-        return attrs
 
 class IPAddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = IPAddress
-        fields = [
-            "id", "vrf", "address", "status", "dns_name", "description",
-            "assigned_object_type", "assigned_object_id",
-            "created_at", "updated_at",
-        ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        fields = ["id", "address", "prefix", "interface", "status", "role", "hostname", "created_at"]
+        read_only_fields = ["id", "created_at"]
 
-    def validate_address(self, value):
-        # Accept "10.0.0.1" and normalize to host prefix, or require CIDR if you prefer
-        s = str(value).strip()
-        if "/" not in s:
-            # assume host
-            ip = ip_address(s)
-            s = f"{ip}/32" if ip.version == 4 else f"{ip}/128"
+    def validate(self, attrs):
+        prefix = attrs.get("prefix") or getattr(self.instance, "prefix", None)
+        address = attrs.get("address") or getattr(self.instance, "address", None)
+        interface = attrs.get("interface") or getattr(self.instance, "interface", None)
+        if not prefix or not address:
+            return attrs
 
         try:
-            net = ip_network(s, strict=False)  # strict=False allows host/len
-        except ValueError as e:
-            raise serializers.ValidationError(str(e))
+            ip_obj = ipaddress.ip_address(address)
+        except ValueError:
+            raise serializers.ValidationError({"address": "Enter a valid IP address."})
 
-        # Enforce host address only
-        if (net.num_addresses != 1):
-            raise serializers.ValidationError("IP address must be a host (/32 or /128).")
+        network = ipaddress.ip_network(prefix.cidr, strict=False)
+        if ip_obj not in network:
+            raise serializers.ValidationError({"address": "IP must belong to the selected prefix."})
 
-        return str(net)
+        vrf_id = prefix.vrf_id
+        qs = IPAddress.objects.filter(address=address, prefix__vrf_id=vrf_id)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError({"address": "IP address already exists in this VRF."})
+
+        return attrs

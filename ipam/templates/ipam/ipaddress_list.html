@@ -1,0 +1,84 @@
+{% extends "core/base.html" %}
+{% block title %}IP Addresses{% endblock %}
+
+{% block styles %}
+main { max-width: 1200px; }
+.card { background: var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.25rem; box-shadow: var(--shadow); }
+.table { width:100%; border-collapse: collapse; }
+.table th { text-align:left; font-size:0.8rem; text-transform: uppercase; letter-spacing:0.08em; color: var(--muted); padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+.table td { padding:0.55rem 0; border-bottom:1px solid var(--border); }
+.filters { display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.8rem; }
+.filters select, .filters input { border:1px solid var(--border); border-radius:10px; padding:0.45rem 0.7rem; }
+.btn { border:none; border-radius:999px; padding:0.55rem 1.1rem; font-weight:700; cursor:pointer; background: var(--primary); color:#fff; box-shadow: var(--shadow); }
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+        <div>
+            <p class="tag">IPAM</p>
+            <h1 style="margin:0;">IP Addresses</h1>
+        </div>
+        <div style="display:flex; gap:0.6rem; align-items:center;">
+            <a href="{% url 'ipam:index' %}" class="link-btn">← Back</a>
+            <a class="btn" href="{% url 'ipam:ipaddress_add' %}">Assign IP</a>
+        </div>
+    </div>
+    <form method="get" class="filters">
+        <select name="device" onchange="this.form.submit()">
+            <option value="">All devices</option>
+            {% for dev in devices %}
+                <option value="{{ dev.id }}" {% if request.GET.device == dev.id|stringformat:'s' %}selected{% endif %}>{{ dev.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="interface" onchange="this.form.submit()">
+            <option value="">All interfaces</option>
+            {% for iface in interfaces %}
+                <option value="{{ iface.id }}" {% if request.GET.interface == iface.id|stringformat:'s' %}selected{% endif %}>{{ iface.device.name }} / {{ iface.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="prefix" onchange="this.form.submit()">
+            <option value="">All prefixes</option>
+            {% for pref in prefixes %}
+                <option value="{{ pref.id }}" {% if request.GET.prefix == pref.id|stringformat:'s' %}selected{% endif %}>{{ pref.cidr }}</option>
+            {% endfor %}
+        </select>
+        <select name="status" onchange="this.form.submit()">
+            <option value="">Any status</option>
+            {% for key,label in form.fields.status.choices %}
+                <option value="{{ key }}" {% if request.GET.status == key %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Search IP/hostname">
+        <button type="submit">Filter</button>
+    </form>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Address</th>
+                <th>Prefix</th>
+                <th>Device</th>
+                <th>Interface</th>
+                <th>Status</th>
+                <th>Hostname</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ip in ip_addresses %}
+            <tr>
+                <td>{{ ip.address }}</td>
+                <td>{{ ip.prefix.cidr }}</td>
+                <td>{% if ip.interface %}{{ ip.interface.device.name }}{% else %}—{% endif %}</td>
+                <td>{% if ip.interface %}{{ ip.interface.name }}{% else %}—{% endif %}</td>
+                <td>{{ ip.get_status_display }}</td>
+                <td>{{ ip.hostname|default:"—" }}</td>
+                <td><a href="{% url 'ipam:ipaddress_detail' ip.id %}">View</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="muted">No IP addresses found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "core/base.html" %}
+{% block title %}Delete VRF{% endblock %}
+
+{% block content %}
+<div class="card" style="background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.25rem; box-shadow: var(--shadow); max-width:600px; margin:0 auto;">
+    <h1 style="margin-top:0;">Delete VRF</h1>
+    <p>Are you sure you want to delete VRF <strong>{{ object.name }}</strong>?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn" style="background: #dc2626; color:#fff;">Confirm</button>
+        <a href="{% url 'ipam:vrf_list' %}">Cancel</a>
+    </form>
+</div>
+{% endblock %}

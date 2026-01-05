@@ -14,38 +14,44 @@ class Prefix(models.Model):
         Site,
         on_delete=models.PROTECT,
         related_name="prefixes",
-    )
+        )
     vrf = models.ForeignKey(
         VRF,
         on_delete=models.PROTECT,
         related_name="prefixes",
         null=True,
         blank=True,
-    )
+        )
     vlan = models.ForeignKey(
         VLAN,
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
         related_name="prefixes",
-    )
+        )
     parent = models.ForeignKey(
         "self",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="children",
-    )
+        verbose_name="Parent Prefix",
+        help_text="The parent prefix of this prefix",
+        )
     status = models.CharField(
         max_length=20,
         choices=PrefixStatusChoices.choices,
         default=PrefixStatusChoices.ACTIVE,
-    )
+        verbose_name="Status",
+        help_text="The operational status of this prefix",
+        )
     role = models.CharField(
         max_length=20,
         choices=PrefixRoleChoices.choices,
         default=PrefixRoleChoices.USER,
-    )
+        verbose_name="Role",
+        help_text="The role of this prefix",
+        )
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

@@ -1,0 +1,29 @@
+{% extends "core/base.html" %}
+{% block title %}IPAM{% endblock %}
+
+{% block styles %}
+main { max-width: 1200px; }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.25rem; box-shadow: var(--shadow); }
+.link-btn { font-weight: 700; color: var(--primary); }
+{% endblock %}
+
+{% block content %}
+<section class="card-grid">
+    <div class="card">
+        <h3 style="margin:0 0 0.35rem 0;">VRFs</h3>
+        <p class="muted">Virtual routing contexts.</p>
+        <a class="link-btn" href="{% url 'ipam:vrf_list' %}">Manage VRFs →</a>
+    </div>
+    <div class="card">
+        <h3 style="margin:0 0 0.35rem 0;">Prefixes</h3>
+        <p class="muted">Networks and allocations.</p>
+        <a class="link-btn" href="{% url 'ipam:prefix_list' %}">Manage prefixes →</a>
+    </div>
+    <div class="card">
+        <h3 style="margin:0 0 0.35rem 0;">IP Addresses</h3>
+        <p class="muted">Assigned addresses.</p>
+        <a class="link-btn" href="{% url 'ipam:ipaddress_list' %}">Manage IPs →</a>
+    </div>
+</section>
+{% endblock %}

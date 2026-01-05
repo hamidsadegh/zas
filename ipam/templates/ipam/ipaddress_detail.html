@@ -1,0 +1,32 @@
+{% extends "core/base.html" %}
+{% block title %}IP {{ ip.address }}{% endblock %}
+
+{% block styles %}
+main { max-width: 900px; }
+.card { background: var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.25rem; box-shadow: var(--shadow); margin-bottom:1rem; }
+.muted { color: var(--muted); }
+.meta { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap:0.75rem; }
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+        <div>
+            <p class="tag">IP Address</p>
+            <h1 style="margin:0;">{{ ip.address }}</h1>
+            <p class="muted" style="margin:0;">Prefix: {{ ip.prefix.cidr }}</p>
+        </div>
+        <div style="display:flex; gap:0.6rem;">
+            <a href="{% url 'ipam:ipaddress_edit' ip.id %}">Edit</a>
+            <a href="{% url 'ipam:ipaddress_delete' ip.id %}">Delete</a>
+            <a href="{% url 'ipam:ipaddress_list' %}">Back</a>
+        </div>
+    </div>
+    <div class="meta" style="margin-top:0.8rem;">
+        <div><div class="muted">Status</div><div>{{ ip.get_status_display }}</div></div>
+        <div><div class="muted">Role</div><div>{{ ip.get_role_display }}</div></div>
+        <div><div class="muted">Interface</div><div>{% if ip.interface %}{{ ip.interface.device.name }} / {{ ip.interface.name }}{% else %}—{% endif %}</div></div>
+        <div><div class="muted">Hostname</div><div>{{ ip.hostname|default:"—" }}</div></div>
+    </div>
+</div>
+{% endblock %}

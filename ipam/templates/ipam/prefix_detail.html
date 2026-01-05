@@ -1,0 +1,75 @@
+{% extends "core/base.html" %}
+{% block title %}Prefix {{ prefix.cidr }}{% endblock %}
+
+{% block styles %}
+main { max-width: 1200px; }
+.card { background: var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.25rem; box-shadow: var(--shadow); margin-bottom:1rem; }
+.table { width:100%; border-collapse: collapse; }
+.table th { text-align:left; font-size:0.8rem; text-transform: uppercase; letter-spacing:0.08em; color: var(--muted); padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+.table td { padding:0.55rem 0; border-bottom:1px solid var(--border); }
+.muted { color: var(--muted); }
+.actions a { margin-right:0.5rem; }
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+        <div>
+            <p class="tag">Prefix</p>
+            <h1 style="margin:0;">{{ prefix.cidr }}</h1>
+            <p class="muted" style="margin:0;">{{ prefix.site.name|default:"—" }} · {{ prefix.vrf|default:"default VRF" }}</p>
+        </div>
+        <div>
+            <a href="{% url 'ipam:prefix_edit' prefix.id %}">Edit</a>
+            <a href="{% url 'ipam:prefix_delete' prefix.id %}">Delete</a>
+            <a href="{% url 'ipam:prefix_list' %}">Back</a>
+        </div>
+    </div>
+    {% if prefix.description %}
+        <p style="margin-top:0.6rem;">{{ prefix.description }}</p>
+    {% endif %}
+    <div style="display:flex; gap:1.5rem; flex-wrap:wrap; margin-top:0.6rem;">
+        <div><span class="muted">Role</span><div>{{ prefix.get_role_display }}</div></div>
+        <div><span class="muted">Status</span><div>{{ prefix.get_status_display }}</div></div>
+        <div><span class="muted">VLAN</span><div>{{ prefix.vlan|default:"—" }}</div></div>
+    </div>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Child prefixes</h3>
+    <table class="table">
+        <thead><tr><th>Prefix</th><th>Role</th><th>Status</th></tr></thead>
+        <tbody>
+            {% for child in children %}
+            <tr>
+                <td><a href="{% url 'ipam:prefix_detail' child.id %}">{{ child.cidr }}</a></td>
+                <td>{{ child.get_role_display }}</td>
+                <td>{{ child.get_status_display }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="muted">No child prefixes.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">IP addresses</h3>
+    <table class="table">
+        <thead><tr><th>Address</th><th>Interface</th><th>Status</th></tr></thead>
+        <tbody>
+            {% for ip in ip_addresses %}
+            <tr>
+                <td>{{ ip.address }}</td>
+                <td>
+                    {% if ip.interface %}{{ ip.interface.device.name }} / {{ ip.interface.name }}{% else %}—{% endif %}
+                </td>
+                <td>{{ ip.get_status_display }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="muted">No IPs in this prefix.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
