@@ -7,6 +7,7 @@ from network.views.discovery import (
     create_device_from_candidate,
     resolve_discovery_mismatch,
 )
+from network.views.sync import sync_device
 
 app_name = "network"
 
@@ -29,4 +30,5 @@ urlpatterns = [
         name="discovery_candidate_detail",
     ),
     path("discovery/candidates/action/", discovery_candidates_action, name="discovery_candidates_action"),
+    path("sync/device/<uuid:pk>/", sync_device, name="device_sync"),
 ]

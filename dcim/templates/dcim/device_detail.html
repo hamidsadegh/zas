@@ -323,7 +323,13 @@ main {
                 <h1 style="margin: 0;">{{ device.name }}</h1>
                 <p style="margin: 0; color: var(--muted);">{{ device.management_ip }}</p>
             </div>
-            <a href="{% url 'device_list' %}" class="back-link">← Back to device list</a>
+            <div style="display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap;">
+                <form method="post" action="{% url 'network:device_sync' device.id %}" style="margin:0;">
+                    {% csrf_token %}
+                    <button type="submit" class="copy-btn">Sync device</button>
+                </form>
+                <a href="{% url 'device_list' %}" class="back-link">← Back to device list</a>
+            </div>
         </div>
 
         <div class="detail-grid" style="margin-top: 1.5rem;">
