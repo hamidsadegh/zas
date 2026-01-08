@@ -37,9 +37,12 @@ def home(request):
     interface_stats = Interface.objects.aggregate(
         total=Count("id"),
         up=Count("id", filter=Q(status="up")),
+        connected=Count("id", filter=Q(status="connected")),
         down=Count("id", filter=Q(status="down")),
         disabled=Count("id", filter=Q(status="disabled")),
+        notconnected=Count("id", filter=Q(status="notconnected")),
     )
+    interface_stats["up_connected"] = interface_stats.get("up", 0) + interface_stats.get("connected", 0)
 
     recent_devices = (
         Device.objects.select_related("area", "device_type__vendor", "device_type")
@@ -65,5 +68,4 @@ def home(request):
         "top_vendors": top_vendors,
     }
     return render(request, "core/dashboard.html", context)
-
 

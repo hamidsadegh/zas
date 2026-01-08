@@ -210,9 +210,9 @@ main {
             <div class="delta">Unknown: {{ device_stats.unknown|default:0 }}</div>
         </div>
         <div class="stat-card">
-            <h4>Interfaces Up</h4>
-            <div class="value">{{ interface_stats.up|default:0 }}</div>
-            <div class="delta">Down: {{ interface_stats.down|default:0 }}</div>
+            <h4>Interfaces Up / Connected</h4>
+            <div class="value">{{ interface_stats.up_connected|default:0 }}</div>
+            <div class="delta">Not connected: {{ interface_stats.notconnected|default:0 }}</div>
         </div>
         <div class="stat-card">
             <h4>Disabled Interfaces</h4>
