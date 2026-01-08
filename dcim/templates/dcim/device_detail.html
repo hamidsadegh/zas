@@ -459,7 +459,6 @@ main {
                     <tr>
                         <th>Name</th>
                         <th>Serial Number</th>
-                        <th>Vendor</th>
                         <th>Description</th>
                     </tr>
                 </thead>
@@ -467,8 +466,7 @@ main {
                     {% for module in modules %}
                     <tr>
                         <td>{{ module.name }}</td>
-                        <td>{{ module.serial_number|default:"—" }}</td>
-                        <td>{{ module.vendor|default:"—" }}</td>
+                        <td>{{ module.serial_number_display|default:"—" }}</td>
                         <td>{{ module.description|default:"—" }}</td>
                     </tr>
                     {% endfor %}
@@ -516,7 +514,17 @@ main {
                     <td>{{ interface.mac_address|default:"—" }}</td>
                     <td>{{ interface.status|title }}</td>
                     <td>{{ interface.endpoint|default:"—" }}</td>
-                    <td>{{ interface.speed|default:"—" }}</td>
+                    <td>
+                        {% if interface.speed != None %}
+                            {% if interface.speed > 1000 %}
+                                {% widthratio interface.speed 1000 1 %}G
+                            {% else %}
+                                {{ interface.speed }}
+                            {% endif %}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

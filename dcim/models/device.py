@@ -373,8 +373,23 @@ class DeviceModule(models.Model):
         verbose_name = "Device Module"
         verbose_name_plural = "Device Modules"
 
+    @property
+    def serial_number_display(self):
+        if not self.serial_number:
+            return None
+        serial = self.serial_number.strip()
+        if not serial:
+            return None
+        serial_upper = serial.upper()
+        if serial_upper in ("N/A", "UNKNOWN", "N") or serial_upper.startswith("UNKNOWN:"):
+            return None
+        return serial
+
     def __str__(self):
-        return f"{self.device.name} - {self.name} ({self.serial_number})"
+        serial = self.serial_number_display
+        if serial:
+            return f"{self.device.name} - {self.name} ({serial})"
+        return f"{self.device.name} - {self.name}"
     
     
 class DeviceRuntimeStatus(models.Model):
