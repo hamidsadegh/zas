@@ -4,7 +4,7 @@ import uuid
 
 from dcim.models.device import Device
 from dcim.models.vlan import VLAN
-from dcim.choices import InterfaceStatusChoices, InterfaceKindChoices, InterfaceModeChoices
+from dcim.choices import InterfaceStatusChoices, InterfaceKindChoices, InterfaceModeChoices, SwitchportModeChoices
 
 
 
@@ -50,6 +50,29 @@ class Interface(models.Model):
         verbose_name="Speed (Mbps)",
         help_text="Interface speed in megabits per second",
         )
+    duplex = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text="Duplex mode as reported by the device (e.g., a-full, full, half).",
+        )
+    speed_mode = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text="Speed mode as reported by the device (e.g., a-1000, 1000).",
+        )
+    switchport_enabled = models.BooleanField(
+        default=False,
+        help_text="Whether this interface operates as a Layer 2 switchport",
+        )
+    switchport_mode = models.CharField(
+        max_length=32,
+        choices=SwitchportModeChoices.CHOICES,
+        null=True,
+        blank=True,
+        help_text="Switchport mode as configured on the device",
+        )
     access_vlan = models.ForeignKey(
         VLAN,
         null=True,
@@ -57,14 +80,26 @@ class Interface(models.Model):
         on_delete=models.SET_NULL,
         related_name="access_interfaces",
         )
-    trunk_vlans = models.ManyToManyField(
-        VLAN, 
-        related_name="trunk_interfaces", 
-        blank=True
+    native_vlan = models.ForeignKey(
+        VLAN,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="native_interfaces",
+        )
+    vlan_raw = models.CharField(
+        max_length=64,
+        blank=True,
+        help_text="Raw VLAN/switchport value from device output (debug/reference)",
         )
     is_trunk = models.BooleanField(
         default=False,
         help_text="Indicates whether this interface is a trunk port",
+        )
+    trunk_vlans = models.ManyToManyField(
+        VLAN, 
+        related_name="trunk_interfaces", 
+        blank=True
         )
     is_virtual = models.BooleanField(
         default=False,
@@ -76,8 +111,7 @@ class Interface(models.Model):
         default=InterfaceKindChoices.PHYSICAL,
         db_index=True,
         help_text="Normalized interface type (physical, svi, port-channel, loopback, tunnel)",
-    )
-
+        )
     mode = models.CharField(
         max_length=2,
         choices=InterfaceModeChoices.CHOICES,
@@ -85,7 +119,7 @@ class Interface(models.Model):
         blank=True,
         db_index=True,
         help_text="Layer mode (L2 or L3)",
-    )
+        )
     lag = models.ForeignKey(
         "self", 
         null=True, 

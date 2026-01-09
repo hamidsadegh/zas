@@ -452,7 +452,7 @@ main {
         <div class="detail-actions" style="margin-bottom: 1.2rem;">
             <h3 style="margin: 0;">Modules</h3>
         </div>
-        {% with modules=device.modules.all %}
+        {% with modules=modules %}
             {% if modules %}
             <table>
                 <thead>
@@ -498,10 +498,10 @@ main {
                 <tr>
                     <th><a href="?sort=name{% if search_query %}&search={{ search_query }}{% endif %}">Name</a></th>
                     <th><a href="?sort=description{% if search_query %}&search={{ search_query }}{% endif %}">Description</a></th>
-                    <th><a href="?sort=ip_address{% if search_query %}&search={{ search_query }}{% endif %}">IP Address</a></th>
-                    <th><a href="?sort=mac_address{% if search_query %}&search={{ search_query }}{% endif %}">MAC Address</a></th>
+                    <th><a href="?sort=ip_address{% if search_query %}&search={{ search_query }}{% endif %}">IP / VLAN</a></th>
                     <th><a href="?sort=status{% if search_query %}&search={{ search_query }}{% endif %}">Status</a></th>
-                    <th><a href="?sort=endpoint{% if search_query %}&search={{ search_query }}{% endif %}">Endpoint</a></th>
+                    <th><a href="?sort=duplex{% if search_query %}&search={{ search_query }}{% endif %}">Duplex</a></th>
+                    <th><a href="?sort=speed_mode{% if search_query %}&search={{ search_query }}{% endif %}">Speed Mode</a></th>
                     <th><a href="?sort=speed{% if search_query %}&search={{ search_query }}{% endif %}">Speed</a></th>
                 </tr>
             </thead>
@@ -510,10 +510,18 @@ main {
                 <tr class="interface-row">
                     <td>{{ interface.name }}</td>
                     <td>{{ interface.description|default:"—" }}</td>
-                    <td>{{ interface.ip_address|default:"—" }}</td>
-                    <td>{{ interface.mac_address|default:"—" }}</td>
+                    <td>
+                        {% if interface.ip_address %}
+                            {{ interface.ip_address }}
+                        {% elif interface.access_vlan %}
+                            VLAN {{ interface.access_vlan.vlan_id }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
                     <td>{{ interface.status|title }}</td>
-                    <td>{{ interface.endpoint|default:"—" }}</td>
+                    <td>{{ interface.duplex|default:"—" }}</td>
+                    <td>{{ interface.speed_mode|default:"—" }}</td>
                     <td>
                         {% if interface.speed != None %}
                             {% if interface.speed > 1000 %}

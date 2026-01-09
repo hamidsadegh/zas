@@ -878,6 +878,20 @@ class InterfaceStatusChoices(ChoiceSet):
         (XCVR_ABSENCE, _('Xcvr Absence')),
     )
 
+class SwitchportModeChoices(ChoiceSet):
+    ACCESS = "access"
+    TRUNK = "trunk"
+    DYNAMIC = "dynamic"
+    DOT1Q_TUNNEL = "dot1q-tunnel"
+    PRIVATE_VLAN = "private-vlan"
+
+    CHOICES = (
+        (ACCESS, _("Access")),
+        (TRUNK, _("Trunk")),
+        (DYNAMIC, _("Dynamic")),
+        (DOT1Q_TUNNEL, _("Dot1Q Tunnel")),
+        (PRIVATE_VLAN, _("Private VLAN")),
+    )
 
 class InterfaceKindChoices:
     PHYSICAL = "physical"

@@ -1,3 +1,4 @@
+import re
 import uuid
 
 from django.http import JsonResponse
@@ -114,6 +115,13 @@ class DeviceDetailView(LoginRequiredMixin, DetailView):
     template_name = "dcim/device_detail.html"
     context_object_name = "device"
 
+    @staticmethod
+    def _natural_sort_key(value):
+        return [
+            int(part) if part.isdigit() else part.lower()
+            for part in re.split(r"(\d+)", value or "")
+        ]
+
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         action = request.POST.get("tag_action")
@@ -164,16 +172,34 @@ class DeviceDetailView(LoginRequiredMixin, DetailView):
             )
 
         # Allow only safe fields to sort
-        allowed_sort_fields = ['name', 'status', 'ip_address', 'mac_address', 'speed']
+        allowed_sort_fields = [
+            'name',
+            'description',
+            'status',
+            'ip_address',
+            'speed',
+            'duplex',
+            'speed_mode',
+        ]
         if sort_field not in allowed_sort_fields:
             sort_field = 'name'
 
-        interfaces = interfaces.order_by(sort_field)
+        if sort_field == "name":
+            interfaces = sorted(
+                interfaces,
+                key=lambda iface: self._natural_sort_key(iface.name),
+            )
+        else:
+            interfaces = interfaces.order_by(sort_field)
 
         context['interfaces'] = interfaces
         context['search_query'] = search_query
         context['sort_field'] = sort_field
         context['reachability_checks'] = get_reachability_checks(get_system_settings())
+        context["modules"] = sorted(
+            device.modules.all(),
+            key=lambda module: self._natural_sort_key(module.name),
+        )
         latest_config = (
             DeviceConfiguration.objects.filter(device=device)
             .order_by("-collected_at")

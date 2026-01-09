@@ -205,10 +205,14 @@ class SyncService:
         # ---- status ----
         for e in status_result.get("parsed", []) or []:
             name = self._normalize_iface(e.get("port") or e.get("interface"))
+            speed_raw = str(e.get("speed") or "").strip()
+            duplex_raw = str(e.get("duplex") or "").strip()
             status_map[name] = {
                 "status": (e.get("status") or "").lower(),
-                "vlan": (e.get("vlan") or "").lower(),
-                "speed": self._parse_speed(e.get("speed")),
+                "vlan": (e.get("vlan_id") or "").lower(),
+                "speed": self._parse_speed(speed_raw),
+                "speed_mode": speed_raw or None,
+                "duplex": duplex_raw or None,
             }
 
         # ---- ip brief ----
@@ -268,6 +272,8 @@ class SyncService:
             print(name, data)
             iface.status = self._map_status(data["status"])
             iface.speed = data["speed"]
+            iface.speed_mode = data.get("speed_mode")
+            iface.duplex = data.get("duplex")
             iface.description = desc_map.get(name, "")
             iface.is_trunk = "trunk" in (data.get("vlan") or "")
             iface.save()
