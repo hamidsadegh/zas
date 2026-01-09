@@ -513,6 +513,8 @@ main {
                     <td>
                         {% if interface.ip_address %}
                             {{ interface.ip_address }}
+                        {% elif interface.vlan_raw %}
+                            {{ interface.vlan_raw }}
                         {% elif interface.access_vlan %}
                             VLAN {{ interface.access_vlan.vlan_id }}
                         {% else %}

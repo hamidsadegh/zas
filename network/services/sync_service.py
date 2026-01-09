@@ -205,11 +205,15 @@ class SyncService:
         # ---- status ----
         for e in status_result.get("parsed", []) or []:
             name = self._normalize_iface(e.get("port") or e.get("interface"))
+            vlan_raw = str(
+                e.get("vlan") or e.get("vlan_id") or e.get("VLAN") or ""
+            ).strip()
             speed_raw = str(e.get("speed") or "").strip()
             duplex_raw = str(e.get("duplex") or "").strip()
             status_map[name] = {
                 "status": (e.get("status") or "").lower(),
-                "vlan": (e.get("vlan_id") or "").lower(),
+                "vlan": vlan_raw.lower(),
+                "vlan_raw": vlan_raw or None,
                 "speed": self._parse_speed(speed_raw),
                 "speed_mode": speed_raw or None,
                 "duplex": duplex_raw or None,
@@ -269,11 +273,11 @@ class SyncService:
             data = status_map.get(name)
             if not data:
                 continue
-            print(name, data)
             iface.status = self._map_status(data["status"])
             iface.speed = data["speed"]
             iface.speed_mode = data.get("speed_mode")
             iface.duplex = data.get("duplex")
+            iface.vlan_raw = data.get("vlan_raw")
             iface.description = desc_map.get(name, "")
             iface.is_trunk = "trunk" in (data.get("vlan") or "")
             iface.save()
