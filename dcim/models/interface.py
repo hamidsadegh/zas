@@ -4,7 +4,7 @@ import uuid
 
 from dcim.models.device import Device
 from dcim.models.vlan import VLAN
-from dcim.choices import InterfaceStatusChoices
+from dcim.choices import InterfaceStatusChoices, InterfaceKindChoices, InterfaceModeChoices
 
 
 
@@ -70,6 +70,37 @@ class Interface(models.Model):
         default=False,
         help_text="Indicates whether this interface is virtual (e.g., loopback, VLAN)",
         )
+    kind = models.CharField(
+        max_length=20,
+        choices=InterfaceKindChoices.CHOICES,
+        default=InterfaceKindChoices.PHYSICAL,
+        db_index=True,
+        help_text="Normalized interface type (physical, svi, port-channel, loopback, tunnel)",
+    )
+
+    mode = models.CharField(
+        max_length=2,
+        choices=InterfaceModeChoices.CHOICES,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Layer mode (L2 or L3)",
+    )
+    lag = models.ForeignKey(
+        "self", 
+        null=True, 
+        blank=True, 
+        on_delete=models.SET_NULL, 
+        related_name="members",
+        verbose_name="LAG",
+        help_text="Link Aggregation Group this interface is a member of",
+        )
+    lag_mode = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text="LAG mode (e.g., active, passive, on)",
+        )   
     
     description = models.CharField(max_length=255, blank=True, null=True)
 

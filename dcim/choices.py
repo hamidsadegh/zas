@@ -864,7 +864,8 @@ class InterfaceStatusChoices(ChoiceSet):
     DISABLED = 'disabled'
     CONNECTED = 'connected'
     NOTCONNECTED = 'notconnected'
-    ERR_DISABLED = 'err-disabled'   
+    ERR_DISABLED = 'err-disabled'
+    XCVR_ABSENCE = 'xcvrAbsen'
 
 
     CHOICES = (
@@ -874,18 +875,33 @@ class InterfaceStatusChoices(ChoiceSet):
         (CONNECTED, _('Connected')),
         (NOTCONNECTED, _('Not Connected')),
         (ERR_DISABLED, _('Err-Disabled')),
+        (XCVR_ABSENCE, _('Xcvr Absence')),
     )
 
 
-class InterfaceKindChoices(ChoiceSet):
-    KIND_PHYSICAL = 'physical'
-    KIND_VIRTUAL = 'virtual'
-    KIND_WIRELESS = 'wireless'
+class InterfaceKindChoices:
+    PHYSICAL = "physical"
+    PORT_CHANNEL = "port-channel"
+    SVI = "svi"
+    LOOPBACK = "loopback"
+    TUNNEL = "tunnel"
 
     CHOICES = (
-        (KIND_PHYSICAL, _('Physical')),
-        (KIND_VIRTUAL, _('Virtual')),
-        (KIND_WIRELESS, _('Wireless')),
+        (PHYSICAL, "Physical"),
+        (PORT_CHANNEL, "Port-Channel"),
+        (SVI, "SVI"),
+        (LOOPBACK, "Loopback"),
+        (TUNNEL, "Tunnel"),
+    )
+
+
+class InterfaceModeChoices:
+    L2 = "L2"
+    L3 = "L3"
+
+    CHOICES = (
+        (L2, "Layer 2"),
+        (L3, "Layer 3"),
     )
 
 
@@ -1513,19 +1529,19 @@ class InterfaceDuplexChoices(ChoiceSet):
     )
 
 
-class InterfaceModeChoices(ChoiceSet):
+# class InterfaceModeChoices(ChoiceSet):
 
-    MODE_ACCESS = 'access'
-    MODE_TAGGED = 'tagged'
-    MODE_TAGGED_ALL = 'tagged-all'
-    MODE_Q_IN_Q = 'q-in-q'
+#     MODE_ACCESS = 'access'
+#     MODE_TAGGED = 'tagged'
+#     MODE_TAGGED_ALL = 'tagged-all'
+#     MODE_Q_IN_Q = 'q-in-q'
 
-    CHOICES = (
-        (MODE_ACCESS, _('Access')),
-        (MODE_TAGGED, _('Tagged')),
-        (MODE_TAGGED_ALL, _('Tagged (All)')),
-        (MODE_Q_IN_Q, _('Q-in-Q (802.1ad)')),
-    )
+#     CHOICES = (
+#         (MODE_ACCESS, _('Access')),
+#         (MODE_TAGGED, _('Tagged')),
+#         (MODE_TAGGED_ALL, _('Tagged (All)')),
+#         (MODE_Q_IN_Q, _('Q-in-Q (802.1ad)')),
+#     )
 
 
 class InterfacePoEModeChoices(ChoiceSet):
