@@ -866,6 +866,8 @@ class InterfaceStatusChoices(ChoiceSet):
     NOTCONNECTED = 'notconnected'
     ERR_DISABLED = 'err-disabled'
     XCVR_ABSENCE = 'xcvrAbsen'
+    INACTIVE = 'inactive'
+    UNKNOWN = 'unknown'
 
 
     CHOICES = (
@@ -876,6 +878,8 @@ class InterfaceStatusChoices(ChoiceSet):
         (NOTCONNECTED, _('Not Connected')),
         (ERR_DISABLED, _('Err-Disabled')),
         (XCVR_ABSENCE, _('Xcvr Absence')),
+        (INACTIVE, _('Inactive')),
+        (UNKNOWN, _('Unknown')),
     )
 
 class SwitchportModeChoices(ChoiceSet):

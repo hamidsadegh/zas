@@ -14,6 +14,7 @@ from dcim.models import (
     VLAN,
 )
 from dcim.choices import (
+    DevicePlatformChoices,
     InterfaceStatusChoices,
     InterfaceKindChoices,
     InterfaceModeChoices,
@@ -43,7 +44,10 @@ class SyncService:
             runtime, _ = DeviceRuntimeStatus.objects.get_or_create(device=device)
             runtime.last_check = self.now
 
-            if device.device_type == 'cisco_nxos':  # NX-OS requires special handling
+            if (
+                device.device_type
+                and device.device_type.platform == DevicePlatformChoices.NX_OS
+            ):
                 self.PORTCHANNEL_SUMMARY_CMD = cli.PORTCHANNEL_SUMMARY_NXOS_CMD
             else:
                 self.PORTCHANNEL_SUMMARY_CMD = cli.PORTCHANNEL_SUMMARY_ISO_CMD
@@ -151,9 +155,6 @@ class SyncService:
             serial = entry.get("sn") or entry.get("serial") or ""
             descr = entry.get("descr") or ""
 
-            if not serial or serial.upper() in {"N/A", "UNKNOWN"}:
-                serial = f"UNKNOWN:{device.id}:{name}"
-
             DeviceModule.objects.update_or_create(
                 device=device,
                 name=name,
@@ -193,11 +194,14 @@ class SyncService:
         status_map = {}
         desc_map = {}
         ip_map = {}
+        ip_seen = {}
         lag_map = {}
 
         # ---- descriptions ----
         for e in desc_result.get("parsed", []) or []:
             name = self._normalize_iface(e.get("port") or e.get("interface"))
+            if not name:
+                continue
             if "Vl" in name:
                 continue  # Skip VLAN interfaces here; handled via ip brief
             desc_map[name] = (e.get("description") or "").strip()
@@ -205,6 +209,8 @@ class SyncService:
         # ---- status ----
         for e in status_result.get("parsed", []) or []:
             name = self._normalize_iface(e.get("port") or e.get("interface"))
+            if not name:
+                continue
             vlan_raw = str(
                 e.get("vlan") or e.get("vlan_id") or e.get("VLAN") or ""
             ).strip()
@@ -222,18 +228,39 @@ class SyncService:
         # ---- ip brief ----
         for e in ip_result.get("parsed", []) or []:
             name = self._normalize_iface(e.get("intf") or e.get("interface"))
+            if not name:
+                continue
             ip = e.get("ipaddr") or e.get("ip_address")
-            if ip and ip.lower() != "unassigned":
-                ip_map[name] = ip.strip()
+            status = (e.get("status") or "").lower()
+            proto = (e.get("proto") or "").lower()
+            ip_value = (ip or "").strip()
+            if ip_value and ip_value.lower() != "unassigned":
+                ip_map[name] = {
+                    "ip": ip_value,
+                    "status": status,   # interface status
+                    "proto": proto,     # protocol status
+                }
+                ip_seen[name] = ip_map[name]
+            else:
+                ip_seen[name] = {
+                    "ip": None,
+                    "status": status,
+                    "proto": proto,
+                }
 
         # ---- port-channel ----
         for e in po_result.get("parsed", []) or []:
             po = self._normalize_iface(e.get("port_channel"))
+            if not po:
+                continue
             for m in (e.get("interfaces") or "").split():
-                lag_map[self._normalize_iface(m)] = po
+                member = self._normalize_iface(m)
+                if member:
+                    lag_map[member] = po
 
+                
         # ---- create all interfaces ----
-        all_names = set(status_map) | set(desc_map) | set(ip_map) | set(lag_map.values())
+        all_names = set(status_map) | set(desc_map) | set(ip_seen) | set(lag_map.values())
         iface_objs = {
             name: Interface.objects.get_or_create(device=device, name=name)[0]
             for name in all_names
@@ -268,26 +295,66 @@ class SyncService:
                 member.lag_mode = "active"
                 member.save(update_fields=["lag", "lag_mode"])
 
-        # ---- operational attributes ----
+        # ---- status / description ----
         for name, iface in iface_objs.items():
-            data = status_map.get(name)
-            if not data:
-                continue
-            iface.status = self._map_status(data["status"])
-            iface.speed = data["speed"]
-            iface.speed_mode = data.get("speed_mode")
-            iface.duplex = data.get("duplex")
-            iface.vlan_raw = data.get("vlan_raw")
-            iface.description = desc_map.get(name, "")
-            iface.is_trunk = "trunk" in (data.get("vlan") or "")
-            iface.save()
+            update_fields = []
+            if name in desc_map:
+                iface.description = desc_map.get(name, "") or ""
+                update_fields.append("description")
+
+            if name in status_map:
+                ifc = status_map[name]
+                mapped_status = self._map_status(ifc.get("status"))
+                iface.status = mapped_status
+                iface.speed = ifc.get("speed")
+                iface.speed_mode = ifc.get("speed_mode")
+                iface.duplex = ifc.get("duplex")
+                iface.vlan_raw = ifc.get("vlan_raw")
+                iface.is_trunk = "trunk" in (ifc.get("vlan") or "")
+                update_fields.extend(
+                    [
+                        "status",
+                        "speed",
+                        "speed_mode",
+                        "duplex",
+                        "vlan_raw",
+                        "is_trunk",
+                    ]
+                )
+            else:
+                mapped_status = None
+
+            ip_data = ip_seen.get(name)
+            if (
+                ip_data
+                and (
+                    name not in status_map
+                    or mapped_status == InterfaceStatusChoices.UNKNOWN
+                )
+            ):
+                ip_status = self._map_status_from_ip_brief(
+                    ip_data.get("status"),
+                    ip_data.get("proto"),
+                )
+                if ip_status:
+                    iface.status = ip_status
+                    if "status" not in update_fields:
+                        update_fields.append("status")
+
+            if update_fields:
+                iface.save(update_fields=update_fields)
 
         # ---- TEMP: IP on interface (pre-IPAM) ----
-        for name, ip in ip_map.items():
+        for name, ip_data in ip_seen.items():
             iface = iface_objs.get(name)
-            if iface:
-                iface.ip_address = ip
-                iface.save(update_fields=["ip_address"])
+            if iface is None:
+                continue
+            ip_value = ip_data.get("ip")
+            if ip_value and str(ip_value).lower() != "unassigned":
+                iface.ip_address = ip_value
+            else:
+                iface.ip_address = None
+            iface.save(update_fields=["ip_address"])
 
     # =================================================
     # HELPERS
@@ -340,6 +407,8 @@ class SyncService:
     def _map_status(status_raw: str):
         if not status_raw:
             return InterfaceStatusChoices.DOWN
+        if "up" in status_raw:
+            return InterfaceStatusChoices.UP
         if "notconnec" in status_raw:
             return InterfaceStatusChoices.NOTCONNECTED
         if "err" in status_raw:
@@ -350,7 +419,19 @@ class SyncService:
             return InterfaceStatusChoices.CONNECTED
         if "xcvrabsen" in status_raw:
             return InterfaceStatusChoices.XCVR_ABSENCE
-        return InterfaceStatusChoices.DOWN
+        if "inactive" in status_raw:
+            return InterfaceStatusChoices.INACTIVE
+        return InterfaceStatusChoices.UNKNOWN
+
+    @staticmethod
+    def _map_status_from_ip_brief(status_raw: str, proto_raw: str):
+        status = (status_raw or "").strip().lower()
+        proto = (proto_raw or "").strip().lower()
+        if status == "up" and proto == "up":
+            return InterfaceStatusChoices.UP
+        if status in {"administratively down", "admin down", "down"} or proto == "down":
+            return InterfaceStatusChoices.DOWN
+        return InterfaceStatusChoices.UNKNOWN
 
     @staticmethod
     def _parse_serial_from_text(raw: str):
