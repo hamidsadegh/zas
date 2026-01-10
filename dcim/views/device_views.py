@@ -1,6 +1,7 @@
 import re
 import uuid
 
+from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView
@@ -18,6 +19,25 @@ from dcim.models import (
 )
 from automation.engine.diff_engine import generate_diff, generate_visual_diff
 from accounts.services.settings_service import get_reachability_checks, get_system_settings
+
+PREVIEW_LIMIT = 10
+PER_PAGE_OPTIONS = (10, 25, 50, 100)
+
+
+def _natural_sort_key(value):
+    return [
+        int(part) if part.isdigit() else part.lower()
+        for part in re.split(r"(\d+)", value or "")
+    ]
+
+
+def _get_paginate_by(request, default=25):
+    per_page = request.GET.get("paginate_by")
+    if per_page and per_page.isdigit():
+        per_page = int(per_page)
+        if per_page in PER_PAGE_OPTIONS:
+            return per_page
+    return default
 
 # -----------------------
 # HTML Views
@@ -115,13 +135,6 @@ class DeviceDetailView(LoginRequiredMixin, DetailView):
     template_name = "dcim/device_detail.html"
     context_object_name = "device"
 
-    @staticmethod
-    def _natural_sort_key(value):
-        return [
-            int(part) if part.isdigit() else part.lower()
-            for part in re.split(r"(\d+)", value or "")
-        ]
-
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         action = request.POST.get("tag_action")
@@ -155,51 +168,21 @@ class DeviceDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         device = self.get_object()
 
-        # Get search and sort params for interfaces
-        search_query = self.request.GET.get('search', '')
-        sort_field = self.request.GET.get('sort', 'name')
-
-        interfaces = device.interfaces.all()
-
-        # Search interfaces
-        if search_query:
-            interfaces = interfaces.filter(
-                Q(name__icontains=search_query) |
-                Q(description__icontains=search_query) |
-                Q(ip_address__icontains=search_query) |
-                Q(mac_address__icontains=search_query) |
-                Q(endpoint__icontains=search_query)
-            )
-
-        # Allow only safe fields to sort
-        allowed_sort_fields = [
-            'name',
-            'description',
-            'status',
-            'ip_address',
-            'speed',
-            'duplex',
-            'speed_mode',
-        ]
-        if sort_field not in allowed_sort_fields:
-            sort_field = 'name'
-
-        if sort_field == "name":
-            interfaces = sorted(
-                interfaces,
-                key=lambda iface: self._natural_sort_key(iface.name),
-            )
-        else:
-            interfaces = interfaces.order_by(sort_field)
-
-        context['interfaces'] = interfaces
-        context['search_query'] = search_query
-        context['sort_field'] = sort_field
-        context['reachability_checks'] = get_reachability_checks(get_system_settings())
-        context["modules"] = sorted(
-            device.modules.all(),
-            key=lambda module: self._natural_sort_key(module.name),
+        interfaces = sorted(
+            device.interfaces.all(),
+            key=lambda iface: _natural_sort_key(iface.name),
         )
+        modules = sorted(
+            device.modules.all(),
+            key=lambda module: _natural_sort_key(module.name),
+        )
+
+        context["preview_limit"] = PREVIEW_LIMIT
+        context["interfaces_count"] = len(interfaces)
+        context["interfaces_preview"] = interfaces[:PREVIEW_LIMIT]
+        context["modules_count"] = len(modules)
+        context["modules_preview"] = modules[:PREVIEW_LIMIT]
+        context["reachability_checks"] = get_reachability_checks(get_system_settings())
         latest_config = (
             DeviceConfiguration.objects.filter(device=device)
             .order_by("-collected_at")
@@ -214,6 +197,102 @@ class DeviceDetailView(LoginRequiredMixin, DetailView):
             context["latest_config_preview"] = ""
         context["available_tags"] = Tag.objects.all().order_by("name")
         return context
+
+
+@login_required
+def device_modules(request, device_id):
+    device = get_object_or_404(Device, id=device_id)
+    search_query = request.GET.get("search", "").strip()
+    sort_field = request.GET.get("sort", "name")
+
+    modules = device.modules.all()
+    if search_query:
+        modules = modules.filter(
+            Q(name__icontains=search_query)
+            | Q(serial_number__icontains=search_query)
+            | Q(description__icontains=search_query)
+        )
+
+    allowed_sort_fields = {"name", "serial_number", "description"}
+    if sort_field not in allowed_sort_fields:
+        sort_field = "name"
+
+    if sort_field == "name":
+        modules_list = sorted(
+            modules,
+            key=lambda module: _natural_sort_key(module.name),
+        )
+    else:
+        modules_list = list(modules.order_by(sort_field))
+
+    paginate_by = _get_paginate_by(request, default=25)
+    paginator = Paginator(modules_list, paginate_by)
+    page_number = request.GET.get("page")
+    modules_page = paginator.get_page(page_number)
+
+    context = {
+        "device": device,
+        "modules": modules_page,
+        "search_query": search_query,
+        "sort_field": sort_field,
+        "paginate_by": paginate_by,
+        "per_page_options": PER_PAGE_OPTIONS,
+    }
+    return render(request, "dcim/module_list.html", context)
+
+
+@login_required
+def device_interfaces(request, device_id):
+    device = get_object_or_404(Device, id=device_id)
+    search_query = request.GET.get("search", "").strip()
+    sort_field = request.GET.get("sort", "name")
+
+    interfaces = device.interfaces.all()
+    if search_query:
+        interfaces = interfaces.filter(
+            Q(name__icontains=search_query)
+            | Q(description__icontains=search_query)
+            | Q(ip_address__icontains=search_query)
+            | Q(vlan_raw__icontains=search_query)
+            | Q(status__icontains=search_query)
+            | Q(duplex__icontains=search_query)
+            | Q(speed_mode__icontains=search_query)
+        )
+
+    allowed_sort_fields = {
+        "name",
+        "description",
+        "status",
+        "ip_address",
+        "speed",
+        "duplex",
+        "speed_mode",
+    }
+    if sort_field not in allowed_sort_fields:
+        sort_field = "name"
+
+    if sort_field == "name":
+        interfaces_list = sorted(
+            interfaces,
+            key=lambda iface: _natural_sort_key(iface.name),
+        )
+    else:
+        interfaces_list = list(interfaces.order_by(sort_field))
+
+    paginate_by = _get_paginate_by(request, default=25)
+    paginator = Paginator(interfaces_list, paginate_by)
+    page_number = request.GET.get("page")
+    interfaces_page = paginator.get_page(page_number)
+
+    context = {
+        "device": device,
+        "interfaces": interfaces_page,
+        "search_query": search_query,
+        "sort_field": sort_field,
+        "paginate_by": paginate_by,
+        "per_page_options": PER_PAGE_OPTIONS,
+    }
+    return render(request, "dcim/interface_list.html", context)
 
 
 class AreaListView(LoginRequiredMixin, ListView):

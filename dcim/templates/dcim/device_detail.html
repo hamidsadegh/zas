@@ -451,8 +451,14 @@ main {
     <div class="detail-card interfaces-card">
         <div class="detail-actions" style="margin-bottom: 1.2rem;">
             <h3 style="margin: 0;">Modules</h3>
+            {% if modules_count > preview_limit %}
+                <a class="config-link" href="{% url 'device_modules' device.id %}">View all ({{ modules_count }})</a>
+            {% endif %}
         </div>
-        {% with modules=modules %}
+        {% if modules_count > preview_limit %}
+            <p class="config-meta">Showing first {{ preview_limit }} of {{ modules_count }} modules.</p>
+        {% endif %}
+        {% with modules=modules_preview %}
             {% if modules %}
             <table>
                 <thead>
@@ -481,32 +487,28 @@ main {
     <div class="detail-card interfaces-card">
         <div class="detail-actions" style="margin-bottom: 1.2rem;">
             <h3 style="margin: 0;">Interfaces</h3>
-            <form method="get" class="filter-form">
-                <input type="text" name="search" placeholder="Search interfaces…" value="{{ search_query }}">
-                <select name="paginate_by">
-                    <option value="10" {% if paginate_by|stringformat:"s" == "10" %}selected{% endif %}>10</option>
-                    <option value="25" {% if paginate_by|stringformat:"s" == "25" %}selected{% endif %}>25</option>
-                    <option value="50" {% if paginate_by|stringformat:"s" == "50" %}selected{% endif %}>50</option>
-                    <option value="100" {% if paginate_by|stringformat:"s" == "100" %}selected{% endif %}>100</option>
-                </select>
-                <button type="submit">Apply</button>
-            </form>
+            {% if interfaces_count > preview_limit %}
+                <a class="config-link" href="{% url 'device_interfaces' device.id %}">View all ({{ interfaces_count }})</a>
+            {% endif %}
         </div>
-        {% if interfaces %}
+        {% if interfaces_count > preview_limit %}
+            <p class="config-meta">Showing first {{ preview_limit }} of {{ interfaces_count }} interfaces.</p>
+        {% endif %}
+        {% if interfaces_preview %}
         <table>
             <thead>
                 <tr>
-                    <th><a href="?sort=name{% if search_query %}&search={{ search_query }}{% endif %}">Name</a></th>
-                    <th><a href="?sort=description{% if search_query %}&search={{ search_query }}{% endif %}">Description</a></th>
-                    <th><a href="?sort=ip_address{% if search_query %}&search={{ search_query }}{% endif %}">IP / VLAN</a></th>
-                    <th><a href="?sort=status{% if search_query %}&search={{ search_query }}{% endif %}">Status</a></th>
-                    <th><a href="?sort=duplex{% if search_query %}&search={{ search_query }}{% endif %}">Duplex</a></th>
-                    <th><a href="?sort=speed_mode{% if search_query %}&search={{ search_query }}{% endif %}">Speed Mode</a></th>
-                    <th><a href="?sort=speed{% if search_query %}&search={{ search_query }}{% endif %}">Speed</a></th>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>IP / VLAN</th>
+                    <th>Status</th>
+                    <th>Duplex</th>
+                    <th>Speed Mode</th>
+                    <th>Speed</th>
                 </tr>
             </thead>
             <tbody>
-                {% for interface in interfaces %}
+                {% for interface in interfaces_preview %}
                 <tr class="interface-row">
                     <td>{{ interface.name }}</td>
                     <td>{{ interface.description|default:"—" }}</td>
@@ -539,33 +541,6 @@ main {
                 {% endfor %}
             </tbody>
         </table>
-
-        <div class="pagination-wrapper">
-            <div class="range-info">
-                Showing {{ interfaces.start_index }}–{{ interfaces.end_index }} of {{ interfaces.paginator.count }} interfaces
-            </div>
-            <ul class="pagination">
-                {% if interfaces.has_previous %}
-                    <li><a href="?page={{ interfaces.previous_page_number }}&search={{ search_query }}&paginate_by={{ paginate_by }}">Previous</a></li>
-                {% else %}
-                    <li><span>Previous</span></li>
-                {% endif %}
-
-                {% for num in interfaces.paginator.page_range %}
-                    {% if interfaces.number == num %}
-                        <li class="active"><span>{{ num }}</span></li>
-                    {% elif num > interfaces.number|add:-3 and num < interfaces.number|add:3 %}
-                        <li><a href="?page={{ num }}&search={{ search_query }}&paginate_by={{ paginate_by }}">{{ num }}</a></li>
-                    {% endif %}
-                {% endfor %}
-
-                {% if interfaces.has_next %}
-                    <li><a href="?page={{ interfaces.next_page_number }}&search={{ search_query }}&paginate_by={{ paginate_by }}">Next</a></li>
-                {% else %}
-                    <li><span>Next</span></li>
-                {% endif %}
-            </ul>
-        </div>
         {% else %}
             <p>No interfaces found.</p>
         {% endif %}

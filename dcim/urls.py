@@ -16,6 +16,8 @@ from dcim.views.device_views import (
     devices_by_area,
     #rack_list,
     racks_by_area,
+    device_modules,
+    device_interfaces,
     device_configuration_history,
     device_configuration_diff,
     device_configuration_visual_diff,
@@ -26,6 +28,8 @@ urlpatterns = [
     # Devices
     path("devices/", DeviceListView.as_view(), name="device_list"),
     path("devices/<uuid:pk>/", DeviceDetailView.as_view(), name="device_detail"),
+    path("devices/<uuid:device_id>/modules/", device_modules, name="device_modules"),
+    path("devices/<uuid:device_id>/interfaces/", device_interfaces, name="device_interfaces"),
     path(
         "devices/<uuid:device_id>/configurations/",
         device_configuration_history,

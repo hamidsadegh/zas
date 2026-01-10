@@ -1,6 +1,6 @@
 {% extends "core/base.html" %}
 
-{% block title %}Modules {{ device.name }}{% endblock %}
+{% block title %}Interfaces {{ device.name }}{% endblock %}
 
 {% block styles %}
 .device-detail-wrapper {
@@ -135,15 +135,15 @@ main {
 {% block content %}
 <section class="device-detail-wrapper">
     <div class="detail-actions" style="margin-bottom: 1.2rem;">
-        <h3 style="margin: 0;">Modules - {{ device.name }}</h3>
+        <h3 style="margin: 0;">Interfaces - {{ device.name }}</h3>
         <a class="back-link" href="{% url 'device_detail' device.id %}">Back to device</a>
     </div>
 
     <div class="detail-card interfaces-card">
         <div class="detail-actions" style="margin-bottom: 1.2rem;">
-            <h3 style="margin: 0;">All Modules</h3>
+            <h3 style="margin: 0;">All Interfaces</h3>
             <form method="get" class="filter-form">
-                <input type="text" name="search" placeholder="Search modules..." value="{{ search_query }}">
+                <input type="text" name="search" placeholder="Search interfaces..." value="{{ search_query }}">
                 <select name="paginate_by">
                     {% for option in per_page_options %}
                         <option value="{{ option }}" {% if paginate_by|stringformat:"s" == option|stringformat:"s" %}selected{% endif %}>{{ option }}</option>
@@ -153,21 +153,49 @@ main {
             </form>
         </div>
 
-        {% if modules %}
+        {% if interfaces %}
         <table>
             <thead>
                 <tr>
                     <th><a href="?sort=name{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Name</a></th>
-                    <th><a href="?sort=serial_number{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Serial Number</a></th>
                     <th><a href="?sort=description{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Description</a></th>
+                    <th><a href="?sort=ip_address{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">IP / VLAN</a></th>
+                    <th><a href="?sort=status{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Status</a></th>
+                    <th><a href="?sort=duplex{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Duplex</a></th>
+                    <th><a href="?sort=speed_mode{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Speed Mode</a></th>
+                    <th><a href="?sort=speed{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Speed</a></th>
                 </tr>
             </thead>
             <tbody>
-                {% for module in modules %}
-                <tr>
-                    <td>{{ module.name }}</td>
-                    <td>{{ module.serial_number_display|default:"-" }}</td>
-                    <td>{{ module.description|default:"-" }}</td>
+                {% for interface in interfaces %}
+                <tr class="interface-row">
+                    <td>{{ interface.name }}</td>
+                    <td>{{ interface.description|default:"-" }}</td>
+                    <td>
+                        {% if interface.ip_address %}
+                            {{ interface.ip_address }}
+                        {% elif interface.vlan_raw %}
+                            {{ interface.vlan_raw }}
+                        {% elif interface.access_vlan %}
+                            VLAN {{ interface.access_vlan.vlan_id }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>{{ interface.status|title }}</td>
+                    <td>{{ interface.duplex|default:"-" }}</td>
+                    <td>{{ interface.speed_mode|default:"-" }}</td>
+                    <td>
+                        {% if interface.speed != None %}
+                            {% if interface.speed > 1000 %}
+                                {% widthratio interface.speed 1000 1 %}G
+                            {% else %}
+                                {{ interface.speed }}
+                            {% endif %}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -175,32 +203,32 @@ main {
 
         <div class="pagination-wrapper">
             <div class="range-info">
-                Showing {{ modules.start_index }}–{{ modules.end_index }} of {{ modules.paginator.count }} modules
+                Showing {{ interfaces.start_index }}–{{ interfaces.end_index }} of {{ interfaces.paginator.count }} interfaces
             </div>
             <ul class="pagination">
-                {% if modules.has_previous %}
-                    <li><a href="?page={{ modules.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Previous</a></li>
+                {% if interfaces.has_previous %}
+                    <li><a href="?page={{ interfaces.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Previous</a></li>
                 {% else %}
                     <li><span>Previous</span></li>
                 {% endif %}
 
-                {% for num in modules.paginator.page_range %}
-                    {% if modules.number == num %}
+                {% for num in interfaces.paginator.page_range %}
+                    {% if interfaces.number == num %}
                         <li class="active"><span>{{ num }}</span></li>
-                    {% elif num > modules.number|add:-3 and num < modules.number|add:3 %}
+                    {% elif num > interfaces.number|add:-3 and num < interfaces.number|add:3 %}
                         <li><a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">{{ num }}</a></li>
                     {% endif %}
                 {% endfor %}
 
-                {% if modules.has_next %}
-                    <li><a href="?page={{ modules.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Next</a></li>
+                {% if interfaces.has_next %}
+                    <li><a href="?page={{ interfaces.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Next</a></li>
                 {% else %}
                     <li><span>Next</span></li>
                 {% endif %}
             </ul>
         </div>
         {% else %}
-            <p>No modules found.</p>
+            <p>No interfaces found.</p>
         {% endif %}
     </div>
 </section>
