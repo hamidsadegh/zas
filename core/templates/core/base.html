@@ -173,6 +173,7 @@
             <a href="{% url 'vlan_list' %}">VLANs</a>
             <a href="{% url 'ipam:index' %}" {% if request.path|slice:":6" == '/ipam/' %}class="active"{% endif %}>IPAM</a>
             <a href="{% url 'organization_home' %}" {% if request.path|slice:":13" == '/organization' %}class="active"{% endif %}>Organization</a>
+            <a href="{% url 'inventory' %}" {% if request.path|slice:":11" == '/inventory/' %}class="active"{% endif %}>Inventory</a>
             <a href="{% url 'network:discovery_dashboard' %}" {% if request.path|slice:":11" == '/discovery/' %}class="active"{% endif %}>Discovery</a>
             <a href="{% url 'system_settings' %}">Settings</a>
             <a href="/admin/">Admin</a>

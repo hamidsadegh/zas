@@ -2,7 +2,7 @@ import re
 import uuid
 
 from django.core.paginator import Paginator
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView
 from django.contrib import messages
@@ -19,6 +19,8 @@ from dcim.models import (
 )
 from automation.engine.diff_engine import generate_diff, generate_visual_diff
 from accounts.services.settings_service import get_reachability_checks, get_system_settings
+
+from openpyxl import Workbook
 
 PREVIEW_LIMIT = 10
 PER_PAGE_OPTIONS = (10, 25, 50, 100)
@@ -38,6 +40,124 @@ def _get_paginate_by(request, default=25):
         if per_page in PER_PAGE_OPTIONS:
             return per_page
     return default
+
+
+def _build_inventory_rows(search_query):
+    devices = (
+        Device.objects.select_related(
+            "device_type",
+            "device_type__vendor",
+            "site",
+            "area",
+            "rack",
+        )
+        .prefetch_related("modules")
+        .all()
+    )
+
+    rows = []
+    query = (search_query or "").lower().strip()
+
+    def device_matches(device):
+        if not query:
+            return True
+        haystack = " ".join(
+            filter(
+                None,
+                [
+                    device.name or "",
+                    device.serial_number or "",
+                    device.inventory_number or "",
+                    device.site.name if device.site else "",
+                    device.area.name if device.area else "",
+                    device.rack.name if device.rack else "",
+                ],
+            )
+        ).lower()
+        return query in haystack
+
+    def module_matches(module):
+        if not query:
+            return True
+        haystack = " ".join(
+            filter(
+                None,
+                [
+                    module.name or "",
+                    module.serial_number or "",
+                    module.description or "",
+                ],
+            )
+        ).lower()
+        return query in haystack
+
+    for device in devices:
+        device_match = device_matches(device)
+        if device.rack:
+            device_location = f"{device.rack.area} \u2192 {device.rack.name}"
+        elif device.area:
+            device_location = str(device.area)
+        elif device.site:
+            device_location = device.site.name
+        else:
+            device_location = ""
+        modules = list(device.modules.all())
+        if not modules:
+            if device_match or not query:
+                rows.append(
+                    {
+                        "device": device,
+                        "device_name": device.name or "",
+                        "device_serial": device.serial_number or "",
+                        "device_site": device.site.name if device.site else "",
+                        "device_area": device.area.name if device.area else "",
+                        "device_rack": device.rack.name if device.rack else "",
+                        "device_location": device_location,
+                        "module": None,
+                        "module_name": "",
+                        "module_serial": "",
+                        "module_description": "",
+                    }
+                )
+            continue
+
+        for module in modules:
+            module_match = module_matches(module)
+            if device_match or module_match or not query:
+                rows.append(
+                    {
+                        "device": device,
+                        "device_name": device.name or "",
+                        "device_serial": device.serial_number or "",
+                        "device_site": device.site.name if device.site else "",
+                        "device_area": device.area.name if device.area else "",
+                        "device_rack": device.rack.name if device.rack else "",
+                        "device_location": device_location,
+                        "module": module,
+                        "module_name": module.name or "",
+                        "module_serial": module.serial_number or "",
+                        "module_description": module.description or "",
+                    }
+                )
+
+    return rows
+
+
+def _sort_inventory_rows(rows, sort_field):
+    sort_keys = {
+        "device_name": lambda row: _natural_sort_key(row["device_name"]),
+        "device_serial": lambda row: str(row["device_serial"]).lower(),
+        "device_site": lambda row: _natural_sort_key(row["device_site"]),
+        "device_area": lambda row: _natural_sort_key(row["device_area"]),
+        "device_rack": lambda row: _natural_sort_key(row["device_rack"]),
+        "device_location": lambda row: _natural_sort_key(row["device_location"]),
+        "module_name": lambda row: _natural_sort_key(row["module_name"]),
+        "module_serial": lambda row: str(row["module_serial"]).lower(),
+        "module_description": lambda row: str(row["module_description"]).lower(),
+    }
+    sort_key = sort_keys.get(sort_field, sort_keys["device_name"])
+    rows.sort(key=sort_key)
+    return rows
 
 # -----------------------
 # HTML Views
@@ -293,6 +413,77 @@ def device_interfaces(request, device_id):
         "per_page_options": PER_PAGE_OPTIONS,
     }
     return render(request, "dcim/interface_list.html", context)
+
+
+@login_required
+def inventory_list(request):
+    search_query = request.GET.get("search", "").strip()
+    sort_field = request.GET.get("sort", "device_name")
+
+    rows = _build_inventory_rows(search_query)
+    rows = _sort_inventory_rows(rows, sort_field)
+
+    paginate_by = _get_paginate_by(request, default=25)
+    paginator = Paginator(rows, paginate_by)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "rows": page_obj,
+        "search_query": search_query,
+        "sort_field": sort_field,
+        "paginate_by": paginate_by,
+        "per_page_options": PER_PAGE_OPTIONS,
+    }
+    return render(request, "dcim/inventory.html", context)
+
+
+@login_required
+def inventory_export(request):
+    search_query = request.GET.get("search", "").strip()
+    sort_field = request.GET.get("sort", "device_name")
+
+    rows = _build_inventory_rows(search_query)
+    rows = _sort_inventory_rows(rows, sort_field)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Inventory"
+    headers = [
+        "Device",
+        "Device Serial",
+        "Location",
+        "Inventory Number",
+        "Module",
+        "Module Serial",
+        "Description",
+    ]
+    ws.append(headers)
+
+    for row in rows:
+        device = row["device"]
+        module = row["module"]
+        module_serial = ""
+        if module:
+            module_serial = module.serial_number_display or ""
+        ws.append(
+            [
+                row["device_name"],
+                row["device_serial"],
+                row.get("device_location") or "",
+                device.inventory_number or "",
+                row["module_name"],
+                module_serial,
+                row["module_description"],
+            ]
+        )
+
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = 'attachment; filename="inventory.xlsx"'
+    wb.save(response)
+    return response
 
 
 class AreaListView(LoginRequiredMixin, ListView):
