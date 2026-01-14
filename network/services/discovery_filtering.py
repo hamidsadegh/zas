@@ -12,11 +12,11 @@ def hostname_matches_filter(hostname: str, flt) -> bool:
     """
     hostname = (hostname or "").lower()
 
-    # positive terms: ALL must be present
+    # positive terms: ANY may be present
     if flt.hostname_contains:
         required = _split_terms(flt.hostname_contains)
-        if not all(term in hostname for term in required):
-            return False
+        if any(term in hostname for term in required):
+            return True
 
     # negative terms: NONE may be present
     if flt.hostname_not_contains:
@@ -25,3 +25,15 @@ def hostname_matches_filter(hostname: str, flt) -> bool:
             return False
 
     return True
+
+
+def hostname_passes_filters(hostname: str, filters) -> bool:
+    """
+    Returns True if hostname passes any enabled filter.
+    If no filters are provided, allow all hostnames.
+    """
+    if not filters:
+        return True
+    if not (hostname or "").strip():
+        return False
+    return any(hostname_matches_filter(hostname, flt) for flt in filters)

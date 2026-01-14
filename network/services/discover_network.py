@@ -10,7 +10,7 @@ from network.models.discovery import (
     DiscoveryFilter,
 )
 from network.services.discovery_scanner import DiscoveryScanner
-from network.services.discovery_filtering import hostname_matches_filter
+from network.services.discovery_filtering import hostname_passes_filters
 
 
 class NetworkDiscoveryService:
@@ -27,6 +27,9 @@ class NetworkDiscoveryService:
         self.site = site
         self.scanner = DiscoveryScanner()
         self.now = timezone.now()
+        self.filters = list(
+            DiscoveryFilter.objects.filter(site=self.site, enabled=True)
+        )
 
     # -------------------------------------------------
     # Public API
@@ -82,6 +85,9 @@ class NetworkDiscoveryService:
 
         for r in results:
             if not r.alive:
+                continue
+
+            if not hostname_passes_filters(r.hostname, self.filters):
                 continue
 
             alive += 1

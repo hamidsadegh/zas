@@ -29,7 +29,7 @@ class DiscoveryScanner:
         self.ping_count = ping_count
         self.ping_timeout = max(1, ping_count * 2)
         self.is_windows = platform.system().lower() == "windows"
-        self.max_workers = max_workers or max(4, (os.cpu_count() or 1) * 4)
+        self.max_workers = max_workers or max(8, (os.cpu_count() or 1) * 8)
 
     # ---------- low-level checks ----------
 
