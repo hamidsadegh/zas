@@ -10,6 +10,15 @@ from django.apps import apps
 Device = apps.get_model("dcim", "Device")
 
 
+class SSHSession(asyncssh.SSHClientSession):
+    def __init__(self, on_data):
+        self._on_data = on_data
+
+    def data_received(self, data, datatype):
+        if self._on_data:
+            self._on_data(data)
+
+
 class SSHConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         # 1) Only authenticated users
@@ -66,7 +75,7 @@ class SSHConsumer(AsyncWebsocketConsumer):
             )
 
             self.channel, _ = await self.conn.create_session(
-                lambda: asyncssh.SSHClientSession(self._on_data),
+                lambda: SSHSession(self._on_data),
                 term_type="xterm",
             )
 
