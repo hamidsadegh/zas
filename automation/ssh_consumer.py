@@ -47,7 +47,17 @@ class SSHConsumer(AsyncWebsocketConsumer):
         # 3) Get device
         device_id = self.scope["url_route"]["kwargs"]["device_id"]
         try:
-            self.device = await asyncio.to_thread(Device.objects.get, id=device_id)
+            def _get_device_with_flags():
+                device = Device.objects.prefetch_related("tags").get(id=device_id)
+                is_aci = any(
+                    tag.name.lower() == "aci_fabric"
+                    for tag in device.tags.all()
+                )
+                return device, is_aci
+
+            self.device, self.is_aci_fabric = await asyncio.to_thread(
+                _get_device_with_flags
+            )
         except Device.DoesNotExist:
             await self.accept()
             await self.send(json.dumps({"error": "Device not found."}))
@@ -60,16 +70,23 @@ class SSHConsumer(AsyncWebsocketConsumer):
 
     async def start_ssh(self):
         try:
+            username = self.user.username
+            if self.is_aci_fabric:
+                prefix = "apic#ISE\\\\"
+                if not username.startswith(prefix):
+                    username = f"{prefix}{username}"
+            self.ssh_username = username
+
             # DEBUG (safe) – log what we’re going to try (NO password)
             # You can use logging instead of print in your project
             print(
                 f"[SSHConsumer] Connecting to {self.device.management_ip} "
-                f"as {self.user.username}"
+                f"as {self.ssh_username}"
             )
 
             self.conn = await asyncssh.connect(
                 self.device.management_ip,
-                username=self.user.username,
+                username=self.ssh_username,
                 password=self.tacacs_password,
                 known_hosts=None,
             )

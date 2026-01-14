@@ -19,11 +19,16 @@ class ConnectionService:
             )
 
         platform = resolve_platform(device)
+        username = credential.ssh_username
+        if device.tags.filter(name__iexact="aci_fabric").exists():
+            prefix = "apic#ISE\\\\"
+            if not username.startswith(prefix):
+                username = f"{prefix}{username}"
 
         return {
             "device_type": NETMIKO_PLATFORM_MAP.get(platform, "autodetect"),
             "host": device.management_ip,
-            "username": credential.ssh_username,
+            "username": username,
             "password": credential.ssh_password,
             "port": credential.ssh_port,
             "timeout": 30,
