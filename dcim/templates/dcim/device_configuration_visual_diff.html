@@ -4,9 +4,9 @@
 
 {% block styles %}
 .visual-diff-wrapper {
-    width: min(99vw, 1600px);
+    width: min(100%, 1600px);
     margin: 0 auto;
-    padding: 0 1rem; /* ensures content stays inside viewport and centered */
+    padding: 0 1rem;
 }
 .detail-card {
     background: var(--surface);
@@ -14,13 +14,17 @@
     padding: 1.5rem;
     box-shadow: var(--shadow);
 }
+main {
+    max-width: 100%;
+}
 .diff-scroll {
     max-height: 70vh;
-    overflow-y: auto;
+    overflow: auto;
     border: 1px solid var(--border);
     border-radius: 16px;
     margin: 0; /* keep inside viewport */
     padding: 0 1rem;
+    width: 100%;
 }
 .diff-headings {
     display: grid;
@@ -49,6 +53,7 @@
 .diff-cell {
     white-space: pre;
     overflow-x: auto;
+    min-width: 0;
 }
 .diff-added {
     background: #d4ffd4;
