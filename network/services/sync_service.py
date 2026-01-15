@@ -33,6 +33,7 @@ class SyncService:
         self.IF_STATUS_CMD = cli.IF_STATUS_CMD
         self.IF_DESC_CMD = cli.IF_DESC_CMD
         self.IF_IP_BRIEF_CMD = cli.IF_IP_BRIEF_CMD
+        self.IF_TRANSCEIVER_CMD = cli.IF_TRANSCEIVER_CMD
         self.PORTCHANNEL_SUMMARY_CMD = cli.PORTCHANNEL_SUMMARY_ISO_CMD
         self.RUNNING_CONFIG_CMD = cli.RUNNING_CONFIG_CMD
 
@@ -44,10 +45,11 @@ class SyncService:
             runtime, _ = DeviceRuntimeStatus.objects.get_or_create(device=device)
             runtime.last_check = self.now
 
-            if (
+            is_nxos = bool(
                 device.device_type
                 and device.device_type.platform == DevicePlatformChoices.NX_OS
-            ):
+            )
+            if is_nxos:
                 self.PORTCHANNEL_SUMMARY_CMD = cli.PORTCHANNEL_SUMMARY_NXOS_CMD
             else:
                 self.PORTCHANNEL_SUMMARY_CMD = cli.PORTCHANNEL_SUMMARY_ISO_CMD
@@ -63,6 +65,10 @@ class SyncService:
                         self.IF_IP_BRIEF_CMD: ssh.run_command(self.IF_IP_BRIEF_CMD),
                         self.PORTCHANNEL_SUMMARY_CMD: ssh.run_command(self.PORTCHANNEL_SUMMARY_CMD),
                     }
+                    if is_nxos:
+                        results[self.IF_TRANSCEIVER_CMD] = ssh.run_command(
+                            self.IF_TRANSCEIVER_CMD
+                        )
                     if include_config:
                         results[self.RUNNING_CONFIG_CMD] = ssh.run_command(self.RUNNING_CONFIG_CMD)
 
@@ -80,6 +86,8 @@ class SyncService:
             # Apply retrieved data
             self._apply_version(device, runtime, results[self.VERSION_CMD])
             self._apply_inventory(device, results[self.INVENTORY_CMD])
+            if is_nxos and self.IF_TRANSCEIVER_CMD in results:
+                self._apply_transceivers(device, results[self.IF_TRANSCEIVER_CMD])
 
             self._apply_interfaces(
                 device=device,
@@ -164,6 +172,205 @@ class SyncService:
                     "vendor": None,
                 },
             )
+
+    def _apply_transceivers(self, device: Device, result: dict):
+        entries = self._parse_transceiver_entries(result)
+        for entry in entries:
+            name = entry.get("name")
+            if not name:
+                continue
+            DeviceModule.objects.update_or_create(
+                device=device,
+                name=name,
+                defaults={
+                    "description": entry.get("description"),
+                    "serial_number": entry.get("serial"),
+                    "vendor": None,
+                },
+            )
+
+    def _parse_transceiver_entries(self, result: dict) -> list[dict]:
+        parsed = result.get("parsed")
+        if parsed:
+            entries = self._parse_transceivers_from_parsed(parsed)
+            if entries:
+                return entries
+        raw = result.get("raw", "") or ""
+        return self._parse_transceivers_from_raw(raw)
+
+    def _parse_transceivers_from_parsed(self, parsed) -> list[dict]:
+        entries: list[dict] = []
+        if isinstance(parsed, dict):
+            parsed = [parsed]
+        if not isinstance(parsed, list):
+            return entries
+
+        for entry in parsed:
+            if not isinstance(entry, dict):
+                continue
+            if not self._is_transceiver_present(entry):
+                continue
+            interface = self._first_match(
+                entry,
+                ["interface", "port", "intf", "interface_name"],
+            )
+            if not interface:
+                name_value = entry.get("name") if isinstance(entry.get("name"), str) else ""
+                if self._looks_like_interface(name_value):
+                    interface = name_value
+            module_type = self._first_match(
+                entry,
+                ["type", "module_type", "transceiver", "product_id", "pid"],
+            )
+            serial = self._first_match(
+                entry,
+                ["serial", "serial_number", "sn"],
+            )
+            vendor_name = entry.get("name") if isinstance(entry.get("name"), str) else ""
+            part_number = self._first_match(
+                entry,
+                ["part_number", "part", "partnum", "pn"],
+            )
+
+            name = self._format_transceiver_name(interface, module_type, serial)
+            description = self._format_transceiver_description(
+                module_type, vendor_name, part_number
+            )
+            entries.append(
+                {
+                    "name": name,
+                    "description": description,
+                    "serial": serial,
+                }
+            )
+        return entries
+
+    def _parse_transceivers_from_raw(self, raw: str) -> list[dict]:
+        entries: list[dict] = []
+        current = None
+
+        for line in raw.splitlines():
+            if not line.strip():
+                continue
+            if line.startswith(" ") or line.startswith("\t"):
+                if not current:
+                    continue
+                normalized = line.strip()
+                lower = normalized.lower()
+                if "transceiver is present" in lower:
+                    current["present"] = True
+                elif "transceiver is not present" in lower:
+                    current["present"] = False
+                if "type is" in lower:
+                    current["type"] = normalized.split("type is", 1)[1].strip()
+                elif "serial number is" in lower:
+                    current["serial"] = normalized.split("serial number is", 1)[1].strip()
+                elif "name is" in lower:
+                    current["vendor"] = normalized.split("name is", 1)[1].strip()
+                elif "part number is" in lower:
+                    current["part"] = normalized.split("part number is", 1)[1].strip()
+                continue
+
+            if self._looks_like_interface(line.strip()):
+                current = {
+                    "interface": line.strip(),
+                    "present": None,
+                }
+                entries.append(current)
+
+        if not entries and raw:
+            for line in raw.splitlines():
+                if not line.strip():
+                    continue
+                if line.lower().startswith("interface"):
+                    continue
+                if not self._looks_like_interface(line.strip()):
+                    continue
+                parts = [p for p in re.split(r"\s{2,}", line.strip()) if p]
+                if not parts:
+                    continue
+                if any("not present" in part.lower() for part in parts):
+                    continue
+                current = {
+                    "interface": parts[0],
+                    "type": parts[1] if len(parts) > 1 else "",
+                    "vendor": parts[2] if len(parts) > 2 else "",
+                    "part": parts[3] if len(parts) > 3 else "",
+                    "serial": parts[4] if len(parts) > 4 else "",
+                    "present": None,
+                }
+                entries.append(current)
+
+        results = []
+        for entry in entries:
+            if entry.get("present") is False:
+                continue
+            interface = entry.get("interface")
+            module_type = entry.get("type")
+            serial = entry.get("serial")
+            vendor_name = entry.get("vendor")
+            part_number = entry.get("part")
+            name = self._format_transceiver_name(interface, module_type, serial)
+            description = self._format_transceiver_description(
+                module_type, vendor_name, part_number
+            )
+            results.append(
+                {
+                    "name": name,
+                    "description": description,
+                    "serial": serial,
+                }
+            )
+        return results
+
+    def _format_transceiver_name(self, interface: str | None, module_type: str | None, serial: str | None) -> str:
+        if interface:
+            return f"Transceiver {interface}"
+        if module_type:
+            return f"Transceiver {module_type}"
+        if serial:
+            return f"Transceiver {serial}"
+        return "Transceiver"
+
+    def _format_transceiver_description(
+        self,
+        module_type: str | None,
+        vendor_name: str | None,
+        part_number: str | None,
+    ) -> str | None:
+        parts = []
+        if module_type:
+            parts.append(module_type)
+        if vendor_name and vendor_name not in parts:
+            parts.append(vendor_name)
+        if part_number:
+            parts.append(f"PN {part_number}")
+        return " / ".join(parts) if parts else None
+
+    def _first_match(self, entry: dict, keys: list[str]) -> str | None:
+        for key in keys:
+            value = entry.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+        return None
+
+    def _looks_like_interface(self, value: str | None) -> bool:
+        if not value:
+            return False
+        return bool(re.match(r"^[A-Za-z]+[0-9/.-]+$", value))
+
+    def _is_transceiver_present(self, entry: dict) -> bool:
+        for key in ["present", "transceiver", "status", "state"]:
+            value = entry.get(key)
+            if isinstance(value, str):
+                value_lower = value.lower()
+                if "not present" in value_lower or "absent" in value_lower or value_lower == "no":
+                    return False
+                if "present" in value_lower or value_lower in ("yes", "true"):
+                    return True
+            if isinstance(value, bool):
+                return value
+        return True
 
     def _record_config(
         self,
