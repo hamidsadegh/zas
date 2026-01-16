@@ -3,133 +3,8 @@
 {% block title %}Interfaces {{ device.name }}{% endblock %}
 
 {% block styles %}
-.device-detail-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    width: 100%;
-    font-size: 0.85rem;
-}
-
-.device-detail-wrapper main,
-main {
-    max-width: none;
-    width: 95vw;
-    margin: 0 auto;
-}
-
-.device-detail-wrapper {
-    width: 95%;
-    margin: 0 auto;
-}
-
-.detail-card {
-    background: var(--surface);
-    border-radius: 20px;
-    padding: 1.5rem;
-    box-shadow: var(--shadow);
-}
-
-.interfaces-card table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.85rem;
-}
-
-.interfaces-card thead th {
-    text-align: left;
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    padding: 0.5rem 0.8rem;
-    border-bottom: 1px solid var(--border);
-}
-
-.interfaces-card tbody tr {
-    border-bottom: 1px solid var(--border);
-}
-
-.interfaces-card td {
-    padding: 0.8rem 0.8rem;
-}
-
-.detail-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-
-.back-link {
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    padding: 0.5rem 1.2rem;
-    font-weight: 600;
-}
-
-.filter-form {
-    display: flex;
-    gap: 0.6rem;
-    flex-wrap: wrap;
-    align-items: center;
-}
-
-.filter-form input,
-.filter-form select {
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 0.4rem 0.9rem;
-    font-size: 0.85rem;
-}
-
-.filter-form button {
-    border-radius: 999px;
-    border: none;
-    padding: 0.45rem 1.2rem;
-    font-weight: 600;
-    background: var(--primary);
-    color: #fff;
-    box-shadow: var(--shadow);
-}
-
-.pagination-wrapper {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 1.5rem;
-    flex-wrap: wrap;
-    gap: 1rem;
-    font-size: 0.8rem;
-}
-
-.range-info {
-    color: var(--muted);
-}
-
-.pagination {
-    list-style: none;
-    display: flex;
-    gap: 0.3rem;
-    margin: 0;
-    padding: 0;
-}
-
-.pagination a,
-.pagination span {
-    border-radius: 8px;
-    padding: 0.3rem 0.8rem;
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-size: 0.8rem;
-}
-
-.pagination .active span {
-    background: var(--primary);
-    color: #fff;
-    border-color: var(--primary);
-}
+{% include "dcim/_layout_styles.html" %}
+.device-detail-wrapper { gap: 1.5rem; font-size: 0.95rem; }
 {% endblock %}
 
 {% block content %}
@@ -142,64 +17,65 @@ main {
     <div class="detail-card interfaces-card">
         <div class="detail-actions" style="margin-bottom: 1.2rem;">
             <h3 style="margin: 0;">All Interfaces</h3>
-            <form method="get" class="filter-form">
-                <input type="text" name="search" placeholder="Search interfaces..." value="{{ search_query }}">
-                <select name="paginate_by">
+            <form method="get" class="filter-form" style="flex-wrap: nowrap; gap: 0.5rem; margin-left: auto;">
+                <input class="filter-search-wide" type="text" name="search" placeholder="Search interfaces..." value="{{ search_query }}">
+                <select name="paginate_by" onchange="this.form.submit()">
                     {% for option in per_page_options %}
                         <option value="{{ option }}" {% if paginate_by|stringformat:"s" == option|stringformat:"s" %}selected{% endif %}>{{ option }}</option>
                     {% endfor %}
                 </select>
-                <button type="submit">Apply</button>
             </form>
         </div>
 
         {% if interfaces %}
-        <table>
-            <thead>
-                <tr>
-                    <th><a href="?sort=name{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Name</a></th>
-                    <th><a href="?sort=description{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Description</a></th>
-                    <th><a href="?sort=ip_address{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">IP / VLAN</a></th>
-                    <th><a href="?sort=status{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Status</a></th>
-                    <th><a href="?sort=duplex{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Duplex</a></th>
-                    <th><a href="?sort=speed_mode{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Speed Mode</a></th>
-                    <th><a href="?sort=speed{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Speed</a></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for interface in interfaces %}
-                <tr class="interface-row">
-                    <td>{{ interface.name }}</td>
-                    <td>{{ interface.description|default:"-" }}</td>
-                    <td>
-                        {% if interface.ip_address %}
-                            {{ interface.ip_address }}
-                        {% elif interface.vlan_raw %}
-                            {{ interface.vlan_raw }}
-                        {% elif interface.access_vlan %}
-                            VLAN {{ interface.access_vlan.vlan_id }}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                    <td>{{ interface.status|title }}</td>
-                    <td>{{ interface.duplex|default:"-" }}</td>
-                    <td>{{ interface.speed_mode|default:"-" }}</td>
-                    <td>
-                        {% if interface.speed != None %}
-                            {% if interface.speed > 1000 %}
-                                {% widthratio interface.speed 1000 1 %}G
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th><a href="?sort=name{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Name</a></th>
+                        <th><a href="?sort=description{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Description</a></th>
+                        <th><a href="?sort=ip_address{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">IP / VLAN</a></th>
+                        <th><a href="?sort=status{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Status</a></th>
+                        <th><a href="?sort=duplex{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Duplex</a></th>
+                        <th><a href="?sort=speed_mode{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Speed Mode</a></th>
+                        <th><a href="?sort=speed{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Speed</a></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for interface in interfaces %}
+                    <tr class="interface-row">
+                        <td>{{ interface.name }}</td>
+                        <td>{{ interface.description|default:"-" }}</td>
+                        <td>
+                            {% if interface.ip_address %}
+                                {{ interface.ip_address }}
+                            {% elif interface.vlan_raw %}
+                                {{ interface.vlan_raw }}
+                            {% elif interface.access_vlan %}
+                                VLAN {{ interface.access_vlan.vlan_id }}
                             {% else %}
-                                {{ interface.speed }}
+                                -
                             {% endif %}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        </td>
+                        <td>{{ interface.status|title }}</td>
+                        <td>{{ interface.duplex|default:"-" }}</td>
+                        <td>{{ interface.speed_mode|default:"-" }}</td>
+                        <td>
+                            {% if interface.speed != None %}
+                                {% if interface.speed > 1000 %}
+                                    {% widthratio interface.speed 1000 1 %}G
+                                {% else %}
+                                    {{ interface.speed }}
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
         <div class="pagination-wrapper">
             <div class="range-info">

@@ -109,6 +109,7 @@ def _build_inventory_rows(search_query):
                         "device": device,
                         "device_name": device.name or "",
                         "device_serial": device.serial_number or "",
+                        "device_site_id": str(device.site.id) if device.site else "",
                         "device_site": device.site.name if device.site else "",
                         "device_area": device.area.name if device.area else "",
                         "device_rack": device.rack.name if device.rack else "",
@@ -129,6 +130,7 @@ def _build_inventory_rows(search_query):
                         "device": device,
                         "device_name": device.name or "",
                         "device_serial": device.serial_number or "",
+                        "device_site_id": str(device.site.id) if device.site else "",
                         "device_site": device.site.name if device.site else "",
                         "device_area": device.area.name if device.area else "",
                         "device_rack": device.rack.name if device.rack else "",
@@ -199,6 +201,15 @@ class DeviceListView(LoginRequiredMixin, ListView):
         if site != "all":
             queryset = queryset.filter(site_id=site)
 
+        self.tag_choices = list(Tag.objects.all().order_by("name"))
+        tag = self.request.GET.get("tag", "").strip()
+        tag_ids = {str(tag_obj.id) for tag_obj in self.tag_choices}
+        if tag and tag in tag_ids:
+            self.current_tag_filter = tag
+            queryset = queryset.filter(tags__id=tag)
+        else:
+            self.current_tag_filter = ""
+
         search = self.request.GET.get("search", "").strip()
         if search:
             queryset = queryset.filter(
@@ -238,6 +249,8 @@ class DeviceListView(LoginRequiredMixin, ListView):
         context['paginate_by'] = getattr(self, "current_paginate_by", self.paginate_by)
         context['site_choices'] = self.site_filter_choices
         context['site_filter'] = getattr(self, "current_site_filter", "all")
+        context['tag_choices'] = self.tag_choices
+        context['tag_filter'] = getattr(self, "current_tag_filter", "")
         context['per_page_options'] = self.per_page_options
         settings_obj = get_system_settings()
         context['reachability_checks'] = get_reachability_checks(settings_obj)
@@ -420,7 +433,17 @@ def inventory_list(request):
     search_query = request.GET.get("search", "").strip()
     sort_field = request.GET.get("sort", "device_name")
 
+    site_choices = [("all", "All Sites")]
+    for site in Site.objects.order_by("name"):
+        site_choices.append((str(site.id), site.name))
+    site_filter = request.GET.get("site", "all")
+    valid_site_keys = {choice[0] for choice in site_choices}
+    if site_filter not in valid_site_keys:
+        site_filter = "all"
+
     rows = _build_inventory_rows(search_query)
+    if site_filter != "all":
+        rows = [row for row in rows if row.get("device_site_id") == site_filter]
     rows = _sort_inventory_rows(rows, sort_field)
 
     paginate_by = _get_paginate_by(request, default=25)
@@ -434,6 +457,8 @@ def inventory_list(request):
         "sort_field": sort_field,
         "paginate_by": paginate_by,
         "per_page_options": PER_PAGE_OPTIONS,
+        "site_choices": site_choices,
+        "site_filter": site_filter,
     }
     return render(request, "dcim/inventory.html", context)
 
@@ -442,8 +467,11 @@ def inventory_list(request):
 def inventory_export(request):
     search_query = request.GET.get("search", "").strip()
     sort_field = request.GET.get("sort", "device_name")
+    site_filter = request.GET.get("site", "all")
 
     rows = _build_inventory_rows(search_query)
+    if site_filter != "all":
+        rows = [row for row in rows if row.get("device_site_id") == site_filter]
     rows = _sort_inventory_rows(rows, sort_field)
 
     wb = Workbook()

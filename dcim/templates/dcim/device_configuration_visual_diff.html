@@ -3,93 +3,18 @@
 {% block title %}Visual Configuration Diff – {{ device.name }}{% endblock %}
 
 {% block styles %}
-.visual-diff-wrapper {
-    width: min(100%, 1600px);
-    margin: 0 auto;
-    padding: 0 1rem;
-}
-.detail-card {
-    background: var(--surface);
-    border-radius: 20px;
-    padding: 1.5rem;
-    box-shadow: var(--shadow);
-}
-main {
-    max-width: 100%;
-}
-.diff-scroll {
-    max-height: 70vh;
-    overflow: auto;
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    margin: 0; /* keep inside viewport */
-    padding: 0 1rem;
-    width: 100%;
-}
-.diff-headings {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--border);
-    background: #f8faff;
-    font-weight: 600;
-}
-.diff-grid {
-    display: block;
-}
-.diff-row {
-    display: grid;
-    grid-template-columns: 3.5rem 1fr 3.5rem 1fr;
-    gap: 0.75rem;
-    padding: 0.35rem 0.75rem;
-    font-family: "Fira Code", "SFMono-Regular", Menlo, monospace;
-    line-height: 1.45;
-}
-.diff-row .line-number {
-    color: var(--muted);
-    text-align: right;
-}
-.diff-cell {
-    white-space: pre;
-    overflow-x: auto;
-    min-width: 0;
-}
-.diff-added {
-    background: #d4ffd4;
-}
-.diff-removed {
-    background: #ffd4d4;
-}
-.diff-changed {
-    background: #fff4d4;
-}
-.diff-context {
-    background: #ffffff;
-}
-.detail-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-}
-.config-link,
-.back-link {
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    padding: 0.4rem 1rem;
-    text-decoration: none;
-    font-weight: 600;
-    margin-left: 0.5rem;
-}
-.tag {
-    padding: 0.25rem 0.75rem;
-    border-radius: 999px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    background: #eef2ff;
-    color: var(--primary);
-}
+{% include "dcim/_layout_styles.html" %}
+.visual-diff-wrapper { gap: 1.25rem; max-width: 1600px; }
+.diff-scroll { max-height: 70vh; overflow: auto; border: 1px solid var(--border); border-radius: 16px; margin: 0; padding: 0 1rem; width: 100%; }
+.diff-headings { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); background: #f8faff; font-weight: 600; }
+.diff-grid { display: block; }
+.diff-row { display: grid; grid-template-columns: 3.5rem 1fr 3.5rem 1fr; gap: 0.75rem; padding: 0.35rem 0.75rem; font-family: "Fira Code", "SFMono-Regular", Menlo, monospace; line-height: 1.45; }
+.diff-row .line-number { color: var(--muted); text-align: right; }
+.diff-cell { white-space: pre; overflow-x: auto; min-width: 0; }
+.diff-added { background: #d4ffd4; }
+.diff-removed { background: #ffd4d4; }
+.diff-changed { background: #fff4d4; }
+.diff-context { background: #ffffff; }
 {% endblock %}
 
 {% block content %}

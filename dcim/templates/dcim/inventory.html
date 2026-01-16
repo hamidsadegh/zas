@@ -3,156 +3,9 @@
 {% block title %}Inventory{% endblock %}
 
 {% block styles %}
-.device-detail-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    width: 100%;
-    font-size: 0.85rem;
-}
-
-.device-detail-wrapper main,
-main {
-    max-width: none;
-    width: 95vw;
-    margin: 0 auto;
-}
-
-.device-detail-wrapper {
-    width: 95%;
-    margin: 0 auto;
-}
-
-.detail-card {
-    background: var(--surface);
-    border-radius: 20px;
-    padding: 1.5rem;
-    box-shadow: var(--shadow);
-}
-
-.interfaces-card table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.85rem;
-}
-
-.interfaces-card thead th {
-    text-align: left;
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    padding: 0.5rem 0.8rem;
-    border-bottom: 1px solid var(--border);
-}
-
-.interfaces-card tbody tr {
-    border-bottom: 1px solid var(--border);
-}
-
-.interfaces-card td {
-    padding: 0.8rem 0.8rem;
-}
-
-.detail-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-
-.filter-form {
-    display: flex;
-    gap: 0.6rem;
-    flex-wrap: wrap;
-    align-items: center;
-}
-
-.filter-form input,
-.filter-form select {
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 0.4rem 0.9rem;
-    font-size: 0.85rem;
-}
-
-.filter-form button {
-    border-radius: 999px;
-    border: none;
-    padding: 0.45rem 1.2rem;
-    font-weight: 600;
-    background: var(--primary);
-    color: #fff;
-    box-shadow: var(--shadow);
-}
-
-.filter-actions {
-    display: flex;
-    gap: 0.6rem;
-    flex-wrap: wrap;
-    align-items: center;
-}
-
-.export-link {
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    padding: 0.45rem 1.1rem;
-    font-weight: 600;
-    text-decoration: none;
-    color: var(--text);
-}
-
-.export-link:hover {
-    background: var(--surface-strong, #f8faff);
-}
-
-.pagination-wrapper {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 1.5rem;
-    flex-wrap: wrap;
-    gap: 1rem;
-    font-size: 0.8rem;
-}
-
-.range-info {
-    color: var(--muted);
-}
-
-.pagination {
-    list-style: none;
-    display: flex;
-    gap: 0.3rem;
-    margin: 0;
-    padding: 0;
-}
-
-.pagination a,
-.pagination span {
-    border-radius: 8px;
-    padding: 0.3rem 0.8rem;
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-size: 0.8rem;
-}
-
-.pagination .active span {
-    background: var(--primary);
-    color: #fff;
-    border-color: var(--primary);
-}
-
-.table-link {
-    color: inherit;
-    text-decoration: none;
-    font-weight: 600;
-}
-
-.table-link:hover {
-    text-decoration: underline;
-}
+{% include "dcim/_layout_styles.html" %}
+.device-detail-wrapper { gap: 1.5rem; font-size: 0.95rem; }
+.filter-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
 {% endblock %}
 
 {% block content %}
@@ -160,53 +13,59 @@ main {
     <div class="detail-actions" style="margin-bottom: 1.2rem;">
         <h3 style="margin: 0;">Inventory</h3>
         <div class="filter-actions">
-            <form method="get" class="filter-form">
-            <input type="text" name="search" placeholder="Search devices, serials, locations..." value="{{ search_query }}">
-                <select name="paginate_by">
-                    {% for option in per_page_options %}
-                        <option value="{{ option }}" {% if paginate_by|stringformat:"s" == option|stringformat:"s" %}selected{% endif %}>{{ option }}</option>
+            <form method="get" class="filter-form" style="flex-wrap: nowrap; width: 100%; gap: 0.5rem;">
+                <select name="site" onchange="this.form.submit()">
+                    {% for key, label in site_choices %}
+                        <option value="{{ key }}" {% if site_filter == key %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
-                <button type="submit">Apply</button>
+                <input class="filter-search-wide" type="text" name="search" placeholder="Search devices, serials, locations..." value="{{ search_query }}">
+                <select name="paginate_by" onchange="this.form.submit()">
+                    {% for option in per_page_options %}
+                        <option value="{{ option }}" {% if paginate_by|stringformat:"s" == option|stringformat:"s" %}selected{% endif %}>Show {{ option }}</option>
+                    {% endfor %}
+                </select>
+                <a class="export-link" href="{% url 'inventory_export' %}?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if sort_field %}sort={{ sort_field|urlencode }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}{% endif %}{% if site_filter %}&site={{ site_filter }}{% endif %}">Export</a>
             </form>
-            <a class="export-link" href="{% url 'inventory_export' %}?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if sort_field %}sort={{ sort_field|urlencode }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}{% endif %}">Export Excel</a>
         </div>
     </div>
 
     <div class="detail-card interfaces-card">
         {% if rows %}
-        <table>
-            <thead>
-                <tr>
-                    <th><a href="?sort=device_name{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Device</a></th>
-                    <th><a href="?sort=device_serial{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Device Serial</a></th>
-                    <th><a href="?sort=device_location{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Location</a></th>
-                    <th><a href="?sort=module_name{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Module</a></th>
-                    <th><a href="?sort=module_serial{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Module Serial</a></th>
-                    <th><a href="?sort=module_description{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Description</a></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in rows %}
-                <tr>
-                    <td>
-                        <a class="table-link" href="{% url 'device_detail' row.device.id %}">{{ row.device_name }}</a>
-                    </td>
-                    <td>{{ row.device_serial|default:"-" }}</td>
-                    <td>{{ row.device_location|default:"-" }}</td>
-                    <td>{{ row.module_name|default:"-" }}</td>
-                    <td>
-                        {% if row.module %}
-                            {{ row.module.serial_number_display|default:"-" }}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                    <td>{{ row.module_description|default:"-" }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th><a href="?sort=device_name{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Device</a></th>
+                        <th><a href="?sort=device_serial{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Device Serial</a></th>
+                        <th><a href="?sort=device_location{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Location</a></th>
+                        <th><a href="?sort=module_name{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Module</a></th>
+                        <th><a href="?sort=module_serial{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Module Serial</a></th>
+                        <th><a href="?sort=module_description{% if search_query %}&search={{ search_query }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Description</a></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr>
+                        <td>
+                            <a class="table-link" href="{% url 'device_detail' row.device.id %}">{{ row.device_name }}</a>
+                        </td>
+                        <td>{{ row.device_serial|default:"-" }}</td>
+                        <td>{{ row.device_location|default:"-" }}</td>
+                        <td>{{ row.module_name|default:"-" }}</td>
+                        <td>
+                            {% if row.module %}
+                                {{ row.module.serial_number_display|default:"-" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ row.module_description|default:"-" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
         <div class="pagination-wrapper">
             <div class="range-info">

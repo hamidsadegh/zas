@@ -3,57 +3,12 @@
 {% block title %}{% if form.instance.pk %}Edit VLAN{% else %}Add VLAN{% endif %}{% endblock %}
 
 {% block styles %}
-.form-shell {
-    width: 60%;
-    max-width: 900px;
-    margin: 0 auto;
-    background: var(--surface);
-    border-radius: 20px;
-    padding: 2rem;
-    box-shadow: var(--shadow);
-}
-
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1rem;
-}
-
-.form-field {
-    display: flex;
-    flex-direction: column;
-}
-
-.form-field label {
-    font-weight: 600;
-    color: var(--muted);
-    margin-bottom: 0.25rem;
-}
-
-.form-field input,
-.form-field select,
-.form-field textarea {
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 0.6rem 0.8rem;
-}
-
-.form-actions {
-    margin-top: 1.5rem;
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.8rem;
-}
-
-.btn {
-    border-radius: 999px;
-    border: none;
-    padding: 0.6rem 1.4rem;
-    font-weight: 600;
-}
-
-.btn-primary { background: var(--primary); color: #fff; }
-.btn-secondary { background: #fff; border: 1px solid var(--border); color: var(--text); }
+{% include "dcim/_layout_styles.html" %}
+.form-shell { width: 60%; max-width: 900px; margin: 0 auto; background: var(--surface); border-radius: 18px; padding: 2rem; box-shadow: 0 14px 34px rgba(15, 29, 64, 0.08); border: 1px solid #dde6f4; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+.form-field { display: flex; flex-direction: column; }
+.form-field label { font-weight: 600; color: var(--muted); margin-bottom: 0.25rem; }
+.form-actions { margin-top: 1.5rem; }
 {% endblock %}
 
 {% block content %}

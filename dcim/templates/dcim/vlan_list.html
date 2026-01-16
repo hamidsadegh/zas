@@ -3,125 +3,13 @@
 {% block title %}VLANs{% endblock %}
 
 {% block styles %}
-.vlan-wrapper {
-    width: 95%;
-    margin: 0 auto;
-    background: var(--surface);
-    border-radius: 22px;
-    padding: 1.5rem 2rem;
-    box-shadow: var(--shadow);
-    font-size: 0.85rem;
-}
-
-.vlan-header {
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 1.2rem;
-}
-
-.filter-bar {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    align-items: center;
-}
-
+{% include "dcim/_layout_styles.html" %}
+.vlan-wrapper { padding: 1.5rem 2rem; font-size: 0.95rem; }
+.vlan-header { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.2rem; }
+.filter-bar { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
 .filter-bar select,
-.filter-bar input {
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 0.4rem 0.9rem;
-    min-width: 150px;
-}
-
-.filter-bar button,
-.action-btn {
-    border-radius: 999px;
-    border: none;
-    padding: 0.45rem 1.2rem;
-    font-weight: 600;
-    background: var(--primary);
-    color: #fff;
-    box-shadow: var(--shadow);
-}
-
-.action-btn.secondary {
-    background: #fff;
-    color: var(--primary);
-    border: 1px solid var(--border);
-}
-
-.vlan-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.table-responsive {
-    overflow-x: auto;
-}
-
-.vlan-table th {
-    text-align: left;
-    font-size: 0.7rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--muted);
-    padding: 0.6rem 0.8rem;
-    border-bottom: 1px solid var(--border);
-}
-
-.vlan-table td {
-    padding: 0.75rem 0.8rem;
-    border-bottom: 1px solid var(--border);
-}
-
-.table-actions a {
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    padding: 0.35rem 0.9rem;
-    font-weight: 600;
-    font-size: 0.8rem;
-    margin-right: 0.4rem;
-}
-
-.pagination-wrapper {
-    margin-top: 1.2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.8rem;
-    font-size: 0.8rem;
-}
-
-.pagination {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    gap: 0.3rem;
-}
-
-.pagination a,
-.pagination span {
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    padding: 0.3rem 0.8rem;
-    color: var(--text);
-}
-
-.pagination .active span {
-    background: var(--primary);
-    color: #fff;
-}
-
-main {
-    max-width: none;
-    width: 95vw;
-    margin: 0 auto;
-}
+.filter-bar input { min-width: 150px; }
+.vlan-table { font-size: 0.92rem; }
 {% endblock %}
 
 {% block content %}
@@ -138,20 +26,24 @@ main {
                         <option value="{{ key }}" {% if site_filter == key %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
+                <select name="usage_area" onchange="this.form.submit()">
+                    {% for code, label in usage_area_choices %}
+                        <option value="{{ code }}" {% if usage_area_filter == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
                 <input type="text" name="q" placeholder="Search VLANs..." value="{{ search_query }}">
                 <select name="paginate_by" onchange="this.form.submit()">
                     {% for option in per_page_options %}
                         <option value="{{ option }}" {% if paginate_by_value == option %}selected{% endif %}>Show {{ option }}</option>
                     {% endfor %}
                 </select>
-                <button type="submit">Search</button>
             </form>
             <a href="{% url 'vlan_form' %}" class="action-btn">Add VLAN</a>
-            <a href="{% url 'vlan_export' %}?site={{ site_filter }}" class="action-btn secondary">Export</a>
+            <a href="{% url 'vlan_export' %}?site={{ site_filter }}{% if usage_area_filter %}&usage_area={{ usage_area_filter }}{% endif %}" class="action-btn secondary">Export</a>
         </div>
     </div>
 
-    <div class="table-responsive">
+    <div class="table-scroll">
         <table class="vlan-table">
             <thead>
                 <tr>
@@ -176,8 +68,8 @@ main {
                     <td>{{ vlan.description|default:"—" }}</td>
                     <td>{{ vlan.site.name|default:"—" }}</td>
                     <td class="table-actions">
-                        <a href="{% url 'vlan_edit' vlan.pk %}">Edit</a>
-                        <a href="{% url 'vlan_delete' vlan.pk %}">Delete</a>
+                        <a class="btn btn-ghost small" href="{% url 'vlan_edit' vlan.pk %}">Edit</a>
+                        <a class="btn btn-ghost small btn-danger" href="{% url 'vlan_delete' vlan.pk %}">Delete</a>
                     </td>
                 </tr>
                 {% empty %}

@@ -33,16 +33,22 @@ class VLANListView(LoginRequiredMixin, ListView):
         queryset = VLAN.objects.select_related("site", "site__organization").order_by("vlan_id")
 
         site = self.request.GET.get("site", "all")
+        usage_area = self.request.GET.get("usage_area", "").strip()
+        usage_codes = {code for code, _ in VLAN.USAGE_CHOICES}
         try:
             if site != "all":
                 uuid.UUID(str(site))
         except (ValueError, TypeError):
             site = "all"
         self._site_filter = site
+        self._usage_area_filter = usage_area if usage_area in usage_codes else ""
         search = self.request.GET.get("q", "").strip()
 
         if site != "all":
             queryset = queryset.filter(site_id=site)
+
+        if self._usage_area_filter:
+            queryset = queryset.filter(usage_area=self._usage_area_filter)
 
         if search:
             q_objects = Q(
@@ -65,6 +71,8 @@ class VLANListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context["site_choices"] = self._site_choices()
         context["site_filter"] = getattr(self, "_site_filter", "all")
+        context["usage_area_filter"] = getattr(self, "_usage_area_filter", "")
+        context["usage_area_choices"] = [("", "All usage areas")] + list(VLAN.USAGE_CHOICES)
         context["search_query"] = self.request.GET.get("q", "")
         context["per_page_options"] = self.per_page_options
         context["paginate_by_value"] = getattr(self, "_current_paginate_by", self.paginate_by)
@@ -117,6 +125,7 @@ class VLANDeleteView(LoginRequiredMixin, DeleteView):
 class VLANExportView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         site = request.GET.get("site")
+        usage_area = request.GET.get("usage_area", "").strip()
         queryset = VLAN.objects.all()
         if site and site != "all":
             try:
@@ -125,6 +134,9 @@ class VLANExportView(LoginRequiredMixin, View):
                 site = None
             if site:
                 queryset = queryset.filter(site_id=site)
+        usage_codes = {code for code, _ in VLAN.USAGE_CHOICES}
+        if usage_area and usage_area in usage_codes:
+            queryset = queryset.filter(usage_area=usage_area)
 
         wb = Workbook()
         ws = wb.active

@@ -3,63 +3,15 @@
 {% block title %}Configuration Diff – {{ device.name }}{% endblock %}
 
 {% block styles %}
-.config-diff {
-    width: 95%;
-    margin: 0 auto;
-}
-.detail-card {
-    background: var(--surface);
-    border-radius: 20px;
-    padding: 1.5rem;
-    box-shadow: var(--shadow);
-}
-.diff-meta {
-    margin-bottom: 1rem;
-    color: var(--muted);
-}
-pre.diff {
-    background: #0f172a;
-    color: #e2e8f0;
-    padding: 1rem;
-    border-radius: 16px;
-    white-space: pre-wrap;
-    overflow-x: auto;
-}
-.back-link {
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    padding: 0.4rem 1rem;
-    text-decoration: none;
-}
-.detail-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.tag {
-    padding: 0.25rem 0.75rem;
-    border-radius: 999px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    background: #eef2ff;
-    color: var(--primary);
-}
-.config-actions {
-    display: flex;
-    gap: 0.6rem;
-    align-items: center;
-}
-.config-link {
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    padding: 0.4rem 0.9rem;
-    text-decoration: none;
-    font-weight: 600;
-}
+{% include "dcim/_layout_styles.html" %}
+.config-diff { gap: 1.25rem; }
+.diff-meta { margin-bottom: 1rem; color: var(--muted); }
+pre.diff { background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 16px; white-space: pre-wrap; overflow-x: auto; }
+.config-actions { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
 {% endblock %}
 
 {% block content %}
-<section class="config-diff">
+<section class="config-diff" style="width: 60%; max-width: 900px;">
     <div class="detail-card">
         <div class="detail-actions">
             <div>

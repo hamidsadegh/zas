@@ -3,25 +3,8 @@
 {% block title %}Delete VLAN{% endblock %}
 
 {% block styles %}
-.form-shell {
-    width: 40%;
-    margin: 0 auto;
-    background: var(--surface);
-    border-radius: 20px;
-    padding: 2rem;
-    box-shadow: var(--shadow);
-}
-
-.btn {
-    border-radius: 999px;
-    border: none;
-    padding: 0.6rem 1.4rem;
-    font-weight: 600;
-    margin-right: 0.5rem;
-}
-
-.btn-danger { background: #dc2626; color: #fff; }
-.btn-secondary { background: #fff; border: 1px solid var(--border); color: var(--text); }
+{% include "dcim/_layout_styles.html" %}
+.form-shell { width: 40%; max-width: 720px; margin: 0 auto; background: var(--surface); border-radius: 18px; padding: 2rem; box-shadow: 0 14px 34px rgba(15, 29, 64, 0.08); border: 1px solid #dde6f4; }
 {% endblock %}
 
 {% block content %}
