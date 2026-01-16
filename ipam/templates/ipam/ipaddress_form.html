@@ -1,15 +1,18 @@
 {% extends "core/base.html" %}
-{% block title %}Assign IP Address{% endblock %}
+{% block title %}{% if form.instance.pk %}IP Address{% else %}Add IP Address{% endif %}{% endblock %}
 
 {% block styles %}
+{% include "dcim/_layout_styles.html" %}
+main { width: 90%; max-width: 1100px; margin: 0 auto; }
 .form-shell {
-    width: 60%;
-    max-width: 900px;
+    width: 90%;
+    max-width: 1100px;
     margin: 0 auto;
     background: var(--surface);
-    border-radius: 20px;
+    border-radius: 18px;
     padding: 2rem;
-    box-shadow: var(--shadow);
+    box-shadow: 0 14px 34px rgba(15, 29, 64, 0.08);
+    border: 1px solid #dde6f4;
 }
 .form-grid {
     display: grid;
@@ -21,9 +24,14 @@
 .form-field input,
 .form-field select,
 .form-field textarea {
-    border: 1px solid var(--border);
+    border: 1px solid #d8e0ee;
     border-radius: 12px;
     padding: 0.6rem 0.8rem;
+    width: 100%;
+    min-width: 0;
+}
+.form-field select {
+    max-width: 100%;
 }
 .form-actions {
     margin-top: 1.5rem;
@@ -31,19 +39,11 @@
     justify-content: flex-end;
     gap: 0.8rem;
 }
-.btn {
-    border-radius: 999px;
-    border: none;
-    padding: 0.6rem 1.4rem;
-    font-weight: 600;
-}
-.btn-primary { background: var(--primary); color: #fff; }
-.btn-secondary { background: #fff; border: 1px solid var(--border); color: var(--text); }
 {% endblock %}
 
 {% block content %}
 <section class="form-shell">
-    <h1 style="margin-top:0;">Assign IP Address</h1>
+    <h1 style="margin-top:0;">{% if form.instance.pk %}IP Address{% else %}Add IP Address{% endif %}</h1>
     <form method="post" class="form-grid">
         {% csrf_token %}
         {% for field in form %}
@@ -56,7 +56,7 @@
             </div>
         {% endfor %}
         <div class="form-actions" style="grid-column: 1 / -1;">
-            <a href="{% url 'ipam:ipaddress_list' %}" class="btn btn-secondary">Cancel</a>
+            <a href="{% url 'ipam:ipaddress_list' %}" class="btn back">Back</a>
             <button type="submit" class="btn btn-primary">Save</button>
         </div>
     </form>

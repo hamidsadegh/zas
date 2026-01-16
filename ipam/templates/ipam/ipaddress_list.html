@@ -2,14 +2,29 @@
 {% block title %}IP Addresses{% endblock %}
 
 {% block styles %}
-main { max-width: 1200px; }
-.card { background: var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.25rem; box-shadow: var(--shadow); }
-.table { width:100%; border-collapse: collapse; }
-.table th { text-align:left; font-size:0.8rem; text-transform: uppercase; letter-spacing:0.08em; color: var(--muted); padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
-.table td { padding:0.55rem 0; border-bottom:1px solid var(--border); }
-.filters { display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.8rem; }
-.filters select, .filters input { border:1px solid var(--border); border-radius:10px; padding:0.45rem 0.7rem; }
-.btn { border:none; border-radius:999px; padding:0.55rem 1.1rem; font-weight:700; cursor:pointer; background: var(--primary); color:#fff; box-shadow: var(--shadow); }
+{% include "dcim/_layout_styles.html" %}
+main { width: 50%; max-width: 900px; margin: 0 auto; }
+.card { max-width: 900px; margin: 0 auto; }
+.ipam-filters {
+    display:flex;
+    align-items:center;
+    gap:0.5rem;
+    flex-wrap: wrap;
+    width: 100%;
+}
+.ipam-filters select {
+    flex: 1 1 160px;
+    min-width: 140px;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ipam-filters input[type="text"] {
+    flex: 2 1 260px;
+    min-width: 200px;
+}
+.table-actions .btn-ghost { padding: 0.3rem 0.7rem; border-radius: 10px; font-size: 0.9rem; }
 {% endblock %}
 
 {% block content %}
@@ -20,23 +35,11 @@ main { max-width: 1200px; }
             <h1 style="margin:0;">IP Addresses</h1>
         </div>
         <div style="display:flex; gap:0.6rem; align-items:center;">
-            <a href="{% url 'ipam:index' %}" class="link-btn">← Back</a>
-            <a class="btn" href="{% url 'ipam:ipaddress_add' %}">Assign IP</a>
+            <a href="{% url 'ipam:index' %}" class="btn back">Back</a>
+            <a class="btn btn-primary" href="{% url 'ipam:ipaddress_add' %}">Assign IP</a>
         </div>
     </div>
-    <form method="get" class="filters">
-        <select name="device" onchange="this.form.submit()">
-            <option value="">All devices</option>
-            {% for dev in devices %}
-                <option value="{{ dev.id }}" {% if request.GET.device == dev.id|stringformat:'s' %}selected{% endif %}>{{ dev.name }}</option>
-            {% endfor %}
-        </select>
-        <select name="interface" onchange="this.form.submit()">
-            <option value="">All interfaces</option>
-            {% for iface in interfaces %}
-                <option value="{{ iface.id }}" {% if request.GET.interface == iface.id|stringformat:'s' %}selected{% endif %}>{{ iface.device.name }} / {{ iface.name }}</option>
-            {% endfor %}
-        </select>
+    <form method="get" class="ipam-filters">
         <select name="prefix" onchange="this.form.submit()">
             <option value="">All prefixes</option>
             {% for pref in prefixes %}
@@ -49,10 +52,22 @@ main { max-width: 1200px; }
                 <option value="{{ key }}" {% if request.GET.status == key %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
-        <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Search IP/hostname">
-        <button type="submit">Filter</button>
+        <select name="device" onchange="this.form.submit()">
+            <option value="">All devices</option>
+            {% for dev in devices %}
+                <option value="{{ dev.id }}" {% if request.GET.device == dev.id|stringformat:'s' %}selected{% endif %}>{{ dev.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="interface" onchange="this.form.submit()">
+            <option value="">All interfaces</option>
+            {% for iface in interfaces %}
+                <option value="{{ iface.id }}" {% if request.GET.interface == iface.id|stringformat:'s' %}selected{% endif %}>{{ iface.device.name }} / {{ iface.name }}</option>
+            {% endfor %}
+        </select>
+        <input class="filter-search-wide" type="text" name="search" value="{{ request.GET.search }}" placeholder="Search IP/hostname">
     </form>
-    <table class="table">
+    <div class="table-scroll">
+    <table class="data-table">
         <thead>
             <tr>
                 <th>Address</th>
@@ -73,12 +88,13 @@ main { max-width: 1200px; }
                 <td>{% if ip.interface %}{{ ip.interface.name }}{% else %}—{% endif %}</td>
                 <td>{{ ip.get_status_display }}</td>
                 <td>{{ ip.hostname|default:"—" }}</td>
-                <td><a href="{% url 'ipam:ipaddress_detail' ip.id %}">View</a></td>
+                <td class="table-actions"><a class="btn btn-ghost small" href="{% url 'ipam:ipaddress_detail' ip.id %}">View</a></td>
             </tr>
             {% empty %}
             <tr><td colspan="6" class="muted">No IP addresses found.</td></tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
 </div>
 {% endblock %}

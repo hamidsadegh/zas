@@ -2,15 +2,26 @@
 {% block title %}Prefixes{% endblock %}
 
 {% block styles %}
-main { max-width: 1200px; }
-.card { background: var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.25rem; box-shadow: var(--shadow); }
-.table { width:100%; border-collapse: collapse; }
-.table th { text-align:left; font-size:0.8rem; text-transform: uppercase; letter-spacing:0.08em; color: var(--muted); padding:0.5rem 0; border-bottom:1px solid var(--border); }
-.table td { padding:0.55rem 0; border-bottom:1px solid var(--border); }
-.filters { display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.8rem; }
-.filters select { border:1px solid var(--border); border-radius:10px; padding:0.45rem 0.7rem; }
-.actions a { margin-right:0.5rem; }
-.btn { border:none; border-radius:999px; padding:0.55rem 1.1rem; font-weight:700; cursor:pointer; background: var(--primary); color:#fff; box-shadow: var(--shadow); }
+{% include "dcim/_layout_styles.html" %}
+main { width: 50%; max-width: 900px; margin: 0 auto; }
+.card { max-width: 900px; margin: 0 auto; }
+.ipam-filters {
+    display:flex;
+    align-items:center;
+    gap:0.5rem;
+    flex-wrap: wrap;
+    margin-bottom:0.8rem;
+    width: 100%;
+}
+.ipam-filters select {
+    flex: 1 1 160px;
+    min-width: 140px;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.table-actions .btn-ghost { padding: 0.3rem 0.7rem; border-radius: 10px; font-size: 0.9rem; }
 {% endblock %}
 
 {% block content %}
@@ -21,11 +32,11 @@ main { max-width: 1200px; }
             <h1 style="margin:0;">Prefixes</h1>
         </div>
         <div style="display:flex; gap:0.6rem; align-items:center;">
-            <a href="{% url 'ipam:index' %}" class="link-btn">← Back</a>
-            <a class="btn" href="{% url 'ipam:prefix_add' %}">Add Prefix</a>
+            <a href="{% url 'ipam:index' %}" class="btn back">Back</a>
+            <a class="btn btn-primary" href="{% url 'ipam:prefix_add' %}">Add Prefix</a>
         </div>
     </div>
-    <form method="get" class="filters">
+    <form method="get" class="ipam-filters">
         <select name="vrf" onchange="this.form.submit()">
             <option value="">All VRFs</option>
             {% for vrf in form.fields.vrf.queryset %}
@@ -48,7 +59,8 @@ main { max-width: 1200px; }
             {% endfor %}
         </select>
     </form>
-    <table class="table">
+    <div class="table-scroll">
+    <table class="data-table">
         <thead>
             <tr>
                 <th>Prefix</th>
@@ -67,9 +79,9 @@ main { max-width: 1200px; }
                 <td>{{ prefix.site|default:"—" }}</td>
                 <td>{{ prefix.get_role_display }}</td>
                 <td>{{ prefix.ip_count|default:0 }}</td>
-                <td class="actions">
-                    <a href="{% url 'ipam:prefix_edit' prefix.id %}">Edit</a>
-                    <a href="{% url 'ipam:prefix_delete' prefix.id %}">Delete</a>
+                <td class="table-actions">
+                    <a class="btn btn-ghost small" href="{% url 'ipam:prefix_edit' prefix.id %}">Edit</a>
+                    <a class="btn btn-ghost small btn-danger" href="{% url 'ipam:prefix_delete' prefix.id %}">Delete</a>
                 </td>
             </tr>
             {% empty %}
@@ -77,5 +89,6 @@ main { max-width: 1200px; }
             {% endfor %}
         </tbody>
     </table>
+    </div>
 </div>
 {% endblock %}
