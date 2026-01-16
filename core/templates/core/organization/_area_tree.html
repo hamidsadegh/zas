@@ -3,18 +3,25 @@
     <li class="area-node {% if node.open %}open{% endif %} {% if selected_area and node.area.id == selected_area.id %}active{% endif %}">
         <div class="area-row">
             {% if node.children %}
-                <button type="button" class="area-toggle" aria-label="Toggle children">
+                <button
+                    type="button"
+                    class="area-toggle"
+                    aria-label="Toggle children"
+                    aria-expanded="{% if node.open %}true{% else %}false{% endif %}"
+                >
                     <span class="caret">{% if node.open %}▼{% else %}▶{% endif %}</span>
                 </button>
             {% else %}
                 <span class="area-toggle placeholder"></span>
             {% endif %}
             <button
+                type="button"
                 class="area-link"
                 hx-get="{% url 'organization_home' %}?site={{ site.id }}&area={{ node.area.id }}"
                 hx-target="#organization-page"
                 hx-swap="outerHTML"
                 hx-push-url="true"
+                {% if selected_area and node.area.id == selected_area.id %}aria-current="true"{% endif %}
             >
                 {{ node.area.name }}
             </button>

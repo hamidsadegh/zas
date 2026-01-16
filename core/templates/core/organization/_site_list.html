@@ -1,9 +1,12 @@
 <div class="section-title">
-    <h3>Sites</h3>
-    <span class="muted">{{ sites|length }} total</span>
+    <div>
+        <h3>Sites</h3>
+        <div class="muted">Navigate to a site to manage areas and racks.</div>
+    </div>
+    <span class="chip subtle">{{ sites|length }} total</span>
 </div>
 {% if site_form and site_form.errors %}
-    <div class="notice" style="background:#fef2f2;color:#991b1b;border-color:#fca5a5;">
+    <div class="notice error">
         {% for field, errors in site_form.errors.items %}
             {{ errors|join:", " }}
         {% endfor %}
@@ -12,17 +15,22 @@
 <div class="site-list">
     {% for site in sites %}
     <div class="site-row {% if selected_site and site.id == selected_site.id %}active{% endif %}">
-        <button
-            hx-get="{% url 'organization_home' %}?site={{ site.id }}"
-            hx-target="#organization-page"
-            hx-swap="outerHTML"
-            hx-push-url="true"
-        >
-            {{ site.name }}
-        </button>
+        <div class="site-meta">
+            <button
+                type="button"
+                hx-get="{% url 'organization_home' %}?site={{ site.id }}"
+                hx-target="#organization-page"
+                hx-swap="outerHTML"
+                hx-push-url="true"
+            >
+                {{ site.name }}
+            </button>
+            <div class="muted small-text">{{ site.description|default:"No description yet." }}</div>
+        </div>
         <div class="site-actions">
             <button
-                class="btn-ghost"
+                type="button"
+                class="btn btn-ghost small"
                 hx-get="{% url 'organization_site_edit_form' site.id %}"
                 hx-target="closest .site-row"
                 hx-swap="outerHTML"
@@ -33,10 +41,9 @@
                 hx-confirm="Delete site '{{ site.name }}'?"
                 hx-target="#site-list"
                 hx-swap="outerHTML"
-                style="margin:0;"
             >
                 {% csrf_token %}
-                <button type="submit" class="btn-ghost">Delete</button>
+                <button type="submit" class="btn btn-danger small">Delete</button>
             </form>
         </div>
     </div>
@@ -47,8 +54,7 @@
 
 {% if organization %}
     <form
-        class="stacked"
-        style="margin-top:0.75rem;"
+        class="stacked spacing-top"
         method="post"
         hx-post="{% url 'organization_site_create' %}"
         hx-target="#site-list"
@@ -58,7 +64,9 @@
         <label class="muted" for="id_site_name">Add Site</label>
         <input id="id_site_name" type="text" name="name" class="input" placeholder="Site name" required>
         <textarea name="description" class="textarea" placeholder="Description (optional)"></textarea>
-        <button type="submit" class="btn btn-primary" style="width: fit-content;">Create Site</button>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Create Site</button>
+        </div>
     </form>
 {% else %}
     <div class="notice">Create an organization in admin before adding sites.</div>

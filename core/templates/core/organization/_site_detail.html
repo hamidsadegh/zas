@@ -4,7 +4,7 @@
         <h3>{{ site.name }}</h3>
         <div class="muted">{{ site.description|default:"No description provided." }}</div>
     </div>
-    <span class="pill">Site</span>
+    <span class="chip subtle">Site</span>
 </div>
 
 {% if not areas_exist %}
@@ -14,34 +14,23 @@
         hx-post="{% url 'organization_area_create' %}"
         hx-target="#site-detail"
         hx-swap="innerHTML"
-        class="stacked"
-        style="margin-top:0.75rem;"
+        class="stacked spacing-top"
     >
         {% csrf_token %}
         <input type="hidden" name="site_id" value="{{ site.id }}">
         <label class="muted" for="id_root_area_name">New area</label>
         <input id="id_root_area_name" name="name" class="input" required placeholder="Area name">
         <textarea name="description" class="textarea" placeholder="Description (optional)"></textarea>
-        <button type="submit" class="btn btn-primary" style="width: fit-content;">Create Area</button>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Create Area</button>
+        </div>
     </form>
 {% else %}
-    <style>
-    .area-tree { list-style: none; padding-left: 0; margin: 0; }
-    .area-node { margin: 0; padding: 0.1rem 0; }
-    .area-row { display: flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.45rem; border-radius: 10px; transition: background 0.15s ease, border-color 0.15s ease; }
-    .area-row:hover { background: #f8fafc; }
-    .area-node.active .area-row { background: #e0ebff; border: 1px solid #bcd3ff; }
-    .area-toggle { border: none; background: none; padding: 0; width: 1.2rem; cursor: pointer; color: var(--muted); font-weight: 700; }
-    .area-toggle.placeholder { visibility: hidden; cursor: default; }
-    .area-link { border: none; background: none; text-align: left; padding: 0; margin: 0; font-weight: 600; cursor: pointer; color: var(--text); }
-    .area-link:hover { color: var(--primary); }
-    .area-children { list-style: none; margin: 0; padding-left: 1.2rem; border-left: 1px dashed var(--border); }
-    </style>
-    <div class="org-shell" style="grid-template-columns: 320px 1fr;">
-        <div class="card" style="padding:1rem; box-shadow:none;">
-            <div class="section-title" style="margin-bottom:0.5rem;">
-                <h4 style="margin:0;">Areas</h4>
-                <span class="pill">{{ area_tree|length }} roots</span>
+    <div class="org-grid">
+        <div class="area-panel">
+            <div class="section-title">
+                <h4>Areas</h4>
+                <span class="chip subtle">{{ area_tree|length }} roots</span>
             </div>
             <div class="area-tree">
                 {% include "core/organization/_area_tree.html" with nodes=area_tree site=site selected_area=selected_area %}
@@ -59,6 +48,7 @@
                             children.style.display = isOpen ? "block" : "none";
                             const caret = btn.querySelector(".caret");
                             if (caret) caret.textContent = isOpen ? "▼" : "▶";
+                            btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
                         }
                     });
                 });
@@ -66,18 +56,19 @@
             </script>
         </div>
 
-        <div class="card" style="padding:1rem; box-shadow:none;">
+        <div class="stacked">
             {% if error %}
-                <div class="notice" style="background:#fef2f2;color:#991b1b;border-color:#fca5a5;">{{ error }}</div>
+                <div class="notice error">{{ error }}</div>
             {% endif %}
             {% if selected_area %}
             <div class="section-title">
                 <div>
-                    <h4 style="margin:0;">Area: {{ selected_area.name }}</h4>
+                    <h4>Area: {{ selected_area.name }}</h4>
                     <div class="muted">{{ selected_area.description|default:"No description" }}</div>
                 </div>
+                <span class="chip subtle">Area</span>
             </div>
-            <div class="stacked" style="margin-bottom:1rem;">
+            <div class="stacked">
                 <form
                     method="post"
                     hx-post="{% url 'organization_area_update' selected_area.id %}"
@@ -90,7 +81,9 @@
                     <label class="muted" for="id_area_name">Rename area</label>
                     <input id="id_area_name" name="name" class="input" value="{{ area_form.name.value|default:selected_area.name }}" required>
                     <textarea name="description" class="textarea">{{ area_form.description.value|default:selected_area.description }}</textarea>
-                    <button type="submit" class="btn btn-primary" style="width: fit-content;">Save</button>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
                 </form>
                 <form
                     method="post"
@@ -98,15 +91,15 @@
                     hx-confirm="Delete area '{{ selected_area.name }}'?"
                     hx-target="#site-detail"
                     hx-swap="innerHTML"
-                    style="margin:0;"
+                    class="form-actions"
                 >
                     {% csrf_token %}
-                    <button type="submit" class="btn-ghost">Delete area</button>
+                    <button type="submit" class="btn btn-danger small">Delete area</button>
                 </form>
             </div>
 
-            <div class="stacked" style="margin-bottom:1rem;">
-                <h4 style="margin:0;">Add child area</h4>
+            <div class="stacked">
+                <h4 class="section-heading">Add child area</h4>
                 <form
                     method="post"
                     hx-post="{% url 'organization_area_create' %}"
@@ -119,92 +112,98 @@
                     <input type="hidden" name="parent_id" value="{{ selected_area.id }}">
                     <input name="name" class="input" placeholder="Child area name" required>
                     <textarea name="description" class="textarea" placeholder="Description (optional)"></textarea>
-                    <button type="submit" class="btn btn-primary" style="width: fit-content;">Create</button>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Create</button>
+                    </div>
                 </form>
             </div>
 
             <div class="stacked">
-                <div class="section-title" style="margin-bottom:0.5rem;">
-                    <h4 style="margin:0;">Racks</h4>
-                    <span class="pill">{{ racks|length }}</span>
+                <div class="section-title">
+                    <h4>Racks</h4>
+                    <span class="chip subtle">{{ racks|length }}</span>
                 </div>
-                <table style="width:100%; border-collapse: collapse; font-size:0.95rem;">
-                    <thead>
-                        <tr class="muted">
-                            <th style="text-align:left; padding:0.35rem;">Name</th>
-                            <th style="text-align:left; padding:0.35rem;">Height (U)</th>
-                            <th style="text-align:left; padding:0.35rem;">Description</th>
-                            <th style="text-align:right; padding:0.35rem;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for rack in racks %}
-                        {% if rack_edit and rack_edit.id == rack.id %}
-                        <tr>
-                            <td colspan="4">
-                                <form
-                                    method="post"
-                                    hx-post="{% url 'organization_rack_update' rack.id %}"
-                                    hx-target="#site-detail"
-                                    hx-swap="innerHTML"
-                                    style="display:grid; gap:0.5rem;"
-                                >
-                                    {% csrf_token %}
-                                    <input type="hidden" name="area_id" value="{{ selected_area.id }}">
-                                    <input name="name" class="input" value="{{ rack.name }}" required>
-                                    <input type="number" name="u_height" class="input" value="{{ rack.u_height }}" min="1">
-                                    <textarea name="description" class="textarea" placeholder="Description (optional)">{{ rack.description }}</textarea>
-                                    <div class="site-actions" style="justify-content:flex-end;">
-                                        <button type="submit" class="btn btn-primary">Save</button>
+                <div class="table-scroll">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Height (U)</th>
+                                <th>Description</th>
+                                <th class="actions text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for rack in racks %}
+                            {% if rack_edit and rack_edit.id == rack.id %}
+                            <tr>
+                                <td colspan="4">
+                                    <form
+                                        method="post"
+                                        hx-post="{% url 'organization_rack_update' rack.id %}"
+                                        hx-target="#site-detail"
+                                        hx-swap="innerHTML"
+                                        class="stacked"
+                                    >
+                                        {% csrf_token %}
+                                        <input type="hidden" name="area_id" value="{{ selected_area.id }}">
+                                        <input name="name" class="input" value="{{ rack.name }}" required>
+                                        <input type="number" name="u_height" class="input" value="{{ rack.u_height }}" min="1">
+                                        <textarea name="description" class="textarea" placeholder="Description (optional)">{{ rack.description }}</textarea>
+                                        <div class="form-actions end">
+                                            <button type="submit" class="btn btn-primary">Save</button>
+                                            <button
+                                                type="button"
+                                                class="btn btn-ghost"
+                                                hx-get="{% url 'organization_site_detail' site.id %}?area={{ selected_area.id }}"
+                                                hx-target="#site-detail"
+                                                hx-swap="innerHTML"
+                                            >Cancel</button>
+                                        </div>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td>{{ rack.name }}</td>
+                                <td>{{ rack.u_height }}</td>
+                                <td>{{ rack.description|default:"" }}</td>
+                                <td class="actions">
+                                    <div class="table-actions">
+                                        <a class="btn btn-ghost small" href="{% url 'organization_rack_detail' rack.id %}">View</a>
                                         <button
                                             type="button"
-                                            class="btn-ghost"
-                                            hx-get="{% url 'organization_site_detail' site.id %}?area={{ selected_area.id }}"
-                                            hx-target="#site-detail"
-                                            hx-swap="innerHTML"
-                                        >Cancel</button>
-                                    </div>
-                                </form>
-                            </td>
-                        </tr>
-                        {% else %}
-                                <tr style="border-top:1px solid var(--border);">
-                                    <td style="padding:0.35rem;">{{ rack.name }}</td>
-                                    <td style="padding:0.35rem;">{{ rack.u_height }}</td>
-                                    <td style="padding:0.35rem;">{{ rack.description|default:"" }}</td>
-                                    <td style="padding:0.35rem; text-align:right; display:flex; gap:0.35rem; justify-content:flex-end;">
-                                        <a class="btn-ghost" href="{% url 'organization_rack_detail' rack.id %}">View</a>
-                                        <button
-                                            class="btn-ghost"
+                                            class="btn btn-ghost small"
                                             hx-get="{% url 'organization_home' %}?site={{ site.id }}&area={{ selected_area.id }}&rack={{ rack.id }}"
                                             hx-target="#organization-page"
                                             hx-swap="outerHTML"
-                hx-push-url="true"
-            >Edit</button>
-                                <form
-                                    method="post"
-                                    hx-post="{% url 'organization_rack_delete' rack.id %}"
-                                    hx-target="#site-detail"
-                                    hx-swap="innerHTML"
-                                    hx-confirm="Delete rack '{{ rack.name }}'?"
-                                    style="margin:0;"
-                                >
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn-ghost">Delete</button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% endif %}
-                        {% empty %}
-                        <tr>
-                            <td colspan="4" style="padding:0.5rem;" class="muted">No racks yet.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                                            hx-push-url="true"
+                                        >Edit</button>
+                                        <form
+                                            method="post"
+                                            hx-post="{% url 'organization_rack_delete' rack.id %}"
+                                            hx-target="#site-detail"
+                                            hx-swap="innerHTML"
+                                            hx-confirm="Delete rack '{{ rack.name }}'?"
+                                        >
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger small">Delete</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="muted">No racks yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
 
-                <div class="stacked" style="margin-top:0.75rem;">
-                    <h4 style="margin:0;">Add rack</h4>
+                <div class="stacked section-spacer">
+                    <h4 class="section-heading">Add rack</h4>
                     <form
                         method="post"
                         hx-post="{% url 'organization_rack_create' %}"
@@ -217,10 +216,14 @@
                         <input name="name" class="input" placeholder="Rack name" required>
                         <input type="number" name="u_height" class="input" placeholder="Height (U)" min="1">
                         <textarea name="description" class="textarea" placeholder="Description (optional)"></textarea>
-                        <button type="submit" class="btn btn-primary" style="width: fit-content;">Create Rack</button>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Create Rack</button>
+                        </div>
                     </form>
                 </div>
             </div>
+            {% else %}
+                <div class="notice">Select an area from the tree to manage racks.</div>
             {% endif %}
         </div>
     </div>

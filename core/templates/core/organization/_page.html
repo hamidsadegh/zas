@@ -1,6 +1,6 @@
-<div id="organization-page" class="stacked" style="gap:1.5rem;">
+<div id="organization-page" class="org-page">
     {% include "core/organization/_organization_card.html" with organization=organization organization_form=organization_form %}
-    <div class="org-shell">
+    <div class="org-grid">
         <div id="site-list" class="card">
             {% include "core/organization/_site_list.html" with sites=sites selected_site=selected_site organization=organization %}
         </div>

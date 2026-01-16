@@ -18,6 +18,32 @@
     box-shadow: var(--shadow);
     border: 1px solid var(--border);
 }
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    border-radius: 12px;
+    padding: 0.55rem 1.05rem;
+    font-weight: 650;
+    cursor: pointer;
+    border: 1px solid transparent;
+    background: #f8fafc;
+    color: var(--text);
+    text-decoration: none;
+    transition: transform 0.12s ease, box-shadow 0.2s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: 0 12px 26px rgba(15, 29, 64, 0.12); }
+.btn:active { transform: translateY(0); }
+.btn-ghost {
+    background: #f8fafc;
+    border-color: #d8e0ee;
+    color: var(--text);
+}
+.btn-ghost:hover {
+    background: #eef2ff;
+    border-color: #cbd5f5;
+}
 .rack-meta h2 { margin: 0 0 0.35rem 0; }
 .pill {
     background: #e9f1ff;
@@ -126,7 +152,7 @@ main {
                 <h2>{{ rack.name }}</h2>
                 <div class="muted">{{ rack.area.name }} · {{ rack.area.site.name }}</div>
             </div>
-            <a class="btn-ghost" href="{% url 'organization_home' %}?site={{ rack.area.site.id }}&area={{ rack.area.id }}">Back</a>
+            <a class="btn btn-ghost" href="{% url 'organization_home' %}?site={{ rack.area.site.id }}&area={{ rack.area.id }}">Back</a>
         </div>
         <div style="margin-top:0.75rem;">
             <div class="muted">Height</div>

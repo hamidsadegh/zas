@@ -1,20 +1,17 @@
-<div class="card org-top-card" id="org-card">
-    <div>
-        <div class="pill" style="display:inline-block; margin-bottom:0.35rem;">Organization</div>
+<div class="card org-hero" id="org-card">
+    <div class="org-hero__meta">
+        <span class="chip">Organization</span>
         {% if organization %}
-            <h3 style="margin:0;">{{ organization.name }}</h3>
-            {% if organization.description %}
-                <div class="muted" style="margin-top:0.35rem; line-height:1.5;">{{ organization.description }}</div>
-            {% else %}
-                <div class="muted" style="margin-top:0.35rem;">No description provided.</div>
-            {% endif %}
-            <div class="muted" style="font-size:0.85rem; margin-top:0.5rem;">Managed centrally in admin.</div>
+            <h2>{{ organization.name }}</h2>
+            <p class="muted">{{ organization.description|default:"No description provided." }}</p>
+            <p class="muted fine-print no-margin">Managed centrally in admin.</p>
         {% else %}
-            <p class="muted" style="margin:0;">No organization found. Create one in the admin interface to begin.</p>
+            <p class="muted no-margin">No organization found. Create one in the admin interface to begin.</p>
         {% endif %}
     </div>
-    <div class="muted" style="text-align:right; font-size:0.9rem;">
-        <div style="font-weight:600;">Hierarchy</div>
-        <div>Organization → Sites → Areas → Racks</div>
+    <div class="org-hero__aside muted">
+        <div class="chip subtle">Hierarchy</div>
+        <div class="hierarchy">Organization → Sites → Areas → Racks</div>
+        <div class="hint">Navigate below to build your topology.</div>
     </div>
 </div>
