@@ -21,6 +21,7 @@ __all__ = (
     "DeviceRole",
     "DeviceModule",
     "DeviceRuntimeStatus",
+    "DeviceStackMember",
 )
 
 
@@ -435,6 +436,39 @@ class DeviceRuntimeStatus(models.Model):
 
     def __str__(self):
         return f"Runtime status for {self.device.name}"
+
+
+class DeviceStackMember(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    device = models.ForeignKey(
+        Device,
+        on_delete=models.CASCADE,
+        related_name="stack_members",
+        null=True,
+        blank=True,
+    )
+    switch_number = models.PositiveSmallIntegerField()
+    role = models.CharField(
+        max_length=16,
+        choices=DeviceStackRoleChoices.CHOICES,
+        default=DeviceStackRoleChoices.UNKNOWN,
+    )
+    mac_address = models.CharField(max_length=17)
+    priority = models.PositiveSmallIntegerField(null=True, blank=True)
+    version = models.CharField(max_length=50, null=True, blank=True)
+    state = models.CharField(
+        max_length=16,
+        choices=DeviceStackStateChoices.CHOICES,
+        default=DeviceStackStateChoices.UNKNOWN,
+    )
+
+    class Meta:
+        unique_together = ("device", "switch_number")
+        ordering = ("switch_number",)
+
+    def __str__(self):
+        device_name = self.device.name if self.device else "Unassigned device"
+        return f"{device_name} / member {self.switch_number}"
 
 
 def update_rack_occupied_units(rack_id: Optional[uuid.UUID]):

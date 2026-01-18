@@ -12,6 +12,7 @@ from .device import (
     DeviceRole,
     DeviceModule,
     DeviceRuntimeStatus,
+    DeviceStackMember,
 )
 from .interface import Interface
 
@@ -31,5 +32,6 @@ __all__ = [
     "DeviceModule",
     "DeviceConfiguration",
     "DeviceRuntimeStatus",
+    "DeviceStackMember",
     "Tag",
 ]

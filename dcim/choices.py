@@ -223,6 +223,36 @@ class DeviceAirflowChoices(ChoiceSet):
     ]
 
 
+class DeviceStackRoleChoices(ChoiceSet):
+    ACTIVE = 'active'
+    STANDBY = 'standby'
+    MASTER = 'master'
+    MEMBER = 'member'
+    UNKNOWN = 'unknown'
+
+    CHOICES = (
+        (ACTIVE, _('Active')),
+        (STANDBY, _('Standby')),
+        (MASTER, _('Master')),
+        (MEMBER, _('Member')),
+        (UNKNOWN, _('Unknown')),
+    )
+
+
+class DeviceStackStateChoices(ChoiceSet):
+    READY = 'ready'
+    PROVISIONED = 'provisioned'
+    REMOVED = 'removed'
+    UNKNOWN = 'unknown'
+
+    CHOICES = (
+        (READY, _('Ready')),
+        (PROVISIONED, _('Provisioned')),
+        (REMOVED, _('Removed')),
+        (UNKNOWN, _('Unknown')),
+    )
+
+
 #
 # Modules
 #

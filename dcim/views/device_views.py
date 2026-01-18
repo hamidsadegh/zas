@@ -329,6 +329,7 @@ class DeviceDetailView(LoginRequiredMixin, DetailView):
             context["latest_config"] = None
             context["latest_config_preview"] = ""
         context["available_tags"] = Tag.objects.all().order_by("name")
+        context["stack_members"] = device.stack_members.order_by("switch_number")
         return context
 
 

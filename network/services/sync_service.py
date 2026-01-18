@@ -10,11 +10,14 @@ from dcim.models import (
     DeviceConfiguration,
     DeviceModule,
     DeviceRuntimeStatus,
+    DeviceStackMember,
     Interface,
     VLAN,
 )
 from dcim.choices import (
     DevicePlatformChoices,
+    DeviceStackRoleChoices,
+    DeviceStackStateChoices,
     InterfaceStatusChoices,
     InterfaceKindChoices,
     InterfaceModeChoices,
@@ -36,6 +39,7 @@ class SyncService:
         self.IF_TRANSCEIVER_CMD = cli.IF_TRANSCEIVER_CMD
         self.PORTCHANNEL_SUMMARY_CMD = cli.PORTCHANNEL_SUMMARY_ISO_CMD
         self.RUNNING_CONFIG_CMD = cli.RUNNING_CONFIG_CMD
+        self.STACK_SWITCH_CMD = cli.STACK_SWITCH_CMD
 
     # =================================================
     # PUBLIC API
@@ -48,6 +52,11 @@ class SyncService:
             is_nxos = bool(
                 device.device_type
                 and device.device_type.platform == DevicePlatformChoices.NX_OS
+            )
+            is_ios_stack = bool(
+                device.device_type
+                and device.device_type.platform
+                in (DevicePlatformChoices.IOS, DevicePlatformChoices.IOS_XE)
             )
             if is_nxos:
                 self.PORTCHANNEL_SUMMARY_CMD = cli.PORTCHANNEL_SUMMARY_NXOS_CMD
@@ -65,6 +74,8 @@ class SyncService:
                         self.IF_IP_BRIEF_CMD: ssh.run_command(self.IF_IP_BRIEF_CMD),
                         self.PORTCHANNEL_SUMMARY_CMD: ssh.run_command(self.PORTCHANNEL_SUMMARY_CMD),
                     }
+                    if is_ios_stack:
+                        results[self.STACK_SWITCH_CMD] = ssh.run_command(self.STACK_SWITCH_CMD)
                     if is_nxos:
                         results[self.IF_TRANSCEIVER_CMD] = ssh.run_command(
                             self.IF_TRANSCEIVER_CMD
@@ -105,6 +116,9 @@ class SyncService:
                     error_message=cfg.get("error"),
                     config_text=cfg.get("raw", "") if not cfg.get("error") else "",
                 )
+
+            if is_ios_stack and self.STACK_SWITCH_CMD in results:
+                self._apply_stack_members(device, results[self.STACK_SWITCH_CMD])
 
             return {"device": device, "success": True}
 
@@ -322,6 +336,106 @@ class SyncService:
                 }
             )
         return results
+
+    def _apply_stack_members(self, device: Device, result: dict):
+        members = self._parse_stack_members(result)
+        seen_numbers = []
+        for member in members:
+            switch_number = member.get("switch_number")
+            if switch_number is None:
+                continue
+            seen_numbers.append(switch_number)
+            DeviceStackMember.objects.update_or_create(
+                device=device,
+                switch_number=switch_number,
+                defaults={
+                    "role": member.get("role", DeviceStackRoleChoices.UNKNOWN),
+                    "mac_address": member.get("mac_address", ""),
+                    "priority": member.get("priority"),
+                    "version": member.get("version"),
+                    "state": member.get("state", DeviceStackStateChoices.UNKNOWN),
+                },
+            )
+        if seen_numbers:
+            device.stack_members.exclude(switch_number__in=seen_numbers).delete()
+
+    def _parse_stack_members(self, result: dict) -> list[dict]:
+        parsed = result.get("parsed")
+        entries: list[dict] = []
+        if parsed:
+            entries = self._parse_stack_from_parsed(parsed)
+        if not entries:
+            raw = result.get("raw", "") or ""
+            entries = self._parse_stack_from_raw(raw)
+        return entries
+
+    def _parse_stack_from_parsed(self, parsed) -> list[dict]:
+        entries: list[dict] = []
+        if isinstance(parsed, dict):
+            parsed = [parsed]
+        if not isinstance(parsed, list):
+            return entries
+        for entry in parsed:
+            if not isinstance(entry, dict):
+                continue
+            switch_num = entry.get("switch") or entry.get("switch_number")
+            try:
+                switch_num = int(str(switch_num).strip())
+            except (TypeError, ValueError):
+                continue
+            role = self._normalize_stack_role(entry.get("role"))
+            state = self._normalize_stack_state(entry.get("state"))
+            mac = entry.get("mac") or entry.get("mac_address") or ""
+            priority = entry.get("priority")
+            try:
+                priority = int(priority) if priority is not None else None
+            except (TypeError, ValueError):
+                priority = None
+            entries.append(
+                {
+                    "switch_number": switch_num,
+                    "role": role,
+                    "mac_address": mac,
+                    "priority": priority,
+                    "version": entry.get("version"),
+                    "state": state,
+                }
+            )
+        return entries
+
+    def _parse_stack_from_raw(self, raw: str) -> list[dict]:
+        entries: list[dict] = []
+        for line in raw.splitlines():
+            if not line.strip():
+                continue
+            if "switch#" in line.lower() or line.startswith("---"):
+                continue
+            m = re.match(
+                r"^\*?\s*(\d+)\s+([A-Za-z]+)\s+([0-9a-fA-F.]+)\s+(\d+)\s+(\S+)\s+([A-Za-z]+)",
+                line.strip(),
+            )
+            if not m:
+                continue
+            switch_number = int(m.group(1))
+            role_raw = m.group(2)
+            mac = m.group(3)
+            try:
+                priority = int(m.group(4))
+            except ValueError:
+                priority = None
+            version = m.group(5)
+            state_raw = m.group(6)
+            entries.append(
+                {
+                    "switch_number": switch_number,
+                    "role": self._normalize_stack_role(role_raw),
+                    "mac_address": mac,
+                    "priority": priority,
+                    "version": version,
+                    "state": self._normalize_stack_state(state_raw),
+                }
+            )
+        return entries
 
     def _format_transceiver_name(self, interface: str | None, module_type: str | None, serial: str | None) -> str:
         if interface:
@@ -675,3 +789,27 @@ class SyncService:
     def _parse_image_from_text(raw: str):
         m = re.search(r"\bVersion\s+([0-9A-Za-z().-]+)", raw or "")
         return m.group(1) if m else None
+
+    @staticmethod
+    def _normalize_stack_role(role: str | None) -> str:
+        value = (role or "").strip().lower()
+        if value in {"active"}:
+            return DeviceStackRoleChoices.ACTIVE
+        if value in {"standby"}:
+            return DeviceStackRoleChoices.STANDBY
+        if value in {"master"}:
+            return DeviceStackRoleChoices.MASTER
+        if value in {"member"}:
+            return DeviceStackRoleChoices.MEMBER
+        return DeviceStackRoleChoices.UNKNOWN
+
+    @staticmethod
+    def _normalize_stack_state(state: str | None) -> str:
+        value = (state or "").strip().lower()
+        if value == "ready":
+            return DeviceStackStateChoices.READY
+        if "provision" in value:
+            return DeviceStackStateChoices.PROVISIONED
+        if "remove" in value:
+            return DeviceStackStateChoices.REMOVED
+        return DeviceStackStateChoices.UNKNOWN
