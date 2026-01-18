@@ -13,6 +13,7 @@ from dcim.models.vendor import Vendor
 from dcim.models.site import Site
 from dcim.models.tag import Tag
 import uuid
+from typing import Optional, Iterable
 
 __all__ = (
     "Device",
@@ -354,11 +355,34 @@ class Device(models.Model):
             raise ValidationError(
                 {"rack": "Rack must belong to the same area as the device."}
             )
+        if self.rack and self.position is not None:
+            occupied = Device.objects.filter(
+                rack=self.rack, position=self.position
+            ).exclude(pk=self.pk).exists()
+            if occupied:
+                raise ValidationError(
+                    {"position": _("This rack unit is already occupied in the selected rack.")}
+                )
         if self.device_type and not self.device_type.platform:
             raise ValidationError(
                 {"device_type": "Device type must define a platform for automation."}
             )
     
+    def save(self, *args, **kwargs):
+        previous_rack_id = None
+        if self.pk:
+            previous_rack_id = Device.objects.filter(pk=self.pk).values_list("rack_id", flat=True).first()
+        super().save(*args, **kwargs)
+        racks_to_update = {previous_rack_id, self.rack_id}
+        for rack_id in [r for r in racks_to_update if r]:
+            update_rack_occupied_units(rack_id)
+
+    def delete(self, *args, **kwargs):
+        rack_id = self.rack_id
+        super().delete(*args, **kwargs)
+        if rack_id:
+            update_rack_occupied_units(rack_id)
+
 
 class DeviceModule(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -411,3 +435,20 @@ class DeviceRuntimeStatus(models.Model):
 
     def __str__(self):
         return f"Runtime status for {self.device.name}"
+
+
+def update_rack_occupied_units(rack_id: Optional[uuid.UUID]):
+    """
+    Recompute and persist the set of occupied rack units for a given rack.
+    Stored as a list of numeric positions to keep the Rack.occupied_units field in sync.
+    """
+    if not rack_id:
+        return
+    positions: Iterable = (
+        Device.objects.filter(rack_id=rack_id)
+        .exclude(position__isnull=True)
+        .values_list("position", flat=True)
+    )
+    Rack.objects.filter(id=rack_id).update(
+        occupied_units=[float(pos) for pos in positions]
+    )

@@ -228,6 +228,13 @@ class Rack(RackBase):
         blank=True,
         null=True
     )
+    occupied_units = models.JSONField(
+        default=list,
+        blank=True,
+        editable=False,
+        verbose_name=_('occupied units'),
+        help_text=_('List of rack unit positions currently assigned to devices')
+    )
 
     clone_fields = (
         'area', 'status', 'role', 'form_factor', 'width', 'airflow', 'u_height', 'desc_units',

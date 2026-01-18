@@ -80,6 +80,7 @@ class RackAdmin(admin.ModelAdmin):
     list_display = ("name", "area", "u_height", "description")
     list_filter = ("area",)
     search_fields = ("name",)
+    readonly_fields = ("occupied_units",)
 
 
 # -----------------------
