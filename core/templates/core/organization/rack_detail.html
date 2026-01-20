@@ -113,6 +113,16 @@
     border-radius: 6px;
     background: #fff;
 }
+.stack-images {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    width: 100%;
+}
+.stack-images img {
+    width: 100%;
+    height: auto;
+}
 .legend {
     display: flex;
     gap: 0.5rem;
@@ -201,11 +211,26 @@ main {
                                             {{ row.device.device_type.model|default:"" }}
                                             {% if row.device.role %} · {{ row.device.role.name }}{% endif %}
                                         </div>
-                                        <div class="muted" style="font-size:0.85rem;">Spans {{ row.height }}U</div>
-                                        {% if row.device.device_type.front_image %}
-                                            <img src="{{ row.device.device_type.front_image.url }}" alt="{{ row.device.name }} front" class="device-img">
-                                        {% elif row.device.device_type.front_svg %}
-                                            <img src="{{ row.device.device_type.front_svg.url }}" alt="{{ row.device.name }} front" class="device-img">
+                                        <div class="muted" style="font-size:0.85rem;">Spans {{ row.height }}U{% if row.stack_count %} · Stack {{ row.stack_count }}{% endif %}</div>
+                                        {% if row.stack_count and row.stack_count > 1 %}
+                                            <div class="stack-images">
+                                                {% for num in row.stack_range %}
+                                                    <div style="position:relative;">
+                                                        <span class="pill" style="position:absolute; top:6px; left:6px; padding:0.15rem 0.4rem; font-size:0.75rem;">#{{ num }}</span>
+                                                    {% if row.device.device_type.front_image %}
+                                                        <img src="{{ row.device.device_type.front_image.url }}" alt="{{ row.device.name }} front" class="device-img">
+                                                    {% elif row.device.device_type.front_svg %}
+                                                        <img src="{{ row.device.device_type.front_svg.url }}" alt="{{ row.device.name }} front" class="device-img">
+                                                    {% endif %}
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}
+                                            {% if row.device.device_type.front_image %}
+                                                <img src="{{ row.device.device_type.front_image.url }}" alt="{{ row.device.name }} front" class="device-img">
+                                            {% elif row.device.device_type.front_svg %}
+                                                <img src="{{ row.device.device_type.front_svg.url }}" alt="{{ row.device.name }} front" class="device-img">
+                                            {% endif %}
                                         {% endif %}
                                     </div>
                                     {% endif %}
@@ -230,13 +255,30 @@ main {
                                             {{ row.device.device_type.model|default:"" }}
                                             {% if row.device.role %} · {{ row.device.role.name }}{% endif %}
                                         </div>
-                                        <div class="muted" style="font-size:0.85rem;">Spans {{ row.height }}U</div>
-                                        {% if row.device.device_type.rear_image %}
-                                            <img src="{{ row.device.device_type.rear_image.url }}" alt="{{ row.device.name }} rear" class="device-img">
-                                        {% elif row.device.device_type.front_image %}
-                                            <img src="{{ row.device.device_type.front_image.url }}" alt="{{ row.device.name }} front" class="device-img">
-                                        {% elif row.device.device_type.front_svg %}
-                                            <img src="{{ row.device.device_type.front_svg.url }}" alt="{{ row.device.name }} front" class="device-img">
+                                        <div class="muted" style="font-size:0.85rem;">Spans {{ row.height }}U{% if row.stack_count %} · Stack {{ row.stack_count }}{% endif %}</div>
+                                        {% if row.stack_count and row.stack_count > 1 %}
+                                            <div class="stack-images">
+                                                {% for num in row.stack_range %}
+                                                    <div style="position:relative;">
+                                                        <span class="pill" style="position:absolute; top:6px; left:6px; padding:0.15rem 0.4rem; font-size:0.75rem;">#{{ num }}</span>
+                                                    {% if row.device.device_type.rear_image %}
+                                                        <img src="{{ row.device.device_type.rear_image.url }}" alt="{{ row.device.name }} rear" class="device-img">
+                                                    {% elif row.device.device_type.front_image %}
+                                                        <img src="{{ row.device.device_type.front_image.url }}" alt="{{ row.device.name }} front" class="device-img">
+                                                    {% elif row.device.device_type.front_svg %}
+                                                        <img src="{{ row.device.device_type.front_svg.url }}" alt="{{ row.device.name }} front" class="device-img">
+                                                    {% endif %}
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}
+                                            {% if row.device.device_type.rear_image %}
+                                                <img src="{{ row.device.device_type.rear_image.url }}" alt="{{ row.device.name }} rear" class="device-img">
+                                            {% elif row.device.device_type.front_image %}
+                                                <img src="{{ row.device.device_type.front_image.url }}" alt="{{ row.device.name }} front" class="device-img">
+                                            {% elif row.device.device_type.front_svg %}
+                                                <img src="{{ row.device.device_type.front_svg.url }}" alt="{{ row.device.name }} front" class="device-img">
+                                            {% endif %}
                                         {% endif %}
                                     </div>
                                     {% endif %}

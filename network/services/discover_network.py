@@ -156,7 +156,7 @@ class NetworkDiscoveryService:
             # -------------------------------
             # Case C: new device
             # -------------------------------
-            c.classified = True
+            c.classified = False  # keep as unclassified until manual/auto assignment
             c.accepted = None  # pending review
             c.save(update_fields=["classified", "accepted"])
             new += 1

@@ -474,15 +474,33 @@ class DeviceStackMember(models.Model):
 def update_rack_occupied_units(rack_id: Optional[uuid.UUID]):
     """
     Recompute and persist the set of occupied rack units for a given rack.
-    Stored as a list of numeric positions to keep the Rack.occupied_units field in sync.
+    Accounts for stack members and device height by expanding occupied units per device.
     """
     if not rack_id:
         return
-    positions: Iterable = (
+    occupied = []
+    devices = (
         Device.objects.filter(rack_id=rack_id)
-        .exclude(position__isnull=True)
-        .values_list("position", flat=True)
+        .select_related("device_type")
     )
+    for dev in devices:
+        if dev.position is None:
+            continue
+        try:
+            start = int(dev.position)
+        except Exception:
+            continue
+        height = 1
+        if dev.device_type and dev.device_type.u_height:
+            try:
+                height = max(1, int(dev.device_type.u_height))
+            except Exception:
+                height = 1
+        stack_factor = dev.stack_members.count() if dev.is_stacked else 1
+        total_units = max(1, height * max(1, stack_factor))
+        for offset in range(total_units):
+            occupied.append(float(start + offset))
+
     Rack.objects.filter(id=rack_id).update(
-        occupied_units=[float(pos) for pos in positions]
+        occupied_units=occupied
     )

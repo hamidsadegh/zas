@@ -358,6 +358,14 @@ class SyncService:
             )
         if seen_numbers:
             device.stack_members.exclude(switch_number__in=seen_numbers).delete()
+        # Update device stacked flag and rack occupancy
+        is_stacked = len(seen_numbers) > 1
+        if device.is_stacked != is_stacked:
+            device.is_stacked = is_stacked
+            device.save(update_fields=["is_stacked"])
+        if device.rack_id:
+            from dcim.models.device import update_rack_occupied_units
+            update_rack_occupied_units(device.rack_id)
 
     def _parse_stack_members(self, result: dict) -> list[dict]:
         parsed = result.get("parsed")

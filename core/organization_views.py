@@ -203,8 +203,9 @@ class RackDetailView(TemplateView):
             dt = d.device_type
             if not dt:
                 continue
-            rack_power_watts += (dt.default_ac_power_supply_watts or 0)
-            rack_weight_kg += float(dt.weight or 0)
+            stack_factor = max(1, d.stack_members.count() if d.is_stacked else 1)
+            rack_power_watts += (dt.default_ac_power_supply_watts or 0) * stack_factor
+            rack_weight_kg += float(dt.weight or 0) * stack_factor
 
         context.update(
             {
@@ -230,7 +231,9 @@ class RackDetailView(TemplateView):
                 continue
             try:
                 start = int(device.position)  # lowest-numbered unit occupied
-                height = int(device.device_type.u_height or 1)
+                base_height = int(device.device_type.u_height or 1)
+                stack_factor = max(1, device.stack_members.count() if device.is_stacked else 1)
+                height = base_height * stack_factor
             except (TypeError, ValueError):
                 continue
             if start < 1 or start > int(rack.u_height):
@@ -246,6 +249,7 @@ class RackDetailView(TemplateView):
                     "start": start,
                     "height": effective_height,
                     "head": head,
+                    "stack_count": stack_factor,
                 }
 
         units = []
@@ -258,6 +262,8 @@ class RackDetailView(TemplateView):
                     "device": block["device"] if is_head else None,
                     "height": block["height"] if is_head else None,
                     "render_height_px": (block["height"] * 36) if is_head else None,
+                    "stack_count": block["stack_count"] if is_head else None,
+                    "stack_range": range(1, block["stack_count"] + 1) if is_head and block.get("stack_count") else None,
                     "occupied": bool(block),
                 }
             )
