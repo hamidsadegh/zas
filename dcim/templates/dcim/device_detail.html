@@ -20,6 +20,26 @@
 .status-dot--ok { background: #22c55e; border-color: #16a34a; box-shadow: 0 0 6px rgba(34, 197, 94, 0.4); }
 .status-dot--down { background: #ef4444; border-color: #dc2626; box-shadow: 0 0 6px rgba(239, 68, 68, 0.4); }
 .status-dot--disabled { background: #d1d5db; border-color: #c4c9d4; box-shadow: none; opacity: 0.6; }
+.loading-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+    visibility: hidden;
+}
+.loading-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: #ffffff;
+    animation: pulse 1s infinite ease-in-out;
+}
+.loading-dots span:nth-child(2) { animation-delay: 0.1s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.2s; }
+@keyframes pulse {
+    0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+    40% { opacity: 1; transform: scale(1.1); }
+}
 .stack-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .stack-table th, .stack-table td { padding: 0.12rem 0.2rem; text-align: left; }
 .stack-table th { color: var(--muted); font-weight: 600; }
@@ -36,9 +56,13 @@
                 <p style="margin: 0; color: var(--muted);">{{ device.management_ip }}</p>
             </div>
             <div style="display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap;">
-                <form method="post" action="{% url 'network:device_sync' device.id %}" style="margin:0;">
+                <form method="post" action="{% url 'network:device_sync' device.id %}" style="margin:0;" id="sync-form">
                     {% csrf_token %}
-                    <button type="submit" class="copy-btn">Sync device</button>
+                    <button type="submit" class="copy-btn" id="sync-btn">Sync device
+                        <span class="loading-dots" id="sync-dots">
+                            <span></span><span></span><span></span>
+                        </span>
+                    </button>
                 </form>
                 <a href="{% url 'device_list' %}" class="back-link">← Back to device list</a>
             </div>
@@ -342,5 +366,17 @@
         }
     });
 })();
+// Sync button loading state
+document.addEventListener("DOMContentLoaded", function() {
+    const form = document.getElementById("sync-form");
+    const btn = document.getElementById("sync-btn");
+    const dots = document.getElementById("sync-dots");
+    if (form && btn && dots) {
+        form.addEventListener("submit", function() {
+            btn.setAttribute("disabled", "disabled");
+            dots.style.visibility = "visible";
+        });
+    }
+});
 </script>
 {% endblock %}

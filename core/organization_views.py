@@ -210,6 +210,7 @@ class RackDetailView(TemplateView):
         context.update(
             {
                 "rack": rack,
+                "back_url": self.request.META.get("HTTP_REFERER"),
                 "show_devices": show_devices,
                 "layout": layout,
                 "device_list": devices,

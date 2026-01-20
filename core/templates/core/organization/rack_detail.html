@@ -162,7 +162,13 @@ main {
                 <h2>{{ rack.name }}</h2>
                 <div class="muted">{{ rack.area.name }} · {{ rack.area.site.name }}</div>
             </div>
-            <a class="btn btn-ghost" href="{% url 'organization_home' %}?site={{ rack.area.site.id }}&area={{ rack.area.id }}">Back</a>
+            {% if back_url %}
+                <a class="btn btn-ghost" href="{{ back_url }}">Back</a>
+            {% elif request.META.HTTP_REFERER %}
+                <a class="btn btn-ghost" href="{{ request.META.HTTP_REFERER }}">Back</a>
+            {% else %}
+                <a class="btn btn-ghost" href="{% url 'organization_home' %}">Back</a>
+            {% endif %}
         </div>
         <div style="margin-top:0.75rem;">
             <div class="muted">Height</div>
