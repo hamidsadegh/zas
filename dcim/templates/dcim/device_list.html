@@ -95,23 +95,23 @@
                         <div class="reachability">
                             {% with ping_enabled=reachability_checks.ping %}
                             <span class="reachability-dot {% if not ping_enabled %}disabled{% elif device.runtime.reachable_ping %}ok{% else %}fail{% endif %}"
-                                  title="{% if ping_enabled %}Ping reachable{% else %}Ping check disabled{% endif %}"
-                                  aria-label="{% if ping_enabled %}Ping reachable: {% if device.runtime.reachable_ping %}yes{% else %}no{% endif %}{% else %}Ping check disabled{% endif %}"></span>
-                            {% endwith %}
-                            {% with snmp_enabled=reachability_checks.snmp %}
-                            <span class="reachability-dot {% if not snmp_enabled %}disabled{% elif device.runtime.reachable_snmp %}ok{% else %}fail{% endif %}"
-                                  title="{% if snmp_enabled %}SNMP reachable{% else %}SNMP check disabled{% endif %}"
-                                  aria-label="{% if snmp_enabled %}SNMP reachable: {% if device.runtime.reachable_snmp %}yes{% else %}no{% endif %}{% else %}SNMP check disabled{% endif %}"></span>
+                                  title="Ping"
+                                  aria-label="Ping"></span>
                             {% endwith %}
                             {% with ssh_enabled=reachability_checks.ssh %}
                             <span class="reachability-dot {% if not ssh_enabled %}disabled{% elif device.runtime.reachable_ssh %}ok{% else %}fail{% endif %}"
-                                  title="{% if ssh_enabled %}SSH reachable{% else %}SSH check disabled{% endif %}"
-                                  aria-label="{% if ssh_enabled %}SSH reachable: {% if device.runtime.reachable_ssh %}yes{% else %}no{% endif %}{% else %}SSH check disabled{% endif %}"></span>
+                                  title="SSH"
+                                  aria-label="SSH"></span>
+                            {% endwith %}
+                            {% with snmp_enabled=reachability_checks.snmp %}
+                            <span class="reachability-dot {% if not snmp_enabled %}disabled{% elif device.runtime.reachable_snmp %}ok{% else %}fail{% endif %}"
+                                  title="SNMP"
+                                  aria-label="SNMP"></span>
                             {% endwith %}
                             {% with netconf_enabled=reachability_checks.netconf %}
                             <span class="reachability-dot {% if not netconf_enabled %}disabled{% elif device.runtime.reachable_netconf %}ok{% else %}fail{% endif %}"
-                                  title="{% if netconf_enabled %}Netconf reachable{% else %}Netconf check disabled{% endif %}"
-                                  aria-label="{% if netconf_enabled %}Netconf reachable: {% if device.runtime.reachable_netconf %}yes{% else %}no{% endif %}{% else %}Netconf check disabled{% endif %}"></span>
+                                  title="Netconf"
+                                  aria-label="Netconf"></span>
                             {% endwith %}
                         </div>
                     </td>
