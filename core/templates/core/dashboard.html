@@ -236,14 +236,14 @@ main {
             <a class="link-btn" href="{% url 'device_list' %}">View devices</a>
         </div>
         <div class="card">
-            <h4>Organization (Sites & Areas)</h4>
+            <h4>Organization (Sites & Areas & Racks)</h4>
             <p>Visualize geographic or logical distribution.</p>
             <a class="link-btn" href="{% url 'organization_home' %}">Browse areas</a>
         </div>
         <div class="card">
-            <h4>Racks</h4>
-            <p>Track rack capacity and hosted devices.</p>
-            <a class="link-btn" href="{% url 'rack_list' %}">Open rack view</a>
+            <h4>Discovery</h4>
+            <p>Review newly discovered devices and promote them into DCIM.</p>
+            <a class="link-btn" href="{% url 'network:discovery_dashboard' %}">Open discovery</a>
         </div>
         <div class="card">
             <h4>System Settings</h4>

@@ -20,11 +20,16 @@ class Command(BaseCommand):
             "--site-id",
             help="Site UUID (automation / unambiguous)",
         )
+        parser.add_argument(
+            "--cidr",
+            help="Scan a single CIDR for the given site (overrides configured ranges)",
+        )
 
     def handle(self, *args, **options):
         site_id = options.get("site_id")
         site_name = options.get("site")
         org_name = options.get("org")
+        cidr = options.get("cidr")
 
         if site_id:
             site = self._get_site_by_id(site_id)
@@ -39,14 +44,9 @@ class Command(BaseCommand):
             self.style.NOTICE(f"Starting discovery for site: {site}")
         )
 
-        if site_id:
-            service = NetworkDiscoveryService(site_id=site.id)
-        elif site_name:
-            service = NetworkDiscoveryService(site=site)
-        else:
-            raise CommandError("Invalid site specification")
+        service = NetworkDiscoveryService(site=site)
         
-        stats = service.run()
+        stats = service.run(cidr_override=cidr)
 
         self.stdout.write(
             self.style.SUCCESS(

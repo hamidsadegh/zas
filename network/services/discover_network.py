@@ -1,4 +1,5 @@
 import ipaddress
+from types import SimpleNamespace
 from django.db import transaction
 from django.utils import timezone
 from django.db.models import Q
@@ -35,8 +36,8 @@ class NetworkDiscoveryService:
     # Public API
     # -------------------------------------------------
 
-    def run(self) -> dict:
-        ranges = self._get_ranges()
+    def run(self, cidr_override: str | None = None) -> dict:
+        ranges = self._get_ranges(cidr_override)
 
         alive = 0
         for dr in ranges:
@@ -56,7 +57,15 @@ class NetworkDiscoveryService:
     # Discovery ranges
     # -------------------------------------------------
 
-    def _get_ranges(self):
+    def _get_ranges(self, cidr_override: str | None = None):
+        if cidr_override:
+            return [
+                SimpleNamespace(
+                    cidr=cidr_override,
+                    scan_method="tcp",
+                    scan_port=22,
+                )
+            ]
         return DiscoveryRange.objects.filter(
             site=self.site,
             enabled=True,
