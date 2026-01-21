@@ -38,8 +38,8 @@
 }
 
 .cli-modal__dialog {
-    width: min(1100px, 95vw);
-    height: min(700px, 90vh);
+    width: min(1400px, 98vw);
+    height: min(850px, 95vh);
     background: var(--surface);
     border-radius: 20px;
     box-shadow: var(--shadow);
@@ -78,6 +78,7 @@
 
 .terminal-wrapper {
     flex: 1;
+    height: 100%;
     border-radius: 16px;
     border: 1px solid var(--border);
     background: #0f172a;
@@ -102,6 +103,27 @@
 
 .terminal-container .xterm-viewport {
     overflow-y: auto !important;
+    height: 100% !important;
+}
+.cli-modal__dialog[data-fullscreen="true"] {
+    width: 100vw;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
+    border-radius: 0;
+}
+.fullscreen-toggle {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.fullscreen-toggle:hover {
+    color: var(--primary);
 }
 </style>
 
@@ -109,7 +131,10 @@
     <div class="cli-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="cli-modal-title">
         <div class="cli-modal__header">
             <h3 id="cli-modal-title" style="margin: 0;">SSH Terminal</h3>
-            <button type="button" class="cli-modal__close" aria-label="Close terminal" data-cli-close>&times;</button>
+            <div style="display:flex; align-items:center; gap:0.6rem;">
+                <button type="button" class="fullscreen-toggle" aria-label="Toggle fullscreen" id="cli-fullscreen-btn">⛶ Fullscreen</button>
+                <button type="button" class="cli-modal__close" aria-label="Close terminal" data-cli-close>&times;</button>
+            </div>
         </div>
         <div class="cli-modal__body">
             <div class="terminal-status" id="terminal-status" role="status" aria-live="polite">Click "Open CLI" to connect.</div>
@@ -133,6 +158,7 @@
     const dialog = modal ? modal.querySelector('.cli-modal__dialog') : null;
     const terminalStatus = document.getElementById('terminal-status');
     const terminalContainer = document.getElementById('device-terminal');
+    const fullscreenBtn = document.getElementById('cli-fullscreen-btn');
     const deviceId = '{{ device.id|escapejs }}';
     let term;
     let socket;
@@ -165,6 +191,10 @@
             if (!autoScroll && isAtBottom()) {
                 autoScroll = true;
             }
+        });
+        term.onKey(() => {
+            autoScroll = true;
+            term.scrollToBottom();
         });
         term.onData((data) => {
             if (socket && socket.readyState === WebSocket.OPEN) {
@@ -202,6 +232,7 @@
             fitAddon.fit();
             term.scrollToBottom();
             bindViewportScrollIntent();
+            sendResize();
         }
     }
 
@@ -236,26 +267,33 @@
         socket = new WebSocket(socketUrl);
         socket.addEventListener('open', () => {
             setStatus('Connected. Type commands to begin.');
+            sendResize();
             if (term) {
                 term.focus();
             }
         });
         socket.addEventListener('message', (event) => {
             let payload;
-            try {
-                payload = JSON.parse(event.data);
-            } catch (err) {
-                payload = { type: 'output', data: event.data };
+            const raw = event.data || '';
+            if (typeof raw === 'string' && raw.trim().startsWith('{')) {
+                try {
+                    payload = JSON.parse(raw);
+                } catch (err) {
+                    payload = null;
+                }
             }
-            if (!payload) {
+            if (payload && payload.type) {
+                if (payload.type === 'output' && payload.data && term) {
+                    writeOutput(payload.data);
+                } else if (payload.type === 'error') {
+                    setStatus(payload.message || 'SSH error.');
+                } else if (payload.type === 'status') {
+                    setStatus(payload.message || '');
+                }
                 return;
             }
-            if (payload.type === 'output' && payload.data && term) {
-                writeOutput(payload.data);
-            } else if (payload.type === 'error') {
-                setStatus(payload.message || 'SSH error.');
-            } else if (payload.type === 'status') {
-                setStatus(payload.message || '');
+            if (term) {
+                writeOutput(raw);
             }
         });
         socket.addEventListener('close', () => {
@@ -264,6 +302,17 @@
         socket.addEventListener('error', () => {
             setStatus('WebSocket error.');
         });
+    }
+
+    function sendResize() {
+        if (!socket || socket.readyState !== WebSocket.OPEN || !term) {
+            return;
+        }
+        socket.send(JSON.stringify({
+            type: 'resize',
+            cols: term.cols,
+            rows: term.rows,
+        }));
     }
 
     function disconnectSocket() {
@@ -286,6 +335,10 @@
             fitTerminal();
         }
         autoScroll = true;
+        if (dialog && fullscreenBtn) {
+            dialog.dataset.fullscreen = 'false';
+            fullscreenBtn.textContent = '⛶ Fullscreen';
+        }
         modal.dataset.open = 'true';
         modal.setAttribute('aria-hidden', 'false');
         fitTerminal();
@@ -302,8 +355,24 @@
         disconnectSocket();
     }
 
+    function toggleFullscreen() {
+        if (!dialog) return;
+        const isFullscreen = dialog.dataset.fullscreen === 'true';
+        if (isFullscreen) {
+            dialog.dataset.fullscreen = 'false';
+            fullscreenBtn.textContent = '⛶ Fullscreen';
+        } else {
+            dialog.dataset.fullscreen = 'true';
+            fullscreenBtn.textContent = 'Exit fullscreen';
+        }
+        fitTerminal();
+    }
+
     openButton.addEventListener('click', openModal);
     closeButton.addEventListener('click', closeModal);
+    if (fullscreenBtn) {
+        fullscreenBtn.addEventListener('click', toggleFullscreen);
+    }
     modal.addEventListener('click', (event) => {
         if (!dialog.contains(event.target)) {
             closeModal();

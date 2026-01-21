@@ -48,14 +48,19 @@ class SSHConsumer(AsyncWebsocketConsumer):
         device_id = self.scope["url_route"]["kwargs"]["device_id"]
         try:
             def _get_device_with_flags():
-                device = Device.objects.prefetch_related("tags").get(id=device_id)
+                device = (
+                    Device.objects.select_related("device_type")
+                    .prefetch_related("tags")
+                    .get(id=device_id)
+                )
                 is_aci = any(
                     tag.name.lower() == "aci_fabric"
                     for tag in device.tags.all()
                 )
-                return device, is_aci
+                platform = device.device_type.platform if device.device_type else None
+                return device, is_aci, platform
 
-            self.device, self.is_aci_fabric = await asyncio.to_thread(
+            self.device, self.is_aci_fabric, self.device_platform = await asyncio.to_thread(
                 _get_device_with_flags
             )
         except Device.DoesNotExist:
@@ -95,6 +100,7 @@ class SSHConsumer(AsyncWebsocketConsumer):
                 lambda: SSHSession(self._on_data),
                 term_type="xterm",
             )
+            await self._disable_paging()
 
         except Exception as exc:
             # Log full error server-side
@@ -106,6 +112,26 @@ class SSHConsumer(AsyncWebsocketConsumer):
             await self.send(json.dumps({"error": f"SSH connection failed: {exc}"}))
             await self.close()
 
+    async def _disable_paging(self):
+        if not hasattr(self, "channel") or not self.channel:
+            return
+        platform = getattr(self, "device_platform", None)
+        try:
+            await asyncio.sleep(0.3)
+        except Exception:
+            pass
+        try:
+            self.channel.write("\n")
+        except Exception:
+            return
+        # IOS/NX-OS paging off (fallback to generic if platform unknown)
+        if platform in ("ios", "iosxe", "nxos") or platform is None:
+            try:
+                self.channel.write("terminal length 0\n")
+                self.channel.write("terminal width 200\n")
+            except Exception:
+                pass
+
     def _on_data(self, data: str):
         # Called by asyncssh session when remote sends output
         asyncio.create_task(self.send(data))
@@ -114,6 +140,21 @@ class SSHConsumer(AsyncWebsocketConsumer):
         # Keystrokes from browser terminal
         if hasattr(self, "channel") and self.channel:
             if text_data:
+                payload = None
+                if text_data.lstrip().startswith("{"):
+                    try:
+                        payload = json.loads(text_data)
+                    except Exception:
+                        payload = None
+                if isinstance(payload, dict) and payload.get("type") == "resize":
+                    cols = int(payload.get("cols") or 0)
+                    rows = int(payload.get("rows") or 0)
+                    if cols > 0 and rows > 0:
+                        try:
+                            self.channel.change_terminal_size(cols, rows)
+                        except Exception:
+                            pass
+                    return
                 self.channel.write(text_data)
 
     async def disconnect(self, code):
