@@ -79,7 +79,9 @@
 .terminal-wrapper {
     flex: 1;
     height: 100%;
-    border-radius: 16px;
+    width: calc(100% - 16px);
+    margin-right: 16px;
+    border-radius: 0;
     border: 1px solid var(--border);
     background: #0f172a;
     overflow: hidden;
@@ -95,15 +97,21 @@
 
 .terminal-container .xterm {
     height: 100%;
+    width: 100%;
 }
 
 .terminal-container .xterm-screen {
     height: 100%;
+    box-sizing: border-box;
+    padding-right: 30px;
+    width: 100%;
 }
 
 .terminal-container .xterm-viewport {
     overflow-y: auto !important;
     height: 100% !important;
+    scrollbar-gutter: stable;
+    width: 100%;
 }
 .cli-modal__dialog[data-fullscreen="true"] {
     width: 100vw;
@@ -165,6 +173,7 @@
     let autoScroll = true;
     let fitAddon;
     let viewportEl;
+    let resizeObserver;
 
     if (!modal || !openButton || !closeButton || !dialog || !terminalStatus || !terminalContainer || !window.Terminal) {
         return;
@@ -202,6 +211,7 @@
             }
         });
         term.open(terminalContainer);
+        bindResizeObserver();
         bindViewportScrollIntent();
         fitTerminal();
     }
@@ -227,13 +237,106 @@
         viewportEl.dataset.scrollBound = 'true';
     }
 
+    function bindResizeObserver() {
+        if (resizeObserver || !window.ResizeObserver) {
+            return;
+        }
+        const target = terminalContainer.closest('.terminal-wrapper') || terminalContainer;
+        resizeObserver = new ResizeObserver(() => {
+            if (modal.dataset.open === 'true') {
+                scheduleFit();
+            }
+        });
+        resizeObserver.observe(target);
+    }
+
+    function getCellSize() {
+        if (term && term._core && term._core._renderService && term._core._renderService.dimensions) {
+            const dims = term._core._renderService.dimensions;
+            if (dims.actualCellWidth && dims.actualCellHeight) {
+                return { width: dims.actualCellWidth, height: dims.actualCellHeight };
+            }
+        }
+        return null;
+    }
+
+    function measureCellSizeFallback() {
+        if (!term) {
+            return null;
+        }
+        const fontSize = term.options.fontSize || 14;
+        const fontFamily = term.options.fontFamily || 'monospace';
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            return null;
+        }
+        ctx.font = `${fontSize}px ${fontFamily}`;
+        const metrics = ctx.measureText('W'.repeat(10));
+        const width = metrics.width ? metrics.width / 10 : null;
+        const height = fontSize * 1.2;
+        if (!width) {
+            return null;
+        }
+        return { width, height };
+    }
+
+    function computeDimensions() {
+        if (!terminalContainer) {
+            return null;
+        }
+        const target = terminalContainer.closest('.terminal-wrapper') || terminalContainer;
+        const rect = target.getBoundingClientRect();
+        if (!rect.width || !rect.height) {
+            return null;
+        }
+        const cell = getCellSize() || measureCellSizeFallback();
+        if (!cell) {
+            return null;
+        }
+        return {
+            cols: Math.max(2, Math.floor(rect.width / cell.width)),
+            rows: Math.max(2, Math.floor(rect.height / cell.height)),
+        };
+    }
+
     function fitTerminal() {
-        if (fitAddon && term) {
+        if (!term) {
+            return false;
+        }
+        let resized = false;
+        const dims = computeDimensions();
+        if (dims && dims.cols > 0 && dims.rows > 0) {
+            term.resize(dims.cols, dims.rows);
+            resized = true;
+        } else if (fitAddon && typeof fitAddon.proposeDimensions === 'function') {
+            const proposed = fitAddon.proposeDimensions();
+            if (proposed && proposed.cols > 0 && proposed.rows > 0) {
+                term.resize(proposed.cols, proposed.rows);
+                resized = true;
+            }
+        } else if (fitAddon) {
             fitAddon.fit();
+            resized = term.cols > 0 && term.rows > 0;
+        }
+        if (resized) {
             term.scrollToBottom();
             bindViewportScrollIntent();
-            sendResize();
         }
+        sendResize(dims);
+        return resized;
+    }
+
+    function scheduleFit() {
+        let attempts = 0;
+        const tryFit = () => {
+            const ok = fitTerminal();
+            attempts += 1;
+            if (!ok && attempts < 10) {
+                setTimeout(tryFit, 60);
+            }
+        };
+        requestAnimationFrame(tryFit);
     }
 
     function isAtBottom() {
@@ -267,7 +370,7 @@
         socket = new WebSocket(socketUrl);
         socket.addEventListener('open', () => {
             setStatus('Connected. Type commands to begin.');
-            sendResize();
+            scheduleFit();
             if (term) {
                 term.focus();
             }
@@ -304,14 +407,14 @@
         });
     }
 
-    function sendResize() {
+    function sendResize(dims) {
         if (!socket || socket.readyState !== WebSocket.OPEN || !term) {
             return;
         }
         socket.send(JSON.stringify({
             type: 'resize',
-            cols: term.cols,
-            rows: term.rows,
+            cols: (dims && dims.cols) || term.cols,
+            rows: (dims && dims.rows) || term.rows,
         }));
     }
 
@@ -341,7 +444,7 @@
         }
         modal.dataset.open = 'true';
         modal.setAttribute('aria-hidden', 'false');
-        fitTerminal();
+        scheduleFit();
         connectSocket();
         if (term) {
             term.focus();
