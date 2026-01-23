@@ -26,7 +26,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 2000;
+    z-index: 9999;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s ease;
@@ -35,6 +35,14 @@
 .cli-modal[data-open="true"] {
     opacity: 1;
     pointer-events: auto;
+}
+
+body.cli-modal-open {
+    overflow: hidden;
+}
+
+body.cli-modal-open > *:not(#cli-modal) {
+    pointer-events: none;
 }
 
 .cli-modal__dialog {
@@ -113,26 +121,6 @@
     scrollbar-gutter: stable;
     width: 100%;
 }
-.cli-modal__dialog[data-fullscreen="true"] {
-    width: 100vw;
-    height: 100vh;
-    max-width: 100vw;
-    max-height: 100vh;
-    border-radius: 0;
-}
-.fullscreen-toggle {
-    border: none;
-    background: transparent;
-    color: var(--muted);
-    font-weight: 700;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-}
-.fullscreen-toggle:hover {
-    color: var(--primary);
-}
 </style>
 
 <div id="cli-modal" class="cli-modal" aria-hidden="true">
@@ -140,7 +128,6 @@
         <div class="cli-modal__header">
             <h3 id="cli-modal-title" style="margin: 0;">SSH Terminal</h3>
             <div style="display:flex; align-items:center; gap:0.6rem;">
-                <button type="button" class="fullscreen-toggle" aria-label="Toggle fullscreen" id="cli-fullscreen-btn">⛶ Fullscreen</button>
                 <button type="button" class="cli-modal__close" aria-label="Close terminal" data-cli-close>&times;</button>
             </div>
         </div>
@@ -166,7 +153,6 @@
     const dialog = modal ? modal.querySelector('.cli-modal__dialog') : null;
     const terminalStatus = document.getElementById('terminal-status');
     const terminalContainer = document.getElementById('device-terminal');
-    const fullscreenBtn = document.getElementById('cli-fullscreen-btn');
     const deviceId = '{{ device.id|escapejs }}';
     let term;
     let socket;
@@ -400,7 +386,7 @@
             }
         });
         socket.addEventListener('close', () => {
-            setStatus('Connection closed.');
+            closeModal('Connection closed.');
         });
         socket.addEventListener('error', () => {
             setStatus('WebSocket error.');
@@ -438,12 +424,12 @@
             fitTerminal();
         }
         autoScroll = true;
-        if (dialog && fullscreenBtn) {
+        if (dialog) {
             dialog.dataset.fullscreen = 'false';
-            fullscreenBtn.textContent = '⛶ Fullscreen';
         }
         modal.dataset.open = 'true';
         modal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('cli-modal-open');
         scheduleFit();
         connectSocket();
         if (term) {
@@ -451,36 +437,16 @@
         }
     }
 
-    function closeModal() {
+    function closeModal(statusMessage) {
         modal.dataset.open = 'false';
         modal.setAttribute('aria-hidden', 'true');
-        setStatus('Session closed.');
+        document.body.classList.remove('cli-modal-open');
+        setStatus(statusMessage || 'Session closed.');
         disconnectSocket();
     }
 
-    function toggleFullscreen() {
-        if (!dialog) return;
-        const isFullscreen = dialog.dataset.fullscreen === 'true';
-        if (isFullscreen) {
-            dialog.dataset.fullscreen = 'false';
-            fullscreenBtn.textContent = '⛶ Fullscreen';
-        } else {
-            dialog.dataset.fullscreen = 'true';
-            fullscreenBtn.textContent = 'Exit fullscreen';
-        }
-        fitTerminal();
-    }
-
     openButton.addEventListener('click', openModal);
-    closeButton.addEventListener('click', closeModal);
-    if (fullscreenBtn) {
-        fullscreenBtn.addEventListener('click', toggleFullscreen);
-    }
-    modal.addEventListener('click', (event) => {
-        if (!dialog.contains(event.target)) {
-            closeModal();
-        }
-    });
+    closeButton.addEventListener('click', () => closeModal());
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && modal.dataset.open === 'true') {
             closeModal();
