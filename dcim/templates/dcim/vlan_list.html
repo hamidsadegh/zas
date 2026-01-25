@@ -10,6 +10,16 @@
 .filter-bar select,
 .filter-bar input { min-width: 150px; }
 .vlan-table { font-size: 0.92rem; }
+.vlan-table .table-actions .btn-ghost {
+    background: #f8fafc;
+    border-color: #d8e0ee;
+    color: var(--text);
+}
+.vlan-table .table-actions .btn-ghost:hover {
+    background: #eef2ff;
+    border-color: #cbd5f5;
+    color: var(--text);
+}
 {% endblock %}
 
 {% block content %}
@@ -69,7 +79,6 @@
                     <td>{{ vlan.site.name|default:"—" }}</td>
                     <td class="table-actions">
                         <a class="btn btn-ghost small" href="{% url 'vlan_edit' vlan.pk %}">Edit</a>
-                        <a class="btn btn-ghost small btn-danger" href="{% url 'vlan_delete' vlan.pk %}">Delete</a>
                     </td>
                 </tr>
                 {% empty %}
