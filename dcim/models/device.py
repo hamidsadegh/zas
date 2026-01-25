@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models import Q
+from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.translation import gettext_lazy as _
@@ -380,9 +382,27 @@ class Device(models.Model):
 
     def delete(self, *args, **kwargs):
         rack_id = self.rack_id
+        site_id = self.site_id
+        device_ip = self.management_ip
+        device_name = self.name
         super().delete(*args, **kwargs)
         if rack_id:
             update_rack_occupied_units(rack_id)
+        try:
+            DiscoveryCandidate = apps.get_model("network", "DiscoveryCandidate")
+        except LookupError:
+            return
+        if site_id and (device_ip or device_name):
+            match = Q()
+            if device_ip:
+                match |= Q(ip_address=device_ip)
+            if device_name:
+                match |= Q(hostname__iexact=device_name)
+            if match:
+                DiscoveryCandidate.objects.filter(site_id=site_id).filter(match).update(
+                    classified=False,
+                    accepted=None,
+                )
 
 
 class DeviceModule(models.Model):

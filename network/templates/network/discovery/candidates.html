@@ -25,6 +25,11 @@ main { max-width: 1250px; }
     align-items: flex-start;
     gap: 1rem;
 }
+.list-actions {
+    display: grid;
+    gap: 0.6rem;
+    justify-items: end;
+}
 .list-header h1 { margin: 0.2rem 0; }
 .muted { color: var(--muted); }
 .pill-group {
@@ -42,6 +47,26 @@ main { max-width: 1250px; }
 }
 .pill.warning { background: #fff7ed; color: #c2410c; }
 .pill.success { background: #ecfdf3; color: #065f46; }
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    border-radius: 12px;
+    padding: 0.6rem 1.1rem;
+    font-weight: 650;
+    cursor: pointer;
+    border: 1px solid #d8e0ee;
+    background: #f8fafc;
+    color: var(--text);
+    text-decoration: none;
+    transition: transform 0.12s ease, box-shadow 0.2s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.back-link:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 26px rgba(15, 29, 64, 0.12);
+}
+.back-link:active { transform: translateY(0); }
 .filters {
     display: flex;
     align-items: center;
@@ -191,6 +216,7 @@ main { max-width: 1250px; }
 @media (max-width: 900px) {
     .list-header { flex-direction: column; }
     .action-bar { flex-direction: column; align-items: flex-start; }
+    .list-actions { justify-items: start; }
 }
 {% endblock %}
 
@@ -202,11 +228,14 @@ main { max-width: 1250px; }
             <h1>Discovery Candidates</h1>
             <p class="muted">Manual review of discovered endpoints. Exact matches are read-only.</p>
         </div>
-        <div class="pill-group">
-            <span class="pill">Total {{ summary.total }}</span>
-            <span class="pill success">Exact {{ summary.exact }}</span>
-            <span class="pill warning">Mismatch {{ summary.mismatch }}</span>
-            <span class="pill">New {{ summary.new }}</span>
+        <div class="list-actions">
+            <div class="pill-group">
+                <span class="pill">Total {{ summary.total }}</span>
+                <span class="pill success">Exact {{ summary.exact }}</span>
+                <span class="pill warning">Mismatch {{ summary.mismatch }}</span>
+                <span class="pill">New {{ summary.new }}</span>
+            </div>
+            <a class="back-link" href="{% url 'network:discovery_dashboard' %}">← Back to Discovery</a>
         </div>
     </div>
 
