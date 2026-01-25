@@ -58,6 +58,8 @@ class SyncService:
                 and device.device_type.platform
                 in (DevicePlatformChoices.IOS, DevicePlatformChoices.IOS_XE)
             )
+
+            # Adjust Portchannel commands based on platform
             if is_nxos:
                 self.PORTCHANNEL_SUMMARY_CMD = cli.PORTCHANNEL_SUMMARY_NXOS_CMD
             else:
@@ -570,12 +572,6 @@ class SyncService:
                     "proto": proto,     # protocol status
                 }
                 ip_seen[name] = ip_map[name]
-            else:
-                ip_seen[name] = {
-                    "ip": None,
-                    "status": status,
-                    "proto": proto,
-                }
 
         # ---- port-channel ----
         for e in po_result.get("parsed", []) or []:
@@ -589,7 +585,7 @@ class SyncService:
 
                 
         # ---- create all interfaces ----
-        all_names = set(status_map) | set(desc_map) | set(ip_seen) | set(lag_map.values())
+        all_names = set(status_map) | set(ip_seen) | set(lag_map.values())
         iface_objs = {
             name: Interface.objects.get_or_create(device=device, name=name)[0]
             for name in all_names
