@@ -68,7 +68,8 @@
                 </div>
                 <span class="chip subtle">Area</span>
             </div>
-            <div class="stacked">
+            <div class="stacked card">
+                <h4 class="section-heading">Rename area</h4>
                 <form
                     method="post"
                     hx-post="{% url 'organization_area_update' selected_area.id %}"
@@ -78,28 +79,24 @@
                 >
                     {% csrf_token %}
                     <input type="hidden" name="site_id" value="{{ site.id }}">
-                    <label class="muted" for="id_area_name">Rename area</label>
                     <input id="id_area_name" name="name" class="input" value="{{ area_form.name.value|default:selected_area.name }}" required>
                     <textarea name="description" class="textarea">{{ area_form.description.value|default:selected_area.description }}</textarea>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Save</button>
+                        <button
+                            type="button"
+                            class="btn btn-danger small"
+                            hx-post="{% url 'organization_area_delete' selected_area.id %}"
+                            hx-confirm="Delete area '{{ selected_area.name }}'?"
+                            hx-target="#site-detail"
+                            hx-swap="innerHTML"
+                        >Delete</button>
                     </div>
-                </form>
-                <form
-                    method="post"
-                    hx-post="{% url 'organization_area_delete' selected_area.id %}"
-                    hx-confirm="Delete area '{{ selected_area.name }}'?"
-                    hx-target="#site-detail"
-                    hx-swap="innerHTML"
-                    class="form-actions"
-                >
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger small">Delete area</button>
                 </form>
             </div>
 
-            <div class="stacked">
-                <h4 class="section-heading">Add child area</h4>
+            <div class="stacked card">
+                <h4 class="section-heading">Add child area to: {{ selected_area.name }}</h4>
                 <form
                     method="post"
                     hx-post="{% url 'organization_area_create' %}"
@@ -118,7 +115,7 @@
                 </form>
             </div>
 
-            <div class="stacked">
+            <div class="stacked card">
                 <div class="section-title">
                     <h4>Racks</h4>
                     <span class="chip subtle">{{ racks|length }}</span>
