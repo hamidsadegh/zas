@@ -40,6 +40,7 @@ def home(request):
         connected=Count("id", filter=Q(status="connected")),
         down=Count("id", filter=Q(status="down")),
         disabled=Count("id", filter=Q(status="disabled")),
+        err_disabled=Count("id", filter=Q(status="err-disabled")),
         notconnected=Count("id", filter=Q(status="notconnected")),
     )
     interface_stats["up_connected"] = interface_stats.get("up", 0) + interface_stats.get("connected", 0)
@@ -68,4 +69,3 @@ def home(request):
         "top_vendors": top_vendors,
     }
     return render(request, "core/dashboard.html", context)
-

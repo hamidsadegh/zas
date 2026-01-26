@@ -174,11 +174,11 @@
         <nav>
             <a href="{% url 'dashboard' %}" {% if request.path == "/" or request.path|slice:":11" == '/dashboard/' %}class="active"{% endif %}>Dashboard</a>
             <a href="{% url 'device_list' %}" {% if request.path|slice:":9" == '/devices/' or request.path|slice:":13" == '/dcim/devices' %}class="active"{% endif %}>Devices</a>
+            <a href="{% url 'inventory' %}" {% if request.path|slice:":11" == '/inventory/' %}class="active"{% endif %}>Inventory</a>
+            <a href="{% url 'network:discovery_dashboard' %}" {% if request.path|slice:":11" == '/discovery/' %}class="active"{% endif %}>Discovery</a>
             <a href="{% url 'vlan_list' %}" {% if request.path|slice:":12" == '/dcim/vlans/' %}class="active"{% endif %}>VLANs</a>
             <a href="{% url 'ipam:index' %}" {% if request.path|slice:":6" == '/ipam/' %}class="active"{% endif %}>IPAM</a>
             <a href="{% url 'organization_home' %}" {% if request.path|slice:":13" == '/organization' %}class="active"{% endif %}>Organization</a>
-            <a href="{% url 'inventory' %}" {% if request.path|slice:":11" == '/inventory/' %}class="active"{% endif %}>Inventory</a>
-            <a href="{% url 'network:discovery_dashboard' %}" {% if request.path|slice:":11" == '/discovery/' %}class="active"{% endif %}>Discovery</a>
             <a href="{% url 'system_settings' %}" {% if request.path|slice:":18" == '/system-settings/' %}class="active"{% endif %}>Settings</a>
             <a href="/admin/" {% if request.path|slice:":7" == '/admin/' %}class="active"{% endif %}>Admin</a>
         </nav>

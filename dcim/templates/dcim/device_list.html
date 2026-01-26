@@ -64,6 +64,9 @@
                 {% endfor %}
             </select>
             <input type="hidden" name="sort" value="{{ sort_field }}">
+            {% if interface_status_filter %}
+                <input type="hidden" name="interface_status" value="{{ interface_status_filter }}">
+            {% endif %}
         </form>
     </div>
 
@@ -71,16 +74,16 @@
         <table class="device-table">
             <thead>
                 <tr>
-                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&sort={% if sort_field == 'name' %}-name{% elif sort_field == '-name' %}name{% else %}name{% endif %}">Device</a></th>
-                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&sort={% if sort_field == 'management_ip' %}-management_ip{% elif sort_field == '-management_ip' %}management_ip{% else %}management_ip{% endif %}">IP</a></th>
-                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&sort={% if sort_field == 'reachability' %}-reachability{% elif sort_field == '-reachability' %}reachability{% else %}reachability{% endif %}">Reachability</a></th>
-                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&sort={% if sort_field == 'status' %}-status{% elif sort_field == '-status' %}status{% else %}status{% endif %}">Status</a></th>
-                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&sort={% if sort_field == 'device_type__model' %}-device_type__model{% elif sort_field == '-device_type__model' %}device_type__model{% else %}device_type__model{% endif %}">Type</a></th>
-                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&sort={% if sort_field == 'serial_number' %}-serial_number{% elif sort_field == '-serial_number' %}serial_number{% else %}serial_number{% endif %}">Serial</a></th>
-                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&sort={% if sort_field == 'area__name' %}-area__name{% elif sort_field == '-area__name' %}area__name{% else %}area__name{% endif %}">Location</a></th>
-                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&sort={% if sort_field == 'rack__name' %}-rack__name{% elif sort_field == '-rack__name' %}rack__name{% else %}rack__name{% endif %}">Rack</a></th>
-                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&sort={% if sort_field == 'site__name' %}-site__name{% elif sort_field == '-site__name' %}site__name{% else %}site__name{% endif %}">Site</a></th>
-                <th class="nowrap"><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&sort={% if sort_field == 'image_version' %}-image_version{% elif sort_field == '-image_version' %}image_version{% else %}image_version{% endif %}">Image</a></th>
+                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&{% if interface_status_filter %}interface_status={{ interface_status_filter|urlencode }}&{% endif %}paginate_by={{ paginate_by }}&sort={% if sort_field == 'name' %}-name{% elif sort_field == '-name' %}name{% else %}name{% endif %}">Device</a></th>
+                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&{% if interface_status_filter %}interface_status={{ interface_status_filter|urlencode }}&{% endif %}paginate_by={{ paginate_by }}&sort={% if sort_field == 'management_ip' %}-management_ip{% elif sort_field == '-management_ip' %}management_ip{% else %}management_ip{% endif %}">IP</a></th>
+                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&{% if interface_status_filter %}interface_status={{ interface_status_filter|urlencode }}&{% endif %}paginate_by={{ paginate_by }}&sort={% if sort_field == 'reachability' %}-reachability{% elif sort_field == '-reachability' %}reachability{% else %}reachability{% endif %}">Reachability</a></th>
+                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&{% if interface_status_filter %}interface_status={{ interface_status_filter|urlencode }}&{% endif %}paginate_by={{ paginate_by }}&sort={% if sort_field == 'status' %}-status{% elif sort_field == '-status' %}status{% else %}status{% endif %}">Status</a></th>
+                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&{% if interface_status_filter %}interface_status={{ interface_status_filter|urlencode }}&{% endif %}paginate_by={{ paginate_by }}&sort={% if sort_field == 'device_type__model' %}-device_type__model{% elif sort_field == '-device_type__model' %}device_type__model{% else %}device_type__model{% endif %}">Type</a></th>
+                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&{% if interface_status_filter %}interface_status={{ interface_status_filter|urlencode }}&{% endif %}paginate_by={{ paginate_by }}&sort={% if sort_field == 'serial_number' %}-serial_number{% elif sort_field == '-serial_number' %}serial_number{% else %}serial_number{% endif %}">Serial</a></th>
+                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&{% if interface_status_filter %}interface_status={{ interface_status_filter|urlencode }}&{% endif %}paginate_by={{ paginate_by }}&sort={% if sort_field == 'area__name' %}-area__name{% elif sort_field == '-area__name' %}area__name{% else %}area__name{% endif %}">Location</a></th>
+                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&{% if interface_status_filter %}interface_status={{ interface_status_filter|urlencode }}&{% endif %}paginate_by={{ paginate_by }}&sort={% if sort_field == 'rack__name' %}-rack__name{% elif sort_field == '-rack__name' %}rack__name{% else %}rack__name{% endif %}">Rack</a></th>
+                <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&{% if interface_status_filter %}interface_status={{ interface_status_filter|urlencode }}&{% endif %}paginate_by={{ paginate_by }}&sort={% if sort_field == 'site__name' %}-site__name{% elif sort_field == '-site__name' %}site__name{% else %}site__name{% endif %}">Site</a></th>
+                <th class="nowrap"><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&{% if interface_status_filter %}interface_status={{ interface_status_filter|urlencode }}&{% endif %}paginate_by={{ paginate_by }}&sort={% if sort_field == 'image_version' %}-image_version{% elif sort_field == '-image_version' %}image_version{% else %}image_version{% endif %}">Image</a></th>
                 <th></th>
             </tr>
         </thead>
@@ -153,7 +156,7 @@
         <ul class="pagination">
             {% if page_obj.has_previous %}
                 <li>
-                    <a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if sort_field %}sort={{ sort_field }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&page={{ page_obj.previous_page_number }}">Previous</a>
+                    <a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if sort_field %}sort={{ sort_field }}&{% endif %}{% if interface_status_filter %}interface_status={{ interface_status_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&page={{ page_obj.previous_page_number }}">Previous</a>
                 </li>
             {% else %}
                 <li><span>Previous</span></li>
@@ -164,14 +167,14 @@
                     <li class="active"><span>{{ num }}</span></li>
                 {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
                     <li>
-                        <a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if sort_field %}sort={{ sort_field }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&page={{ num }}">{{ num }}</a>
+                        <a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if sort_field %}sort={{ sort_field }}&{% endif %}{% if interface_status_filter %}interface_status={{ interface_status_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&page={{ num }}">{{ num }}</a>
                     </li>
                 {% endif %}
             {% endfor %}
 
             {% if page_obj.has_next %}
                 <li>
-                    <a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if sort_field %}sort={{ sort_field }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&page={{ page_obj.next_page_number }}">Next</a>
+                    <a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if sort_field %}sort={{ sort_field }}&{% endif %}{% if interface_status_filter %}interface_status={{ interface_status_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&page={{ page_obj.next_page_number }}">Next</a>
                 </li>
             {% else %}
                 <li><span>Next</span></li>

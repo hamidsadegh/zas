@@ -21,6 +21,7 @@ from dcim.views.device_views import (
     device_configuration_history,
     device_configuration_diff,
     device_configuration_visual_diff,
+    err_disabled_interfaces,
 )
 
 
@@ -44,6 +45,11 @@ urlpatterns = [
         "devices/<uuid:device_id>/config/<uuid:config_id>/visual-diff/<uuid:other_id>/",
         device_configuration_visual_diff,
         name="device_configuration_visual_diff",
+    ),
+    path(
+        "interfaces/err-disabled/",
+        err_disabled_interfaces,
+        name="err_disabled_interfaces",
     ),
 
     # VLANs

@@ -9,10 +9,12 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.db.models import Case, IntegerField, Q, Value, When
+from dcim.choices import InterfaceStatusChoices
 from dcim.models import (
     Area,
     Device,
     DeviceConfiguration,
+    Interface,
     Rack,
     Tag,
     Site,
@@ -206,6 +208,14 @@ class DeviceListView(LoginRequiredMixin, ListView):
         if site != "all":
             queryset = queryset.filter(site_id=site)
 
+        interface_status = self.request.GET.get("interface_status", "").strip()
+        valid_interface_statuses = {choice[0] for choice in InterfaceStatusChoices.CHOICES}
+        if interface_status in valid_interface_statuses:
+            self.current_interface_status = interface_status
+            queryset = queryset.filter(interfaces__status=interface_status).distinct()
+        else:
+            self.current_interface_status = ""
+
         self.tag_choices = list(Tag.objects.all().order_by("name"))
         tag = self.request.GET.get("tag", "").strip()
         tag_ids = {str(tag_obj.id) for tag_obj in self.tag_choices}
@@ -274,6 +284,7 @@ class DeviceListView(LoginRequiredMixin, ListView):
         context['tag_choices'] = self.tag_choices
         context['tag_filter'] = getattr(self, "current_tag_filter", "")
         context['per_page_options'] = self.per_page_options
+        context['interface_status_filter'] = getattr(self, "current_interface_status", "")
         settings_obj = get_system_settings()
         context['reachability_checks'] = get_reachability_checks(settings_obj)
         return context
@@ -449,6 +460,68 @@ def device_interfaces(request, device_id):
         "per_page_options": PER_PAGE_OPTIONS,
     }
     return render(request, "dcim/interface_list.html", context)
+
+
+@login_required
+def err_disabled_interfaces(request):
+    search_query = request.GET.get("search", "").strip()
+    sort_field = request.GET.get("sort", "device__name").strip()
+
+    site_choices = [("all", "All Sites")]
+    for site in Site.objects.order_by("name"):
+        site_choices.append((str(site.id), site.name))
+    site_filter = request.GET.get("site", "all")
+    valid_site_keys = {choice[0] for choice in site_choices}
+    if site_filter not in valid_site_keys:
+        site_filter = "all"
+
+    interfaces = Interface.objects.select_related(
+        "device",
+        "device__site",
+    ).filter(status=InterfaceStatusChoices.ERR_DISABLED)
+
+    if site_filter != "all":
+        interfaces = interfaces.filter(device__site_id=site_filter)
+
+    if search_query:
+        interfaces = interfaces.filter(
+            Q(name__icontains=search_query)
+            | Q(description__icontains=search_query)
+            | Q(ip_address__icontains=search_query)
+            | Q(vlan_raw__icontains=search_query)
+            | Q(device__name__icontains=search_query)
+            | Q(device__management_ip__icontains=search_query)
+            | Q(device__site__name__icontains=search_query)
+        )
+
+    allowed_sort_fields = {
+        "device__name",
+        "device__management_ip",
+        "name",
+        "ip_address",
+        "status",
+        "device__site__name",
+    }
+    if sort_field.lstrip("-") not in allowed_sort_fields:
+        sort_field = "device__name"
+
+    interfaces = interfaces.order_by(sort_field)
+
+    paginate_by = _get_paginate_by(request, default=50)
+    paginator = Paginator(interfaces, paginate_by)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "interfaces": page_obj,
+        "search_query": search_query,
+        "sort_field": sort_field,
+        "paginate_by": paginate_by,
+        "per_page_options": PER_PAGE_OPTIONS,
+        "site_choices": site_choices,
+        "site_filter": site_filter,
+    }
+    return render(request, "dcim/err_disabled_interfaces.html", context)
 
 
 @login_required
