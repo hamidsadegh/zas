@@ -1,18 +1,16 @@
 # Docker Compose configuration file
 services:
   db:
-    image: mariadb:10.11
+    image: postgres:15-alpine
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: zas
-      MYSQL_USER: zasuser
-      MYSQL_PASSWORD: zas_pass
+      POSTGRES_DB: zas
+      POSTGRES_USER: zasuser
+      POSTGRES_PASSWORD: zas_pass
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - db_data:/var/lib/mysql
-      - ./db_init:/docker-entrypoint-initdb.d
+      - db_data:/var/lib/postgresql/data
 
   redis:
     image: redis:7-alpine
@@ -32,6 +30,8 @@ services:
       DATABASE_NAME: zas
       DATABASE_USER: zasuser
       DATABASE_PASSWORD: zas_pass
+      DATABASE_PORT: 5432
+      REDIS_URL: redis://redis:6379/1
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
     volumes:
@@ -58,6 +58,8 @@ services:
       DATABASE_NAME: zas
       DATABASE_USER: zasuser
       DATABASE_PASSWORD: zas_pass
+      DATABASE_PORT: 5432
+      REDIS_URL: redis://redis:6379/1
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
     volumes:
@@ -75,6 +77,8 @@ services:
       DATABASE_NAME: zas
       DATABASE_USER: zasuser
       DATABASE_PASSWORD: zas_pass
+      DATABASE_PORT: 5432
+      REDIS_URL: redis://redis:6379/1
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
     volumes:
