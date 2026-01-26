@@ -18,7 +18,7 @@ class VLANListView(LoginRequiredMixin, ListView):
     model = VLAN
     template_name = "dcim/vlan_list.html"
     context_object_name = "vlans"
-    paginate_by = 25
+    paginate_by = 50
     per_page_options = (10, 25, 50, 100)
 
     def get_paginate_by(self, queryset):
@@ -61,9 +61,18 @@ class VLANListView(LoginRequiredMixin, ListView):
             queryset = queryset.filter(q_objects)
 
         sort = self.request.GET.get("sort", "vlan_id")
-        allowed = {"vlan_id", "name", "subnet", "usage_area", "site__name"}
+        allowed = {
+            "vlan_id",
+            "name",
+            "subnet",
+            "gateway",
+            "usage_area",
+            "description",
+            "site__name",
+        }
         if sort.lstrip("-") in allowed:
             queryset = queryset.order_by(sort)
+        self._current_sort = sort
 
         return queryset
 
@@ -74,6 +83,7 @@ class VLANListView(LoginRequiredMixin, ListView):
         context["usage_area_filter"] = getattr(self, "_usage_area_filter", "")
         context["usage_area_choices"] = [("", "All usage areas")] + list(VLAN.USAGE_CHOICES)
         context["search_query"] = self.request.GET.get("q", "")
+        context["sort_field"] = getattr(self, "_current_sort", "vlan_id")
         context["per_page_options"] = self.per_page_options
         context["paginate_by_value"] = getattr(self, "_current_paginate_by", self.paginate_by)
         return context

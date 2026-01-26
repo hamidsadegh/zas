@@ -57,13 +57,13 @@
         <table class="vlan-table">
             <thead>
                 <tr>
-                    <th>VLAN ID</th>
-                    <th>Name</th>
-                    <th>Subnet</th>
-                    <th>Gateway</th>
-                    <th>Usage Area</th>
-                    <th>Description</th>
-                    <th>Site</th>
+                    <th><a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}site={{ site_filter }}{% if usage_area_filter %}&usage_area={{ usage_area_filter }}{% endif %}&paginate_by={{ paginate_by_value }}&sort={% if sort_field == 'vlan_id' %}-vlan_id{% elif sort_field == '-vlan_id' %}vlan_id{% else %}vlan_id{% endif %}">VLAN ID</a></th>
+                    <th><a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}site={{ site_filter }}{% if usage_area_filter %}&usage_area={{ usage_area_filter }}{% endif %}&paginate_by={{ paginate_by_value }}&sort={% if sort_field == 'name' %}-name{% elif sort_field == '-name' %}name{% else %}name{% endif %}">Name</a></th>
+                    <th><a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}site={{ site_filter }}{% if usage_area_filter %}&usage_area={{ usage_area_filter }}{% endif %}&paginate_by={{ paginate_by_value }}&sort={% if sort_field == 'subnet' %}-subnet{% elif sort_field == '-subnet' %}subnet{% else %}subnet{% endif %}">Subnet</a></th>
+                    <th><a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}site={{ site_filter }}{% if usage_area_filter %}&usage_area={{ usage_area_filter }}{% endif %}&paginate_by={{ paginate_by_value }}&sort={% if sort_field == 'gateway' %}-gateway{% elif sort_field == '-gateway' %}gateway{% else %}gateway{% endif %}">Gateway</a></th>
+                    <th><a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}site={{ site_filter }}{% if usage_area_filter %}&usage_area={{ usage_area_filter }}{% endif %}&paginate_by={{ paginate_by_value }}&sort={% if sort_field == 'usage_area' %}-usage_area{% elif sort_field == '-usage_area' %}usage_area{% else %}usage_area{% endif %}">Usage Area</a></th>
+                    <th><a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}site={{ site_filter }}{% if usage_area_filter %}&usage_area={{ usage_area_filter }}{% endif %}&paginate_by={{ paginate_by_value }}&sort={% if sort_field == 'description' %}-description{% elif sort_field == '-description' %}description{% else %}description{% endif %}">Description</a></th>
+                    <th><a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}site={{ site_filter }}{% if usage_area_filter %}&usage_area={{ usage_area_filter }}{% endif %}&paginate_by={{ paginate_by_value }}&sort={% if sort_field == 'site__name' %}-site__name{% elif sort_field == '-site__name' %}site__name{% else %}site__name{% endif %}">Site</a></th>
                     <th></th>
                 </tr>
             </thead>
@@ -107,7 +107,7 @@
         {% if is_paginated and page_obj %}
         <ul class="pagination">
             {% if page_obj.has_previous %}
-                <li><a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}site={{ site_filter }}&paginate_by={{ paginate_by_value }}&page={{ page_obj.previous_page_number }}">Previous</a></li>
+                <li><a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}site={{ site_filter }}{% if usage_area_filter %}&usage_area={{ usage_area_filter }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}&paginate_by={{ paginate_by_value }}&page={{ page_obj.previous_page_number }}">Previous</a></li>
             {% else %}
                 <li><span>Previous</span></li>
             {% endif %}
@@ -116,12 +116,12 @@
                 {% if page_obj.number == num %}
                     <li class="active"><span>{{ num }}</span></li>
                 {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
-                    <li><a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}site={{ site_filter }}&paginate_by={{ paginate_by_value }}&page={{ num }}">{{ num }}</a></li>
+                    <li><a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}site={{ site_filter }}{% if usage_area_filter %}&usage_area={{ usage_area_filter }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}&paginate_by={{ paginate_by_value }}&page={{ num }}">{{ num }}</a></li>
                 {% endif %}
             {% endfor %}
 
             {% if page_obj.has_next %}
-                <li><a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}site={{ site_filter }}&paginate_by={{ paginate_by_value }}&page={{ page_obj.next_page_number }}">Next</a></li>
+                <li><a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}site={{ site_filter }}{% if usage_area_filter %}&usage_area={{ usage_area_filter }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}&paginate_by={{ paginate_by_value }}&page={{ page_obj.next_page_number }}">Next</a></li>
             {% else %}
                 <li><span>Next</span></li>
             {% endif %}

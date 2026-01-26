@@ -8,7 +8,7 @@ from django.views.generic import ListView, DetailView
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import Case, IntegerField, Q, Value, When
 from dcim.models import (
     Area,
     Device,
@@ -23,7 +23,7 @@ from accounts.services.settings_service import get_reachability_checks, get_syst
 from openpyxl import Workbook
 
 PREVIEW_LIMIT = 10
-PER_PAGE_OPTIONS = (10, 25, 50, 100)
+PER_PAGE_OPTIONS = (10, 25, 50, 100, 200)
 
 
 def _natural_sort_key(value):
@@ -146,6 +146,11 @@ def _build_inventory_rows(search_query):
 
 
 def _sort_inventory_rows(rows, sort_field):
+    reverse = False
+    field = sort_field or "device_name"
+    if field.startswith("-"):
+        reverse = True
+        field = field[1:]
     sort_keys = {
         "device_name": lambda row: _natural_sort_key(row["device_name"]),
         "device_serial": lambda row: str(row["device_serial"]).lower(),
@@ -157,8 +162,8 @@ def _sort_inventory_rows(rows, sort_field):
         "module_serial": lambda row: str(row["module_serial"]).lower(),
         "module_description": lambda row: str(row["module_description"]).lower(),
     }
-    sort_key = sort_keys.get(sort_field, sort_keys["device_name"])
-    rows.sort(key=sort_key)
+    sort_key = sort_keys.get(field, sort_keys["device_name"])
+    rows.sort(key=sort_key, reverse=reverse)
     return rows
 
 # -----------------------
@@ -168,7 +173,7 @@ class DeviceListView(LoginRequiredMixin, ListView):
     model = Device
     template_name = "dcim/templates/dcim/device_list.html"
     context_object_name = "devices"
-    paginate_by = 25
+    paginate_by = 50
     per_page_options = (10, 25, 50, 100)
 
     def get_paginate_by(self, queryset):
@@ -225,8 +230,9 @@ class DeviceListView(LoginRequiredMixin, ListView):
                 | Q(site__organization__name__icontains=search)
             ).distinct()
 
-        sort = self.request.GET.get("sort", "name")
-        if sort.lstrip("-") in [
+        sort = self.request.GET.get("sort", "name").strip()
+        sort_field = sort.lstrip("-")
+        sortable_fields = {
             "name",
             "management_ip",
             "status",
@@ -236,8 +242,24 @@ class DeviceListView(LoginRequiredMixin, ListView):
             "rack__name",
             "site__name",
             "image_version",
-        ]:
-            queryset = queryset.order_by(sort)
+            "reachability",
+        }
+        if sort_field in sortable_fields:
+            if sort_field == "reachability":
+                queryset = queryset.annotate(
+                    reachability_score=Case(
+                        When(runtime__reachable_ping=True, then=Value(1)),
+                        When(runtime__reachable_ssh=True, then=Value(1)),
+                        When(runtime__reachable_snmp=True, then=Value(1)),
+                        When(runtime__reachable_netconf=True, then=Value(1)),
+                        default=Value(0),
+                        output_field=IntegerField(),
+                    )
+                )
+                direction = "-" if sort.startswith("-") else ""
+                queryset = queryset.order_by(f"{direction}reachability_score", "name")
+            else:
+                queryset = queryset.order_by(sort)
 
         return queryset
 
@@ -359,7 +381,7 @@ def device_modules(request, device_id):
     else:
         modules_list = list(modules.order_by(sort_field))
 
-    paginate_by = _get_paginate_by(request, default=25)
+    paginate_by = _get_paginate_by(request, default=50)
     paginator = Paginator(modules_list, paginate_by)
     page_number = request.GET.get("page")
     modules_page = paginator.get_page(page_number)
@@ -413,7 +435,7 @@ def device_interfaces(request, device_id):
     else:
         interfaces_list = list(interfaces.order_by(sort_field))
 
-    paginate_by = _get_paginate_by(request, default=25)
+    paginate_by = _get_paginate_by(request, default=50)
     paginator = Paginator(interfaces_list, paginate_by)
     page_number = request.GET.get("page")
     interfaces_page = paginator.get_page(page_number)
@@ -447,7 +469,7 @@ def inventory_list(request):
         rows = [row for row in rows if row.get("device_site_id") == site_filter]
     rows = _sort_inventory_rows(rows, sort_field)
 
-    paginate_by = _get_paginate_by(request, default=25)
+    paginate_by = _get_paginate_by(request, default=50)
     paginator = Paginator(rows, paginate_by)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
