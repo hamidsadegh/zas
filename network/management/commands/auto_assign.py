@@ -17,6 +17,10 @@ class Command(BaseCommand):
             help="Assign a single candidate UUID",
         )
         parser.add_argument(
+            "--candidate-hostname",
+            help="Assign candidates matching hostname (case-insensitive substring)",
+        )
+        parser.add_argument(
             "--limit",
             type=int,
             default=None,
@@ -30,6 +34,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         candidate_id = options.get("candidate_id")
+        candidate_hostname = options.get("candidate_hostname")
         site_id = options.get("site_id")
         limit = options.get("limit")
         include_config = not options.get("no_config", False)
@@ -42,6 +47,13 @@ class Command(BaseCommand):
             qs = qs.filter(id=candidate_id)
             if not qs.exists():
                 raise CommandError(f"No candidate found with id '{candidate_id}'")
+
+        if candidate_hostname:
+            qs = qs.filter(hostname__icontains=candidate_hostname)
+            if not qs.exists():
+                raise CommandError(
+                    f"No candidate found with hostname containing '{candidate_hostname}'"
+                )
 
         if limit and limit > 0:
             qs = qs[:limit]
