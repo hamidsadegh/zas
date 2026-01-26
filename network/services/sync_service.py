@@ -3,6 +3,7 @@ import re
 from datetime import timedelta
 
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from dcim.models import (
@@ -174,20 +175,32 @@ class SyncService:
         if not parsed:
             return
 
+        no_serial_names = set()
         for entry in parsed:
             name = (entry.get("name") or entry.get("descr") or "Module").strip()
             serial = entry.get("sn") or entry.get("serial") or ""
+            serial_value = str(serial or "").strip()
+            serial_upper = serial_value.upper()
             descr = entry.get("descr") or ""
+            if not serial_value or serial_upper in ("N/A", "UNKNOWN", "N") or serial_upper.startswith("UNKNOWN:"):
+                no_serial_names.add(name)
+                continue
 
             DeviceModule.objects.update_or_create(
                 device=device,
                 name=name,
-                serial_number=serial,
+                serial_number=serial_value,
                 defaults={
                     "description": descr,
                     "vendor": None,
                 },
             )
+
+        if no_serial_names:
+            DeviceModule.objects.filter(
+                device=device,
+                name__in=no_serial_names,
+            ).filter(Q(serial_number__isnull=True) | Q(serial_number="")).delete()
 
     def _apply_transceivers(self, device: Device, result: dict):
         entries = self._parse_transceiver_entries(result)
