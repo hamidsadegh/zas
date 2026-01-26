@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from network.models.discovery import DiscoveryCandidate
+from network.services.auto_assignment_service import AutoAssignmentService
 from dcim.models import (
     Area,
     Device,
@@ -222,6 +223,47 @@ def discovery_candidates_action(request):
 
     action = request.POST.get("action")
     ids = request.POST.getlist("ids")
+
+    if action == "auto_assign":
+        include_config_value = request.POST.get("include_config")
+        include_config = True if ids and include_config_value is None else bool(include_config_value)
+        site_id = request.POST.get("auto_site_id")
+        candidate_hostname = (request.POST.get("candidate_hostname") or "").strip()
+        limit_raw = request.POST.get("limit") or ""
+
+        qs = DiscoveryCandidate.objects.filter(accepted__isnull=True, classified=False)
+        if ids:
+            qs = qs.filter(id__in=ids)
+        if site_id and site_id != "all":
+            qs = qs.filter(site_id=site_id)
+        if candidate_hostname:
+            qs = qs.filter(hostname__icontains=candidate_hostname)
+        try:
+            limit = int(limit_raw)
+        except (TypeError, ValueError):
+            limit = None
+        if limit and limit > 0:
+            qs = qs[:limit]
+
+        candidates = list(qs)
+        if not candidates:
+            messages.info(request, "No eligible candidates to auto-assign.")
+            return redirect("network:discovery_candidates")
+
+        success = 0
+        failed = 0
+        for candidate in candidates:
+            result = AutoAssignmentService(candidate, include_config=include_config).assign()
+            if result.get("success"):
+                success += 1
+            else:
+                failed += 1
+
+        if success:
+            messages.success(request, f"Auto-assigned {success} candidate(s).")
+        if failed:
+            messages.error(request, f"Failed to auto-assign {failed} candidate(s).")
+        return redirect("network:discovery_candidates")
 
     if not ids:
         messages.warning(request, "No candidates selected.")

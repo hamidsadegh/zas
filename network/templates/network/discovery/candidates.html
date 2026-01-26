@@ -121,6 +121,33 @@ main { max-width: 1250px; }
     gap: 0.5rem;
     flex-wrap: wrap;
 }
+.auto-assign-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #f8fafc;
+    margin: 1rem 0;
+}
+.auto-assign-bar label {
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+.auto-assign-bar select,
+.auto-assign-bar input[type="text"],
+.auto-assign-bar input[type="number"] {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.5rem 0.75rem;
+    min-width: 180px;
+}
+.auto-assign-bar input[type="number"] { min-width: 120px; }
+.auto-assign-bar .btn { border-radius: 999px; }
 .btn {
     border: 1px solid var(--border);
     border-radius: 12px;
@@ -260,6 +287,32 @@ main { max-width: 1250px; }
         {% endif %}
     </form>
 
+    <form method="post" action="{% url 'network:discovery_candidates_action' %}" class="auto-assign-bar">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="auto_assign">
+        <label>
+            Site
+            <select name="auto_site_id">
+                {% for key, label in site_choices %}
+                    <option value="{{ key }}" {% if site_filter == key %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            Hostname
+            <input type="text" name="candidate_hostname" placeholder="Contains…">
+        </label>
+        <label>
+            Limit
+            <input type="number" name="limit" min="1" placeholder="All">
+        </label>
+        <label>
+            <input type="checkbox" name="include_config" value="1" checked>
+            Include config
+        </label>
+        <button type="submit" class="btn primary">Auto-assign</button>
+    </form>
+
     <form method="post" action="{% url 'network:discovery_candidates_action' %}" class="bulk-form">
         {% csrf_token %}
         <div class="action-bar">
@@ -270,7 +323,7 @@ main { max-width: 1250px; }
             <div class="actions">
                 <button type="submit" name="action" value="ignore" class="btn danger">Mark as ignored</button>
                 <button type="submit" name="action" value="resolve" class="btn ghost">Resolve mismatch (placeholder)</button>
-                <button type="submit" name="action" value="create_device" class="btn primary">Create device (placeholder)</button>
+                <button type="submit" name="action" value="auto_assign" class="btn primary">Auto-assign selected</button>
             </div>
         </div>
 
