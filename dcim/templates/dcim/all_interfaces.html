@@ -1,6 +1,6 @@
 {% extends "core/base.html" %}
 
-{% block title %}Err-Disabled Interfaces{% endblock %}
+{% block title %}All Interfaces{% endblock %}
 
 {% block styles %}
 {% include "dcim/_layout_styles.html" %}
@@ -13,14 +13,14 @@
     <div class="detail-actions" style="margin-bottom: 1.2rem;">
         <div>
             <p class="tag">Interfaces</p>
-            <h3 style="margin: 0;">Err-Disabled Interfaces</h3>
+            <h3 style="margin: 0;">All Interfaces</h3>
         </div>
         <a class="back-link" href="{% url 'dashboard' %}">← Back to dashboard</a>
     </div>
 
     <div class="detail-card interfaces-card">
         <div class="detail-actions" style="margin-bottom: 1.2rem;">
-            <h3 style="margin: 0;">All Err-Disabled</h3>
+            <h3 style="margin: 0;">All Interfaces</h3>
             <form method="get" class="filter-form" style="flex-wrap: nowrap; gap: 0.5rem; margin-left: auto;">
                 <select name="site" onchange="this.form.submit()">
                     {% for key, label in site_choices %}
@@ -78,7 +78,7 @@
 
         <div class="pagination-wrapper">
             <div class="range-info">
-                Showing {{ interfaces.start_index }}–{{ interfaces.end_index }} of {{ interfaces.paginator.count }} interfaces
+                Showing {{ interfaces.start_index }}-{{ interfaces.end_index }} of {{ interfaces.paginator.count }} interfaces
             </div>
             <ul class="pagination">
                 {% if interfaces.has_previous %}
@@ -103,7 +103,7 @@
             </ul>
         </div>
         {% else %}
-            <p>No err-disabled interfaces found.</p>
+            <p>No interfaces found.</p>
         {% endif %}
     </div>
 </section>

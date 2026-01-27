@@ -224,6 +224,11 @@ main {
             <div class="value">{{ interface_stats.err_disabled|default:0 }}</div>
             <a class="link-btn" href="{% url 'err_disabled_interfaces' %}">View interfaces</a>
         </div>
+        <div class="stat-card">
+            <h4>All Interfaces</h4>
+            <div class="value">{{ interface_stats.total|default:0 }}</div>
+            <a class="link-btn" href="{% url 'all_interfaces' %}">View interfaces</a>
+        </div>
     </div>
 </section>
 

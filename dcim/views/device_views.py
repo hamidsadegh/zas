@@ -498,6 +498,7 @@ def err_disabled_interfaces(request):
         "device__name",
         "device__management_ip",
         "name",
+        "description",
         "ip_address",
         "status",
         "device__site__name",
@@ -522,6 +523,70 @@ def err_disabled_interfaces(request):
         "site_filter": site_filter,
     }
     return render(request, "dcim/err_disabled_interfaces.html", context)
+
+
+@login_required
+def all_interfaces(request):
+    search_query = request.GET.get("search", "").strip()
+    sort_field = request.GET.get("sort", "device__name").strip()
+
+    site_choices = [("all", "All Sites")]
+    for site in Site.objects.order_by("name"):
+        site_choices.append((str(site.id), site.name))
+    site_filter = request.GET.get("site", "all")
+    valid_site_keys = {choice[0] for choice in site_choices}
+    if site_filter not in valid_site_keys:
+        site_filter = "all"
+
+    interfaces = Interface.objects.select_related(
+        "device",
+        "device__site",
+    )
+
+    if site_filter != "all":
+        interfaces = interfaces.filter(device__site_id=site_filter)
+
+    if search_query:
+        interfaces = interfaces.filter(
+            Q(name__icontains=search_query)
+            | Q(description__icontains=search_query)
+            | Q(ip_address__icontains=search_query)
+            | Q(vlan_raw__icontains=search_query)
+            | Q(status__icontains=search_query)
+            | Q(device__name__icontains=search_query)
+            | Q(device__management_ip__icontains=search_query)
+            | Q(device__site__name__icontains=search_query)
+        )
+
+    allowed_sort_fields = {
+        "device__name",
+        "device__management_ip",
+        "name",
+        "description",
+        "ip_address",
+        "status",
+        "device__site__name",
+    }
+    if sort_field.lstrip("-") not in allowed_sort_fields:
+        sort_field = "device__name"
+
+    interfaces = interfaces.order_by(sort_field)
+
+    paginate_by = _get_paginate_by(request, default=50)
+    paginator = Paginator(interfaces, paginate_by)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "interfaces": page_obj,
+        "search_query": search_query,
+        "sort_field": sort_field,
+        "paginate_by": paginate_by,
+        "per_page_options": PER_PAGE_OPTIONS,
+        "site_choices": site_choices,
+        "site_filter": site_filter,
+    }
+    return render(request, "dcim/all_interfaces.html", context)
 
 
 @login_required
