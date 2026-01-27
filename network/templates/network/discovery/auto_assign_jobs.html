@@ -1,0 +1,335 @@
+{% extends "core/base.html" %}
+{% block title %}Auto-assign Jobs{% endblock %}
+
+{% block styles %}
+main { max-width: 1250px; }
+.discovery-wrapper {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+}
+.tag {
+    display: inline-block;
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+.list-actions {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+.muted { color: var(--muted); }
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    border-radius: 12px;
+    padding: 0.6rem 1.1rem;
+    font-weight: 650;
+    cursor: pointer;
+    border: 1px solid #d8e0ee;
+    background: #f8fafc;
+    color: var(--text);
+    text-decoration: none;
+    transition: transform 0.12s ease, box-shadow 0.2s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.back-link:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 26px rgba(15, 29, 64, 0.12);
+}
+.filters {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin: 1.25rem 0;
+}
+.filters select {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.5rem 0.75rem;
+    min-width: 180px;
+}
+.filters input[type="text"] {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.5rem 0.75rem;
+    min-width: 260px;
+}
+.filters button {
+    border: none;
+    border-radius: 999px;
+    padding: 0.55rem 1.2rem;
+    font-weight: 700;
+    background: var(--primary);
+    color: #fff;
+    box-shadow: var(--shadow);
+}
+.table-card { overflow-x: auto; }
+.candidate-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+.candidate-table th {
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.75rem;
+    color: var(--muted);
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+}
+.candidate-table td {
+    padding: 0.75rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+}
+.candidate-table tr:hover { background: #f8fafc; }
+.status-pill {
+    padding: 0.25rem 0.8rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: capitalize;
+}
+.status-pending { background: #e5e7eb; color: #374151; }
+.status-running { background: #eef2ff; color: #1d4ed8; }
+.status-completed { background: #ecfdf3; color: #065f46; }
+.status-failed { background: #fef2f2; color: #991b1b; }
+.job-spinner {
+    width: 10px;
+    height: 10px;
+    border: 2px solid #c7d2fe;
+    border-top-color: #1d4ed8;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+    margin-right: 0.4rem;
+    vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.pagination-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+}
+.pagination {
+    list-style: none;
+    display: flex;
+    gap: 0.35rem;
+    padding: 0;
+    margin: 0;
+}
+.pagination a, .pagination span {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.35rem 0.75rem;
+    color: var(--text);
+}
+.pagination .active span {
+    background: var(--primary);
+    color: #fff;
+}
+.report-link {
+    font-size: 0.85rem;
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+}
+{% endblock %}
+
+{% block content %}
+<section class="discovery-wrapper">
+    <div class="list-header">
+        <div>
+            <p class="tag">Discovery</p>
+            <h1>Auto-assign Jobs</h1>
+            <p class="muted">Track background auto-assign runs and their status.</p>
+        </div>
+        <div class="list-actions">
+            <a class="back-link" href="{% url 'network:discovery_candidates' %}">← Back to Candidates</a>
+        </div>
+    </div>
+
+    <form method="get" class="filters">
+        <select name="status" onchange="this.form.submit()">
+            {% for key, label in status_choices %}
+                <option value="{{ key }}" {% if status_filter == key %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <input type="text" name="job" placeholder="Job ID (optional)" value="{{ report_job_id }}">
+        <button type="submit">Apply</button>
+    </form>
+
+    <div class="table-card">
+        <table class="candidate-table">
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Started</th>
+                    <th>Scope</th>
+                    <th>Config</th>
+                    <th>Success</th>
+                    <th>Failed</th>
+                    <th>Error</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in jobs %}
+                <tr>
+                    <td>
+                        {% if job.status == "running" %}
+                            <span class="status-pill status-running"><span class="job-spinner" aria-hidden="true"></span>Running</span>
+                        {% elif job.status == "completed" %}
+                            <span class="status-pill status-completed">Completed</span>
+                        {% elif job.status == "failed" %}
+                            <span class="status-pill status-failed">Failed</span>
+                        {% else %}
+                            <span class="status-pill status-pending">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ job.created_at|date:"M d, H:i" }}</td>
+                    <td>
+                        {% if job.started_at %}
+                            {{ job.started_at|date:"M d, H:i" }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if job.site %}
+                            {{ job.site.name }}
+                        {% else %}
+                            All sites
+                        {% endif %}
+                        {% if job.candidate_hostname %}
+                            · hostname contains "{{ job.candidate_hostname }}"
+                        {% endif %}
+                        {% if job.limit %}
+                            · limit {{ job.limit }}
+                        {% endif %}
+                        · {{ job.total_candidates }} candidates
+                    </td>
+                    <td>{% if job.include_config %}Yes{% else %}No{% endif %}</td>
+                    <td>{{ job.success_count }}</td>
+                    <td>{{ job.failure_count }}</td>
+                    <td>{{ job.error_message|default:"-" }}</td>
+                    <td>
+                        {% if job.status == "completed" or job.status == "failed" %}
+                            <a class="report-link" href="?status={{ status_filter }}&job={{ job.id }}">View report</a>
+                        {% else %}
+                            <span class="muted">Running…</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" style="text-align:center; padding: 1.5rem; color: var(--muted);">
+                        No auto-assign jobs found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if report_job and report_items %}
+    <div class="list-header" style="margin-top: 1.5rem;">
+        <div>
+            <h2 style="margin: 0;">Auto-assign report</h2>
+            <p class="muted">
+                Job {{ report_job.id }} · Success {{ report_job.success_count }} · Failed {{ report_job.failure_count }}
+            </p>
+        </div>
+    </div>
+    <div class="table-card" style="margin-top: 0.75rem;">
+        <table class="candidate-table">
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Site</th>
+                    <th>IP address</th>
+                    <th>Hostname</th>
+                    <th>Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in report_items %}
+                <tr>
+                    <td>
+                        {% if item.success %}
+                            <span class="status-pill status-completed">Success</span>
+                        {% else %}
+                            <span class="status-pill status-failed">Failed</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ item.site.name|default:"-" }}</td>
+                    <td>{{ item.ip_address|default:"-" }}</td>
+                    <td>{{ item.hostname|default:"-" }}</td>
+                    <td>
+                        {% if item.success %}
+                            {{ item.device|default:"Assigned" }}
+                        {% else %}
+                            {{ item.error_message|default:"Unknown error" }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <div class="pagination-wrapper">
+        <div class="range-info muted">
+            {% if jobs.paginator.count %}
+                Showing {{ jobs.start_index }}-{{ jobs.end_index }} of {{ jobs.paginator.count }} jobs
+            {% else %}
+                No jobs to display.
+            {% endif %}
+        </div>
+        {% if jobs %}
+        <ul class="pagination">
+            {% if jobs.has_previous %}
+                <li><a href="?status={{ status_filter }}&page={{ jobs.previous_page_number }}">Previous</a></li>
+            {% else %}
+                <li><span>Previous</span></li>
+            {% endif %}
+            {% for num in jobs.paginator.page_range %}
+                {% if jobs.number == num %}
+                    <li class="active"><span>{{ num }}</span></li>
+                {% elif num > jobs.number|add:-3 and num < jobs.number|add:3 %}
+                    <li><a href="?status={{ status_filter }}&page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+            {% if jobs.has_next %}
+                <li><a href="?status={{ status_filter }}&page={{ jobs.next_page_number }}">Next</a></li>
+            {% else %}
+                <li><span>Next</span></li>
+            {% endif %}
+        </ul>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

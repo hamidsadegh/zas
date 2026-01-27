@@ -171,19 +171,18 @@ class AutoAssignmentService:
             "port": credential.ssh_port,
             "timeout": 30,
         }
+        print(params)
         location_raw = ""
         parsed_version = None
         stack_raw = None
         with ConnectHandler(**params) as conn:
             try:
-                location_raw = conn.send_command("show snmp location", use_textfsm=False)
+                if platform == DevicePlatformChoices.NX_OS:
+                    location_raw = conn.send_command("show snmp", use_textfsm=False)
+                else:
+                    location_raw = conn.send_command("show snmp location", use_textfsm=False)
             except Exception:
                 location_raw = ""
-            if not location_raw:
-                try:
-                    location_raw = conn.send_command("show snmp", use_textfsm=False)
-                except Exception:
-                    location_raw = ""
             try:
                 parsed_version = conn.send_command("show version", use_textfsm=True)
             except Exception as exc:
@@ -204,6 +203,12 @@ class AutoAssignmentService:
         if not lines:
             raise RuntimeError("SNMP location empty.")
         target = lines[0]
+        for line in lines:
+            if "sys location" in line.lower():
+                _, _, value = line.partition(":")
+                if value.strip():
+                    target = value.strip()
+                    break
         m = self.LOCATION_RE.match(target)
         if not m:
             raise RuntimeError(f"SNMP location not in expected format: '{target}'")

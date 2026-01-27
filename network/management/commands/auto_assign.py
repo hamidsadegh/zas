@@ -64,19 +64,30 @@ class Command(BaseCommand):
 
         success = 0
         failed = 0
+        failures = []
         for candidate in qs:
             self.stdout.write(self.style.NOTICE(f"Assigning candidate {candidate.hostname or candidate.ip_address}"))
-            result = AutoAssignmentService(candidate, include_config=include_config).assign()
+            try:
+                result = AutoAssignmentService(candidate, include_config=include_config).assign()
+            except Exception as exc:
+                result = {"success": False, "error": str(exc), "device": None}
             if result.get("success"):
                 success += 1
                 device = result.get("device")
                 self.stdout.write(self.style.SUCCESS(f"[OK] {device}"))
             else:
                 failed += 1
-                self.stdout.write(self.style.ERROR(f"[FAIL] {result.get('error')}"))
+                error_msg = result.get("error") or "Unknown error"
+                failures.append((candidate, error_msg))
+                self.stdout.write(self.style.ERROR(f"[FAIL] {error_msg}"))
 
         self.stdout.write(
             self.style.SUCCESS(
                 f"Auto-assignment finished. Success: {success}, Failed: {failed}"
             )
         )
+        if failures:
+            self.stdout.write(self.style.ERROR("Failed candidates:"))
+            for candidate, error_msg in failures:
+                label = candidate.hostname or str(candidate.ip_address)
+                self.stdout.write(self.style.ERROR(f"  - {label}: {error_msg}"))

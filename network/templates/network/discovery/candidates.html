@@ -73,6 +73,10 @@ main { max-width: 1250px; }
     gap: 0.6rem;
     flex-wrap: wrap;
     margin: 1.25rem 0;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #f8fafc;
 }
 .filters select {
     border: 1px solid var(--border);
@@ -100,6 +104,10 @@ main { max-width: 1250px; }
     background: var(--primary);
     color: #fff;
     box-shadow: var(--shadow);
+}
+.auto-assign-bar {
+    border: 1px solid #dbeafe;
+    background: #eff6ff;
 }
 .link-btn {
     font-weight: 600;
@@ -192,6 +200,44 @@ main { max-width: 1250px; }
 .status-mismatch { background: #fff7ed; color: #c2410c; }
 .status-new { background: #eef2ff; color: #1d4ed8; }
 .status-unclassified { background: #e5e7eb; color: #374151; }
+.status-ok { background: #ecfdf3; color: #065f46; }
+.status-fail { background: #fef2f2; color: #991b1b; }
+.status-pending { background: #e5e7eb; color: #374151; }
+.status-running { background: #eef2ff; color: #1d4ed8; }
+.status-completed { background: #ecfdf3; color: #065f46; }
+.status-failed { background: #fef2f2; color: #991b1b; }
+.auto-assign-status {
+    display: none;
+    align-items: center;
+    gap: 0.6rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin: 0.6rem 0 1rem;
+}
+.auto-assign-target {
+    color: var(--text);
+}
+.auto-assign-status.active { display: flex; }
+.auto-assign-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #d1d5db;
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+.job-spinner {
+    width: 10px;
+    height: 10px;
+    border: 2px solid #c7d2fe;
+    border-top-color: #1d4ed8;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+    margin-right: 0.4rem;
+    vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 .reachability {
     display: inline-flex;
     gap: 0.35rem;
@@ -262,7 +308,10 @@ main { max-width: 1250px; }
                 <span class="pill warning">Mismatch {{ summary.mismatch }}</span>
                 <span class="pill">New {{ summary.new }}</span>
             </div>
-            <a class="back-link" href="{% url 'network:discovery_dashboard' %}">← Back to Discovery</a>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end;">
+                <a class="back-link" href="{% url 'network:auto_assign_jobs' %}">Auto-assign jobs</a>
+                <a class="back-link" href="{% url 'network:discovery_dashboard' %}">← Back to Discovery</a>
+            </div>
         </div>
     </div>
 
@@ -281,7 +330,7 @@ main { max-width: 1250px; }
         <label>
             <input type="checkbox" name="ssh_only" value="1" {% if ssh_only %}checked{% endif %} onchange="this.form.submit()"> SSH reachable only
         </label>
-        <button type="submit">Apply</button>
+        <button type="submit">Filter</button>
         {% if site_filter != "all" or status_filter != "all" or ssh_only or search_query %}
             <a class="link-btn" href="{% url 'network:discovery_candidates' %}">Clear filters</a>
         {% endif %}
@@ -310,8 +359,14 @@ main { max-width: 1250px; }
             <input type="checkbox" name="include_config" value="1" checked>
             Include config
         </label>
-        <button type="submit" class="btn primary">Auto-assign</button>
+        <button type="submit" class="btn primary" data-auto-assign="1">Auto-assign</button>
     </form>
+    <div id="auto-assign-status" class="auto-assign-status" aria-live="polite">
+        <span class="auto-assign-spinner" aria-hidden="true"></span>
+        <span>Auto-assign is running for</span>
+        <span id="auto-assign-target" class="auto-assign-target">selected devices</span>
+    </div>
+
 
     <form method="post" action="{% url 'network:discovery_candidates_action' %}" class="bulk-form">
         {% csrf_token %}
@@ -323,7 +378,7 @@ main { max-width: 1250px; }
             <div class="actions">
                 <button type="submit" name="action" value="ignore" class="btn danger">Mark as ignored</button>
                 <button type="submit" name="action" value="resolve" class="btn ghost">Resolve mismatch (placeholder)</button>
-                <button type="submit" name="action" value="auto_assign" class="btn primary">Auto-assign selected</button>
+                <button type="submit" name="action" value="auto_assign" class="btn primary" data-auto-assign="1">Auto-assign selected</button>
             </div>
         </div>
 
@@ -348,7 +403,7 @@ main { max-width: 1250px; }
                             {% if c.accepted is True %}
                                 <input type="checkbox" disabled title="Exact matches cannot be changed">
                             {% else %}
-                                <input type="checkbox" name="ids" value="{{ c.id }}">
+                                <input type="checkbox" name="ids" value="{{ c.id }}" data-hostname="{{ c.hostname|default_if_none:'' }}" data-ip="{{ c.ip_address }}">
                             {% endif %}
                         </td>
                         <td>{{ c.site.name }}</td>
@@ -425,4 +480,63 @@ main { max-width: 1250px; }
         {% endif %}
     </div>
 </section>
+<script>
+    (function () {
+        const status = document.getElementById("auto-assign-status");
+        const target = document.getElementById("auto-assign-target");
+        if (!status) {
+            return;
+        }
+        const showStatus = (label) => {
+            if (target && label) {
+                target.textContent = label;
+            }
+            status.classList.add("active");
+        };
+        const autoForm = document.querySelector("form.auto-assign-bar");
+        if (autoForm) {
+            autoForm.addEventListener("submit", () => {
+                const siteSelect = autoForm.querySelector("select[name='auto_site_id']");
+                const hostnameInput = autoForm.querySelector("input[name='candidate_hostname']");
+                const limitInput = autoForm.querySelector("input[name='limit']");
+                const parts = [];
+                if (hostnameInput && hostnameInput.value.trim()) {
+                    parts.push(`hostname contains "${hostnameInput.value.trim()}"`);
+                }
+                if (siteSelect && siteSelect.value && siteSelect.value !== "all") {
+                    const siteLabel = siteSelect.options[siteSelect.selectedIndex]?.text;
+                    if (siteLabel) {
+                        parts.push(`site ${siteLabel}`);
+                    }
+                }
+                if (limitInput && limitInput.value) {
+                    parts.push(`limit ${limitInput.value}`);
+                }
+                showStatus(parts.length ? parts.join(", ") : "filtered candidates");
+            });
+        }
+        const bulkForm = document.querySelector("form.bulk-form");
+        if (bulkForm) {
+            bulkForm.addEventListener("submit", (event) => {
+                const submitter = event.submitter;
+                if (submitter && submitter.dataset.autoAssign === "1") {
+                    const selected = Array.from(bulkForm.querySelectorAll("input[name='ids']:checked"));
+                    const labels = selected.map((input) => {
+                        const hostname = input.dataset.hostname;
+                        const ip = input.dataset.ip;
+                        if (hostname) {
+                            return hostname;
+                        }
+                        if (ip) {
+                            return ip;
+                        }
+                        return "unknown";
+                    });
+                    const labelText = labels.length ? labels.join(", ") : "selected devices";
+                    showStatus(labelText);
+                }
+            });
+        }
+    })();
+</script>
 {% endblock %}

@@ -4,6 +4,7 @@ from network.views.discovery import (
     discovery_candidates,
     discovery_candidates_action,
     discovery_candidate_detail,
+    auto_assign_jobs,
     create_device_from_candidate,
     resolve_discovery_mismatch,
 )
@@ -14,6 +15,7 @@ app_name = "network"
 urlpatterns = [
     path("discovery/", discovery_dashboard, name="discovery_dashboard"),
     path("discovery/candidates/", discovery_candidates, name="discovery_candidates"),
+    path("discovery/auto-assign/", auto_assign_jobs, name="auto_assign_jobs"),
     path(
         "discovery/candidates/<uuid:pk>/assign-device/",
         create_device_from_candidate,

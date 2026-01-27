@@ -1,7 +1,15 @@
-from .discovery import DiscoveryCandidate, DiscoveryFilter, DiscoveryRange
+from .discovery import (
+    AutoAssignJob,
+    AutoAssignJobItem,
+    DiscoveryCandidate,
+    DiscoveryFilter,
+    DiscoveryRange,
+)
 
 __all__ = [
     "DiscoveryCandidate",
     "DiscoveryFilter",
     "DiscoveryRange",
+    "AutoAssignJob",
+    "AutoAssignJobItem",
 ]

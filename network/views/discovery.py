@@ -6,8 +6,8 @@ from django.db import models, transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
-from network.models.discovery import DiscoveryCandidate
-from network.services.auto_assignment_service import AutoAssignmentService
+from network.models.discovery import AutoAssignJob, AutoAssignJobItem, DiscoveryCandidate
+from network.tasks import run_auto_assign_job
 from dcim.models import (
     Area,
     Device,
@@ -200,7 +200,6 @@ def discovery_candidates(request):
         "new": all_candidates.filter(accepted__isnull=True).count(),
         "filtered": qs.count(),
     }
-
     context = {
         "candidates": page_obj,
         "page_obj": page_obj,
@@ -216,7 +215,6 @@ def discovery_candidates(request):
 
 
 @login_required
-@transaction.atomic
 def discovery_candidates_action(request):
     if request.method != "POST":
         return redirect("network:discovery_candidates")
@@ -250,19 +248,22 @@ def discovery_candidates_action(request):
             messages.info(request, "No eligible candidates to auto-assign.")
             return redirect("network:discovery_candidates")
 
-        success = 0
-        failed = 0
-        for candidate in candidates:
-            result = AutoAssignmentService(candidate, include_config=include_config).assign()
-            if result.get("success"):
-                success += 1
-            else:
-                failed += 1
-
-        if success:
-            messages.success(request, f"Auto-assigned {success} candidate(s).")
-        if failed:
-            messages.error(request, f"Failed to auto-assign {failed} candidate(s).")
+        candidate_ids = [str(candidate.id) for candidate in candidates]
+        job = AutoAssignJob.objects.create(
+            requested_by=request.user if request.user.is_authenticated else None,
+            site_id=site_id if site_id and site_id != "all" else None,
+            candidate_hostname=candidate_hostname,
+            limit=limit,
+            include_config=include_config,
+            candidate_ids=candidate_ids,
+            total_candidates=len(candidate_ids),
+            status=AutoAssignJob.Status.PENDING,
+        )
+        run_auto_assign_job.delay(str(job.id), candidate_ids)
+        messages.info(
+            request,
+            f"Auto-assign started for {len(candidate_ids)} candidate(s). Job {job.id}.",
+        )
         return redirect("network:discovery_candidates")
 
     if not ids:
@@ -297,6 +298,54 @@ def discovery_candidates_action(request):
 
     messages.error(request, "Unknown action.")
     return redirect("network:discovery_candidates")
+
+
+@login_required
+def auto_assign_jobs(request):
+    status_filter = (request.GET.get("status") or "running").strip().lower()
+    allowed_statuses = {"running", "pending", "completed", "failed", "all"}
+    if status_filter not in allowed_statuses:
+        status_filter = "running"
+
+    jobs = AutoAssignJob.objects.select_related("site", "requested_by")
+    if request.user.is_authenticated:
+        jobs = jobs.filter(requested_by=request.user)
+    if status_filter != "all":
+        jobs = jobs.filter(status=status_filter)
+
+    report_job_id = (request.GET.get("job") or "").strip()
+    report_job = None
+    report_items = None
+    if report_job_id:
+        report_job = jobs.filter(id=report_job_id).first()
+    if not report_job:
+        report_job = jobs.filter(status=AutoAssignJob.Status.COMPLETED).first()
+    if report_job:
+        report_items = (
+            AutoAssignJobItem.objects.filter(job=report_job)
+            .select_related("device", "site")
+            .order_by("created_at")
+        )
+
+    paginator = Paginator(jobs, 25)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "jobs": page_obj,
+        "status_filter": status_filter,
+        "status_choices": [
+            ("running", "Running"),
+            ("pending", "Pending"),
+            ("completed", "Completed"),
+            ("failed", "Failed"),
+            ("all", "All"),
+        ],
+        "report_job": report_job,
+        "report_items": report_items,
+        "report_job_id": report_job_id,
+    }
+    return render(request, "network/discovery/auto_assign_jobs.html", context)
 
 
 @login_required
