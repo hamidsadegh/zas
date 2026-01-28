@@ -308,9 +308,9 @@ main { max-width: 1250px; }
                 <span class="pill warning">Mismatch {{ summary.mismatch }}</span>
                 <span class="pill">New {{ summary.new }}</span>
             </div>
-            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end;">
-                <a class="back-link" href="{% url 'network:auto_assign_jobs' %}">Auto-assign jobs</a>
+            <div style="display: grid; gap: 0.4rem; justify-items: end;">
                 <a class="back-link" href="{% url 'network:discovery_dashboard' %}">← Back to Discovery</a>
+                <a class="back-link" style="color: var(--primary);" href="{% url 'network:auto_assign_jobs' %}">View Run Jobs</a>
             </div>
         </div>
     </div>
@@ -431,7 +431,7 @@ main { max-width: 1250px; }
                             {% if c.accepted is False %}
                                 <a href="{% url 'network:resolve_discovery_mismatch' c.id %}">Resolve mismatch</a>
                             {% elif c.accepted is None %}
-                                <a href="{% url 'network:create_device_from_candidate' c.id %}">Assign device</a>
+                                <a href="{% url 'network:create_device_from_candidate' c.id %}">Assign manually</a>
                             {% else %}
                                 <a href="{% url 'network:discovery_candidate_detail' c.id %}">Details</a>
                             {% endif %}

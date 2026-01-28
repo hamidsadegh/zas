@@ -318,14 +318,12 @@ def auto_assign_jobs(request):
     report_items = None
     if report_job_id:
         report_job = jobs.filter(id=report_job_id).first()
-    if not report_job:
-        report_job = jobs.filter(status=AutoAssignJob.Status.COMPLETED).first()
-    if report_job:
-        report_items = (
-            AutoAssignJobItem.objects.filter(job=report_job)
-            .select_related("device", "site")
-            .order_by("created_at")
-        )
+        if report_job:
+            report_items = (
+                AutoAssignJobItem.objects.filter(job=report_job)
+                .select_related("device", "site")
+                .order_by("created_at")
+            )
 
     paginator = Paginator(jobs, 25)
     page_number = request.GET.get("page")
@@ -550,6 +548,10 @@ def create_device_from_candidate(request, pk):
 
                     tag_new, _ = Tag.objects.get_or_create(name="discovered-new")
                     device.tags.add(tag_new)
+                    device_name = (device.name or "").lower()
+                    if "mgmt" in device_name or "bmsw" in device_name:
+                        tag_management, _ = Tag.objects.get_or_create(name="management")
+                        device.tags.add(tag_management)
 
                     status, _ = DeviceRuntimeStatus.objects.get_or_create(device=device)
                     status.reachable_ping |= candidate.reachable_ping

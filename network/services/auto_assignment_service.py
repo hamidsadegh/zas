@@ -87,6 +87,21 @@ class AutoAssignmentService:
                 )
                 if tags:
                     device.tags.add(*tags)
+                device_name = (device.name or "").lower()
+                extra_tag_names = set()
+                if "mgmt" in device_name or "bmsw" in device_name:
+                    extra_tag_names.add("management")
+                    extra_tag_names.add("config_backup_tag")
+                if extra_tag_names:
+                    extra_tags = []
+                    for name in extra_tag_names:
+                        tag = Tag.objects.filter(name__iexact=name).first()
+                        if tag:
+                            extra_tags.append(tag)
+                        else:
+                            logger.warning("Tag '%s' not found; skipping.", name)
+                    if extra_tags:
+                        device.tags.add(*extra_tags)
                 if stack_members_data:
                     DeviceStackMember.objects.filter(device=device).delete()
                     DeviceStackMember.objects.bulk_create(
@@ -289,10 +304,16 @@ class AutoAssignmentService:
         tag_names = set(["reachability_check_tag", "discovered-new"])
         if "bcsw" in hostname:
             tag_names.update(["campus", "config_backup_tag"])
+        if "bmsw" in hostname:
+            tag_names.add("config_backup_tag")
         if "bpp" in hostname:
             tag_names.update(["post_pro", "config_backup_tag"])
         if "leaf" in hostname or "spine" in hostname:
             tag_names.add("aci_fabric")
+        if "mgmt" in hostname or "bmsw" in hostname:
+            tag_names.add("management")
+        if "mgmt" in hostname:
+            tag_names.add("config_backup_tag")
 
         tags = []
         for name in tag_names:

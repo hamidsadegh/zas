@@ -175,6 +175,7 @@ class SyncService:
         if not parsed:
             return
 
+        seen_keys = set()
         no_serial_names = set()
         for entry in parsed:
             name = (entry.get("name") or entry.get("descr") or "Module").strip()
@@ -195,6 +196,19 @@ class SyncService:
                     "vendor": None,
                 },
             )
+            seen_keys.add((name, serial_value))
+
+        if seen_keys:
+            keep_q = Q()
+            for name, serial_value in seen_keys:
+                keep_q |= Q(name=name, serial_number=serial_value)
+            DeviceModule.objects.filter(device=device).filter(
+                Q(serial_number__isnull=False) & ~Q(serial_number="")
+            ).exclude(
+                name__startswith="Transceiver "
+            ).exclude(
+                keep_q
+            ).delete()
 
         if no_serial_names:
             DeviceModule.objects.filter(
@@ -204,10 +218,12 @@ class SyncService:
 
     def _apply_transceivers(self, device: Device, result: dict):
         entries = self._parse_transceiver_entries(result)
+        seen_names = set()
         for entry in entries:
             name = entry.get("name")
             if not name:
                 continue
+            seen_names.add(name)
             DeviceModule.objects.update_or_create(
                 device=device,
                 name=name,
@@ -217,6 +233,11 @@ class SyncService:
                     "vendor": None,
                 },
             )
+        if seen_names:
+            DeviceModule.objects.filter(
+                device=device,
+                name__startswith="Transceiver ",
+            ).exclude(name__in=seen_names).delete()
 
     def _parse_transceiver_entries(self, result: dict) -> list[dict]:
         parsed = result.get("parsed")

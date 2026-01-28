@@ -123,6 +123,28 @@ main { max-width: 1250px; }
     vertical-align: middle;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+.report-dropdown {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #f8fafc;
+    padding: 0.75rem 1rem;
+    margin-top: 1rem;
+}
+.report-row td {
+    background: #f8fafc;
+}
+.report-dropdown summary {
+    cursor: pointer;
+    font-weight: 700;
+    list-style: none;
+}
+.report-dropdown summary::-webkit-details-marker { display: none; }
+.report-dropdown summary::after {
+    content: "▾";
+    float: right;
+    color: var(--muted);
+}
+.report-dropdown[open] summary::after { content: "▴"; }
 .pagination-wrapper {
     display: flex;
     justify-content: space-between;
@@ -197,7 +219,7 @@ main { max-width: 1250px; }
             </thead>
             <tbody>
                 {% for job in jobs %}
-                <tr>
+                <tr id="job-{{ job.id }}">
                     <td>
                         {% if job.status == "running" %}
                             <span class="status-pill status-running"><span class="job-spinner" aria-hidden="true"></span>Running</span>
@@ -237,12 +259,69 @@ main { max-width: 1250px; }
                     <td>{{ job.error_message|default:"-" }}</td>
                     <td>
                         {% if job.status == "completed" or job.status == "failed" %}
-                            <a class="report-link" href="?status={{ status_filter }}&job={{ job.id }}">View report</a>
+                            {% if report_job_id == job.id|stringformat:"s" %}
+                                <a class="report-link" href="?status={{ status_filter }}{% if jobs.number %}&page={{ jobs.number }}{% endif %}#job-{{ job.id }}">Hide report</a>
+                            {% else %}
+                                <a class="report-link" href="?status={{ status_filter }}{% if jobs.number %}&page={{ jobs.number }}{% endif %}&job={{ job.id }}#job-{{ job.id }}">View report</a>
+                            {% endif %}
                         {% else %}
                             <span class="muted">Running…</span>
                         {% endif %}
                     </td>
                 </tr>
+                {% if report_job and report_job.id == job.id %}
+                <tr class="report-row">
+                    <td colspan="9">
+                        <details class="report-dropdown" open>
+                            <summary>
+                                Auto-assign report · Job {{ report_job.id }} · Success {{ report_job.success_count }} · Failed {{ report_job.failure_count }}
+                            </summary>
+                            <div class="table-card" style="margin-top: 0.75rem;">
+                                <table class="candidate-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Status</th>
+                                            <th>Site</th>
+                                            <th>IP address</th>
+                                            <th>Hostname</th>
+                                            <th>Result</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in report_items %}
+                                        <tr>
+                                            <td>
+                                                {% if item.success %}
+                                                    <span class="status-pill status-completed">Success</span>
+                                                {% else %}
+                                                    <span class="status-pill status-failed">Failed</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ item.site.name|default:"-" }}</td>
+                                            <td>{{ item.ip_address|default:"-" }}</td>
+                                            <td>
+                                                {% if item.success and item.device %}
+                                                    <a class="report-link" href="{% url 'device_detail' item.device.id %}">{{ item.hostname|default:item.device.name }}</a>
+                                                {% else %}
+                                                    {{ item.hostname|default:"-" }}
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if item.success %}
+                                                    {{ item.device|default:"Assigned" }}
+                                                {% else %}
+                                                    {{ item.error_message|default:"Unknown error" }}
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </details>
+                    </td>
+                </tr>
+                {% endif %}
                 {% empty %}
                 <tr>
                     <td colspan="8" style="text-align:center; padding: 1.5rem; color: var(--muted);">
@@ -253,53 +332,6 @@ main { max-width: 1250px; }
             </tbody>
         </table>
     </div>
-
-    {% if report_job and report_items %}
-    <div class="list-header" style="margin-top: 1.5rem;">
-        <div>
-            <h2 style="margin: 0;">Auto-assign report</h2>
-            <p class="muted">
-                Job {{ report_job.id }} · Success {{ report_job.success_count }} · Failed {{ report_job.failure_count }}
-            </p>
-        </div>
-    </div>
-    <div class="table-card" style="margin-top: 0.75rem;">
-        <table class="candidate-table">
-            <thead>
-                <tr>
-                    <th>Status</th>
-                    <th>Site</th>
-                    <th>IP address</th>
-                    <th>Hostname</th>
-                    <th>Result</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in report_items %}
-                <tr>
-                    <td>
-                        {% if item.success %}
-                            <span class="status-pill status-completed">Success</span>
-                        {% else %}
-                            <span class="status-pill status-failed">Failed</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ item.site.name|default:"-" }}</td>
-                    <td>{{ item.ip_address|default:"-" }}</td>
-                    <td>{{ item.hostname|default:"-" }}</td>
-                    <td>
-                        {% if item.success %}
-                            {{ item.device|default:"Assigned" }}
-                        {% else %}
-                            {{ item.error_message|default:"Unknown error" }}
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% endif %}
 
     <div class="pagination-wrapper">
         <div class="range-info muted">
@@ -332,4 +364,14 @@ main { max-width: 1250px; }
         {% endif %}
     </div>
 </section>
+<script>
+    (function () {
+        const hasRunning = document.querySelector(".status-running, .status-pending");
+        if (hasRunning) {
+            setTimeout(() => {
+                window.location.reload();
+            }, 10000);
+        }
+    })();
+</script>
 {% endblock %}
