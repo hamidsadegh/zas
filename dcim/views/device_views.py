@@ -483,6 +483,14 @@ def err_disabled_interfaces(request):
     if site_filter != "all":
         interfaces = interfaces.filter(device__site_id=site_filter)
 
+    tag_choices = list(Tag.objects.all().order_by("name"))
+    tag_filter = request.GET.get("tag", "").strip()
+    tag_ids = {str(tag.id) for tag in tag_choices}
+    if tag_filter and tag_filter in tag_ids:
+        interfaces = interfaces.filter(device__tags__id=tag_filter).distinct()
+    else:
+        tag_filter = ""
+
     if search_query:
         interfaces = interfaces.filter(
             Q(name__icontains=search_query)
@@ -521,6 +529,8 @@ def err_disabled_interfaces(request):
         "per_page_options": PER_PAGE_OPTIONS,
         "site_choices": site_choices,
         "site_filter": site_filter,
+        "tag_choices": tag_choices,
+        "tag_filter": tag_filter,
     }
     return render(request, "dcim/err_disabled_interfaces.html", context)
 
@@ -545,6 +555,14 @@ def all_interfaces(request):
 
     if site_filter != "all":
         interfaces = interfaces.filter(device__site_id=site_filter)
+
+    tag_choices = list(Tag.objects.all().order_by("name"))
+    tag_filter = request.GET.get("tag", "").strip()
+    tag_ids = {str(tag.id) for tag in tag_choices}
+    if tag_filter and tag_filter in tag_ids:
+        interfaces = interfaces.filter(device__tags__id=tag_filter).distinct()
+    else:
+        tag_filter = ""
 
     if search_query:
         interfaces = interfaces.filter(
@@ -585,6 +603,8 @@ def all_interfaces(request):
         "per_page_options": PER_PAGE_OPTIONS,
         "site_choices": site_choices,
         "site_filter": site_filter,
+        "tag_choices": tag_choices,
+        "tag_filter": tag_filter,
     }
     return render(request, "dcim/all_interfaces.html", context)
 

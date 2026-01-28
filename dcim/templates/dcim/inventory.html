@@ -6,6 +6,9 @@
 {% include "dcim/_layout_styles.html" %}
 .device-detail-wrapper { gap: 1.5rem; font-size: 0.95rem; }
 .filter-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
+.filter-actions { justify-content: flex-end; width: 100%; }
+.filter-actions .filter-form { justify-content: flex-end; }
+.filter-actions .filter-search-wide { min-width: 260px; }
 {% endblock %}
 
 {% block content %}

@@ -6,6 +6,9 @@
 {% include "dcim/_layout_styles.html" %}
 .device-detail-wrapper { gap: 1.5rem; font-size: 0.95rem; }
 .filter-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
+.detail-card .detail-actions { flex-wrap: wrap; }
+.detail-card .filter-form { flex: 1 1 100%; justify-content: flex-end; }
+.detail-card .filter-form .filter-search-wide { min-width: 260px; }
 {% endblock %}
 
 {% block content %}
@@ -27,6 +30,14 @@
                         <option value="{{ key }}" {% if site_filter == key %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
+                {% if tag_choices %}
+                <select name="tag" onchange="this.form.submit()">
+                    <option value="">All tags</option>
+                    {% for tag in tag_choices %}
+                        <option value="{{ tag.id }}" {% if tag_filter|stringformat:"s" == tag.id|stringformat:"s" %}selected{% endif %}>{{ tag.name }}</option>
+                    {% endfor %}
+                </select>
+                {% endif %}
                 <input class="filter-search-wide" type="text" name="search" placeholder="Search device or interface..." value="{{ search_query }}">
                 <select name="paginate_by" onchange="this.form.submit()">
                     {% for option in per_page_options %}
@@ -41,13 +52,13 @@
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'device__name' %}-device__name{% elif sort_field == '-device__name' %}device__name{% else %}device__name{% endif %}">Device</a></th>
-                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'device__management_ip' %}-device__management_ip{% elif sort_field == '-device__management_ip' %}device__management_ip{% else %}device__management_ip{% endif %}">Mgmt IP</a></th>
-                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'name' %}-name{% elif sort_field == '-name' %}name{% else %}name{% endif %}">Interface</a></th>
-                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'description' %}-description{% elif sort_field == '-description' %}description{% else %}description{% endif %}">Description</a></th>
-                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'ip_address' %}-ip_address{% elif sort_field == '-ip_address' %}ip_address{% else %}ip_address{% endif %}">IP / VLAN</a></th>
-                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'status' %}-status{% elif sort_field == '-status' %}status{% else %}status{% endif %}">Status</a></th>
-                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'device__site__name' %}-device__site__name{% elif sort_field == '-device__site__name' %}device__site__name{% else %}device__site__name{% endif %}">Site</a></th>
+                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'device__name' %}-device__name{% elif sort_field == '-device__name' %}device__name{% else %}device__name{% endif %}">Device</a></th>
+                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'device__management_ip' %}-device__management_ip{% elif sort_field == '-device__management_ip' %}device__management_ip{% else %}device__management_ip{% endif %}">Mgmt IP</a></th>
+                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'name' %}-name{% elif sort_field == '-name' %}name{% else %}name{% endif %}">Interface</a></th>
+                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'description' %}-description{% elif sort_field == '-description' %}description{% else %}description{% endif %}">Description</a></th>
+                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'ip_address' %}-ip_address{% elif sort_field == '-ip_address' %}ip_address{% else %}ip_address{% endif %}">IP / VLAN</a></th>
+                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'status' %}-status{% elif sort_field == '-status' %}status{% else %}status{% endif %}">Status</a></th>
+                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'device__site__name' %}-device__site__name{% elif sort_field == '-device__site__name' %}device__site__name{% else %}device__site__name{% endif %}">Site</a></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -82,7 +93,7 @@
             </div>
             <ul class="pagination">
                 {% if interfaces.has_previous %}
-                    <li><a href="?page={{ interfaces.previous_page_number }}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}{% if site_filter %}&site={{ site_filter }}{% endif %}">Previous</a></li>
+                    <li><a href="?page={{ interfaces.previous_page_number }}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}{% if site_filter %}&site={{ site_filter }}{% endif %}{% if tag_filter %}&tag={{ tag_filter|urlencode }}{% endif %}">Previous</a></li>
                 {% else %}
                     <li><span>Previous</span></li>
                 {% endif %}
@@ -91,12 +102,12 @@
                     {% if interfaces.number == num %}
                         <li class="active"><span>{{ num }}</span></li>
                     {% elif num > interfaces.number|add:-3 and num < interfaces.number|add:3 %}
-                        <li><a href="?page={{ num }}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}{% if site_filter %}&site={{ site_filter }}{% endif %}">{{ num }}</a></li>
+                        <li><a href="?page={{ num }}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}{% if site_filter %}&site={{ site_filter }}{% endif %}{% if tag_filter %}&tag={{ tag_filter|urlencode }}{% endif %}">{{ num }}</a></li>
                     {% endif %}
                 {% endfor %}
 
                 {% if interfaces.has_next %}
-                    <li><a href="?page={{ interfaces.next_page_number }}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}{% if site_filter %}&site={{ site_filter }}{% endif %}">Next</a></li>
+                    <li><a href="?page={{ interfaces.next_page_number }}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}{% if site_filter %}&site={{ site_filter }}{% endif %}{% if tag_filter %}&tag={{ tag_filter|urlencode }}{% endif %}">Next</a></li>
                 {% else %}
                     <li><span>Next</span></li>
                 {% endif %}

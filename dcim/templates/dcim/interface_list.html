@@ -5,6 +5,9 @@
 {% block styles %}
 {% include "dcim/_layout_styles.html" %}
 .device-detail-wrapper { gap: 1.5rem; font-size: 0.95rem; }
+.detail-card .detail-actions { flex-wrap: wrap; }
+.detail-card .filter-form { flex: 1 1 100%; justify-content: flex-end; }
+.detail-card .filter-form .filter-search-wide { min-width: 260px; }
 {% endblock %}
 
 {% block content %}
