@@ -406,7 +406,7 @@ class DeviceAdmin(admin.ModelAdmin):
         "site__name",
         "tags__name",
         "device_type__model",
-        "device_type__vendor",
+        "device_type__vendor__name",
         "site__organization__name",
     )
     list_filter = (

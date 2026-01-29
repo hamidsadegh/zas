@@ -2,7 +2,10 @@ import logging
 import random
 import re
 from decimal import Decimal
+from pathlib import Path
 
+import textfsm
+from django.conf import settings
 from django.db import transaction
 
 from netmiko import ConnectHandler
@@ -43,6 +46,7 @@ class AutoAssignmentService:
     def __init__(self, candidate: DiscoveryCandidate, include_config: bool = True):
         self.candidate = candidate
         self.include_config = include_config
+        self._is_aci = False
 
     def assign(self):
         """
@@ -51,10 +55,15 @@ class AutoAssignmentService:
         device = None
         try:
             credential = self._get_ssh_credential()
+            hostname_lower = (self.candidate.hostname or "").lower()
+            include_config = self.include_config
+            if "leaf" in hostname_lower or "spine" in hostname_lower:
+                self._is_aci = True
+                include_config = False
             with transaction.atomic():
-                platform, version_raw = self._detect_platform_via_version(credential)
-                location_raw, parsed_version, stack_raw = self._collect_details_with_driver(
-                    platform, credential
+                conn, device_type, version_raw = self._detect_device_type_via_version(credential)
+                location_raw, parsed_version, stack_raw = self._collect_details(
+                    conn, device_type, version_raw
                 )
                 stack_members_data = self._parse_stack_members(stack_raw) if stack_raw else []
                 stack_count = len(stack_members_data) if stack_members_data else 0
@@ -68,7 +77,7 @@ class AutoAssignmentService:
                 position = self._select_position(rack, requested_unit, required_units)
 
                 model_name = self._extract_model_from_version(parsed_version)
-                device_type = self._resolve_device_type(platform, model_name)
+                device_type_obj = self._resolve_device_type_obj(device_type, model_name)
                 role = self._resolve_role()
                 tags = self._resolve_tags()
 
@@ -79,7 +88,7 @@ class AutoAssignmentService:
                     area=area,
                     rack=rack,
                     position=position,
-                    device_type=device_type,
+                    device_type=device_type_obj,
                     role=role,
                     status=DeviceStatusChoices.STATUS_ACTIVE,
                     source="discovery",
@@ -129,7 +138,7 @@ class AutoAssignmentService:
 
             # Run a sync after creation (outside transaction to avoid long locks)
             sync_service = SyncService(site=device.site)
-            sync_service.sync_device(device, include_config=self.include_config)
+            sync_service.sync_device(device, include_config=include_config)
 
             return {"device": device, "success": True, "error": None}
 
@@ -152,68 +161,129 @@ class AutoAssignmentService:
             )
         return credential
 
-    def _detect_platform_via_version(self, credential: SSHCredential) -> tuple[str, str]:
+    def _parse_show_version(self, raw: str, device_type: str) -> list[dict] | None:
+        if not raw:
+            return None
+        if self._is_aci:
+            template_path = (
+                Path(settings.BASE_DIR)
+                / "network"
+                / "parsers"
+                / "textfsm"
+                / "cisco_nxos_aci_show_version.textfsm"
+            )
+        elif device_type == 'cisco_nxos':
+            template_path = (
+                Path(settings.BASE_DIR)
+                / "network"
+                / "parsers"
+                / "textfsm"
+            / "cisco_nxos_show_version.textfsm"
+        )
+        else:  # cisco_ios
+            template_path = (
+                Path(settings.BASE_DIR)
+                / "network"
+                / "parsers"
+                / "textfsm"
+                / "cisco_ios_show_version.textfsm"
+            )
+        try:
+            with open(template_path, "r", encoding="utf-8") as handle:
+                fsm = textfsm.TextFSM(handle)
+                results = fsm.ParseText(raw)
+        except Exception as exc:
+            logger.warning(
+                "Could not parse NX-OS show version for %s: %s",
+                self.candidate,
+                exc,
+            )
+            return None
+
+        if not results:
+            return None
+        headers = [header.lower() for header in fsm.header]
+        return [dict(zip(headers, row)) for row in results]
+
+    def _resolve_username(self, credential: SSHCredential) -> str:
+        username = credential.ssh_username
+        hostname = (self.candidate.hostname or "").lower()
+        if "leaf" in hostname or "spine" in hostname:
+            prefix = "apic#ISE\\\\"
+            if not username.startswith(prefix):
+                username = f"{prefix}{username}"
+        return username
+
+    def _detect_device_type_via_version(self, credential: SSHCredential) -> tuple[str, str]:
         """
-        First step: determine platform using show version raw output.
+        First step: determine device type using show version raw output.
         """
         params = {
-            "device_type": "cisco_nxos",  # tolerant for IOS/IOS-XE/NX-OS
             "host": str(self.candidate.ip_address),
-            "username": credential.ssh_username,
+            "username": self._resolve_username(credential),
             "password": credential.ssh_password,
             "port": credential.ssh_port,
             "timeout": 30,
+            
         }
-        with ConnectHandler(**params) as conn:
-            version_raw = conn.send_command("show version", use_textfsm=False)
-        if not version_raw:
-            raise RuntimeError("Could not read 'show version' from device.")
-        platform = self._detect_platform(version_raw)
-        return platform, version_raw
+        for device_type in ('cisco_nxos', 'cisco_ios'):
+            try:
+                conn = ConnectHandler(**params, device_type=device_type, fast_cli=True)
+                version_row = conn.send_command('show version', use_textfsm=False)
+                detected_type = 'cisco_nxos' if 'NX-OS' in version_row or "NXOS" in version_row else 'cisco_ios'
+                if detected_type != device_type:
+                    conn.disconnect()
+                    conn = ConnectHandler(**params, device_type=detected_type, fast_cli=True)
+                    version_row = conn.send_command('show version', use_textfsm=False)
+                if 'aci' in version_row.lower():
+                    self._is_aci = True
+                return conn, detected_type, version_row
+            except Exception as exc:
+                logger.warning(
+                    "Device type detection attempt with %s failed for %s: %s",
+                    device_type,
+                    self.candidate,
+                    exc,
+                )
+                continue
+        raise RuntimeError(f"Could not connect to device {self.candidate} for device type detection.")
+        
 
-    def _collect_details_with_driver(
-        self, platform: str, credential: SSHCredential
+    def _collect_details(self, conn: ConnectHandler, device_type: str, version_raw: str
     ) -> tuple[str, dict | list | None, str | None]:
         """
         Collect SNMP location, parsed show version, and raw stack data using the correct driver.
         """
-        driver = NETMIKO_PLATFORM_MAP.get(platform, "autodetect")
-        params = {
-            "device_type": driver,
-            "host": str(self.candidate.ip_address),
-            "username": credential.ssh_username,
-            "password": credential.ssh_password,
-            "port": credential.ssh_port,
-            "timeout": 30,
-        }
-        print(params)
+
         location_raw = ""
         parsed_version = None
         stack_raw = None
-        with ConnectHandler(**params) as conn:
-            try:
-                if platform == DevicePlatformChoices.NX_OS:
-                    location_raw = conn.send_command("show snmp", use_textfsm=False)
-                else:
-                    location_raw = conn.send_command("show snmp location", use_textfsm=False)
-            except Exception:
-                location_raw = ""
-            try:
-                parsed_version = conn.send_command("show version", use_textfsm=True)
-            except Exception as exc:
-                logger.warning("Could not collect parsed show version for %s: %s", self.candidate, exc)
-            if platform in (DevicePlatformChoices.IOS, DevicePlatformChoices.IOS_XE, DevicePlatformChoices.NX_OS):
-                try:
-                    stack_raw = conn.send_command("show switch", use_textfsm=False)
-                except Exception:
-                    stack_raw = None
+       
+        try:
+            if device_type == 'cisco_nxos' and not self._is_aci:
+                location_raw = conn.send_command("show snmp", use_textfsm=False)
+            elif device_type == 'cisco_ios':
+                location_raw = conn.send_command("show snmp location", use_textfsm=False)
+        except Exception:
+            location_raw = ""
+        try:
+            parsed_version = self._parse_show_version(version_raw, device_type)
+        except Exception as exc:
+            logger.warning("Could not collect parsed show version for %s: %s", self.candidate, exc)
+            parsed_version = None
 
-        if not location_raw:
-            raise RuntimeError("Could not read SNMP location from device.")
+        if device_type == 'cisco_ios':
+            try:
+                stack_raw = conn.send_command("show switch", use_textfsm=False)
+            except Exception:
+                stack_raw = None
 
         return location_raw, parsed_version, stack_raw
 
     def _parse_snmp_location(self, raw: str) -> tuple[str, str, Decimal | None]:
+        if self._is_aci:
+            hostname_lower = (self.candidate.hostname or "").lower()
+            return self._parse_aci_location_from_hostname(hostname_lower)
         lines = [ln.strip() for ln in (raw or "").splitlines() if ln.strip()]
         if not lines:
             raise RuntimeError("SNMP location empty.")
@@ -233,6 +303,22 @@ class AutoAssignmentService:
         unit = Decimal(unit_raw) if unit_raw else None
         return area, rack, unit
 
+    def _parse_aci_location_from_hostname(
+        self, hostname: str
+    ) -> tuple[str, str, Decimal | None]:
+        if not hostname:
+            raise RuntimeError("Hostname missing for ACI location fallback.")
+        base = hostname.split(".", 1)[0]
+        parts = [part for part in base.split("-") if part]
+        if len(parts) < 3:
+            raise RuntimeError(
+                f"Hostname not in expected ACI format for area/rack: '{base}'"
+            )
+        area = parts[1]
+        rack_raw = parts[2]
+        rack = f"Rack{rack_raw}"
+        return area, rack, None
+
     def _detect_platform(self, version_raw: str) -> str:
         text = (version_raw or "").upper()
         if "NX-OS" in text:
@@ -241,7 +327,7 @@ class AutoAssignmentService:
             return DevicePlatformChoices.IOS
         return DevicePlatformChoices.UNKNOWN
 
-    def _resolve_device_type(self, platform: str, model_name: str | None) -> DeviceType:
+    def _resolve_device_type_obj(self, platform: str, model_name: str | None) -> DeviceType:
         vendor = Vendor.objects.filter(name__iexact="Cisco").first()
         if not vendor:
             raise RuntimeError("Vendor 'Cisco' not found; create it before auto-assignment.")
@@ -304,16 +390,12 @@ class AutoAssignmentService:
         tag_names = set(["reachability_check_tag", "discovered-new"])
         if "bcsw" in hostname:
             tag_names.update(["campus", "config_backup_tag"])
-        if "bmsw" in hostname:
-            tag_names.add("config_backup_tag")
+        if "bmsw" in hostname or "mgmt" in hostname:
+            tag_names.update(["management", "config_backup_tag"])
         if "bpp" in hostname:
             tag_names.update(["post_pro", "config_backup_tag"])
         if "leaf" in hostname or "spine" in hostname:
             tag_names.add("aci_fabric")
-        if "mgmt" in hostname or "bmsw" in hostname:
-            tag_names.add("management")
-        if "mgmt" in hostname:
-            tag_names.add("config_backup_tag")
 
         tags = []
         for name in tag_names:

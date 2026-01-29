@@ -1,5 +1,10 @@
 import hashlib
+import logging
 import re
+from pathlib import Path
+
+import textfsm
+from django.conf import settings
 from datetime import timedelta
 
 from django.db import transaction
@@ -25,6 +30,9 @@ from dcim.choices import (
 )
 from network.adapters.netmiko import NetmikoAdapter
 from network.choices import CliCommandsChoices as cli
+
+
+logger = logging.getLogger(__name__)
 
 
 class SyncService:
@@ -66,17 +74,27 @@ class SyncService:
             else:
                 self.PORTCHANNEL_SUMMARY_CMD = cli.PORTCHANNEL_SUMMARY_ISO_CMD
 
+            hostname_lower = (device.name or "").lower()
+            is_aci_leaf_spine = "leaf" in hostname_lower or "spine" in hostname_lower
+
             # SSH Connection and Data Retrieval
             try:
                 with NetmikoAdapter(device) as ssh:
                     results = {
                         self.VERSION_CMD: ssh.run_command(self.VERSION_CMD),
                         self.INVENTORY_CMD: ssh.run_command(self.INVENTORY_CMD),
-                        self.IF_STATUS_CMD: ssh.run_command(self.IF_STATUS_CMD),
-                        self.IF_DESC_CMD: ssh.run_command(self.IF_DESC_CMD),
-                        self.IF_IP_BRIEF_CMD: ssh.run_command(self.IF_IP_BRIEF_CMD),
-                        self.PORTCHANNEL_SUMMARY_CMD: ssh.run_command(self.PORTCHANNEL_SUMMARY_CMD),
                     }
+                    if not is_aci_leaf_spine:
+                        results.update(
+                            {
+                                self.IF_STATUS_CMD: ssh.run_command(self.IF_STATUS_CMD),
+                                self.IF_DESC_CMD: ssh.run_command(self.IF_DESC_CMD),
+                                self.IF_IP_BRIEF_CMD: ssh.run_command(self.IF_IP_BRIEF_CMD),
+                                self.PORTCHANNEL_SUMMARY_CMD: ssh.run_command(
+                                    self.PORTCHANNEL_SUMMARY_CMD
+                                ),
+                            }
+                        )
                     if is_ios_stack:
                         results[self.STACK_SWITCH_CMD] = ssh.run_command(self.STACK_SWITCH_CMD)
                     if is_nxos:
@@ -96,20 +114,20 @@ class SyncService:
             # Mark device as reachable
             runtime.reachable_ssh = True
             runtime.save(update_fields=["reachable_ssh", "last_check"])
-            
             # Apply retrieved data
             self._apply_version(device, runtime, results[self.VERSION_CMD])
             self._apply_inventory(device, results[self.INVENTORY_CMD])
             if is_nxos and self.IF_TRANSCEIVER_CMD in results:
                 self._apply_transceivers(device, results[self.IF_TRANSCEIVER_CMD])
 
-            self._apply_interfaces(
-                device=device,
-                status_result=results[self.IF_STATUS_CMD],
-                desc_result=results[self.IF_DESC_CMD],
-                ip_result=results[self.IF_IP_BRIEF_CMD],
-                po_result=results[self.PORTCHANNEL_SUMMARY_CMD],
-            )
+            if not is_aci_leaf_spine:
+                self._apply_interfaces(
+                    device=device,
+                    status_result=results[self.IF_STATUS_CMD],
+                    desc_result=results[self.IF_DESC_CMD],
+                    ip_result=results[self.IF_IP_BRIEF_CMD],
+                    po_result=results[self.PORTCHANNEL_SUMMARY_CMD],
+                )
 
             if include_config:
                 cfg = results.get(self.RUNNING_CONFIG_CMD, {})
@@ -131,6 +149,8 @@ class SyncService:
     def _apply_version(self, device: Device, runtime: DeviceRuntimeStatus, result: dict):
         parsed = result.get("parsed")
         raw = result.get("raw", "") or ""
+        if self._is_aci_leaf_spine(device) and raw:
+            parsed = self._parse_aci_show_version(raw) or parsed
 
         serial = image = None
         uptime_seconds = None
@@ -238,6 +258,31 @@ class SyncService:
                 device=device,
                 name__startswith="Transceiver ",
             ).exclude(name__in=seen_names).delete()
+
+    def _is_aci_leaf_spine(self, device: Device) -> bool:
+        hostname = (device.name or "").lower()
+        return "leaf" in hostname or "spine" in hostname
+
+    def _parse_aci_show_version(self, raw: str) -> list[dict] | None:
+        template_path = (
+            Path(settings.BASE_DIR)
+            / "network"
+            / "parsers"
+            / "textfsm"
+            / "cisco_nxos_aci_show_version.textfsm"
+        )
+        try:
+            with open(template_path, "r", encoding="utf-8") as handle:
+                fsm = textfsm.TextFSM(handle)
+                results = fsm.ParseText(raw)
+        except Exception as exc:
+            logger.warning("ACI show version parse failed: %s", exc)
+            return None
+
+        if not results:
+            return None
+        headers = [header.lower() for header in fsm.header]
+        return [dict(zip(headers, row)) for row in results]
 
     def _parse_transceiver_entries(self, result: dict) -> list[dict]:
         parsed = result.get("parsed")
