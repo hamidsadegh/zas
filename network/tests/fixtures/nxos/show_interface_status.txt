@@ -1,0 +1,74 @@
+
+--------------------------------------------------------------------------------
+Port          Name               Status    Vlan      Duplex  Speed   Type
+--------------------------------------------------------------------------------
+mgmt0         --                 connected routed    full    1000    --
+
+--------------------------------------------------------------------------------
+Port          Name               Status    Vlan      Duplex  Speed   Type
+--------------------------------------------------------------------------------
+Eth1/1        03.17b.17 ES16 A17 notconnec 2098      auto    auto    10Gbase-SR
+Eth1/2        03.17b.18 ES16 A17 notconnec 2098      auto    auto    10Gbase-SR
+Eth1/3        03.17c.01 TON05 A0 notconnec 2098      auto    auto    10Gbase-SR
+Eth1/4        03.17c.02 TON05 A0 notconnec 2098      auto    auto    10Gbase-SR
+Eth1/5        03.17a.22 ES10 A10 connected 2098      full    10G     10Gbase-SR
+Eth1/6        03.17a.23 ES10 A10 connected 2098      full    10G     10Gbase-SR
+Eth1/7        03.17a.13 ES18 A03 connected 2098      full    10G     10Gbase-SR
+Eth1/8        03.17a.14 ES18 A03 connected 2098      full    10G     10Gbase-SR
+Eth1/9        BCE61              notconnec 2098      auto    auto    10Gbase-SR
+Eth1/10       03.17a.17 ES23 A01 notconnec 26        auto    auto    10Gbase-SR
+Eth1/11       03.17a.18 ES23 A01 connected 2098      full    10G     10Gbase-SR
+Eth1/12       03.17a.19 ES23 A01 connected 2098      full    10G     10Gbase-SR
+Eth1/13       03.17a.09 ES17 A01 connected 2098      full    10G     10Gbase-SR
+Eth1/14       03.17a.10 ES17 A01 connected 2098      full    10G     10Gbase-SR
+Eth1/15       03.17a.11 ES17 A01 notconnec 26        auto    auto    10Gbase-SR
+Eth1/16       03.17a.07 ES14 A01 notconnec 26        auto    auto    10Gbase-SR
+Eth1/17       03.17a.05 ES14 A01 connected 2098      full    10G     10Gbase-SR
+Eth1/18       03.17a.06 ES14 A01 connected 2098      full    10G     10Gbase-SR
+Eth1/19       03.17a.01 ES13 A03 notconnec 2098      auto    auto    10Gbase-SR
+Eth1/20       03.17a.02 ES13 A03 notconnec 2098      auto    auto    10Gbase-SR
+Eth1/21       03.17a.03 ES13 A03 notconnec 26        auto    auto    10Gbase-SR
+Eth1/22       03.17b.13 ES12 A03 notconnec 2098      auto    auto    10Gbase-SR
+Eth1/23       03.17b.14 ES12 A03 notconnec 2098      auto    auto    10Gbase-SR
+Eth1/24       03.17b.15 ES12 A03 notconnec 26        auto    auto    10Gbase-SR
+Eth1/25       03.17b.5 bptaus01  notconnec 2098      auto    auto    10Gbase-SR
+Eth1/26       03.17b.6 bptaus01  notconnec 2098      auto    auto    10Gbase-SR
+Eth1/27       03.17b.7 bptaus01  notconnec 26        auto    auto    10Gbase-SR
+Eth1/28       03.17b.1 ES15 A176 notconnec 27        auto    auto    10Gbase-SR
+Eth1/29       BCE61              notconnec 2098      auto    auto    10Gbase-SR
+Eth1/30       03.17c.03 TON05    notconnec 23        auto    auto    10Gbase-SR
+Eth1/31       03.17c.04 TON05    notconnec 23        auto    auto    10Gbase-SR
+Eth1/32       03.17d.1 A179b     connected 2098      full    10G     10Gbase-SR
+Eth1/33       03.17d.2 A179b     connected 2098      full    10G     10Gbase-SR
+Eth1/34       03.17d.3 A179b     notconnec 2098      auto    auto    10Gbase-SR
+Eth1/35       03.17d.4 A179b     connected 2098      full    10G     10Gbase-SR
+Eth1/36       03.17d.5 A179b     connected 2098      full    10G     10Gbase-SR
+Eth1/37       03.17d.6 A179b     connected 2098      full    10G     10Gbase-SR
+Eth1/38       03.17d.7 A179b     connected 2098      full    10G     10Gbase-SR
+Eth1/39       03.17d.8 A179b     connected 2098      full    10G     10Gbase-SR
+Eth1/40       03.17d.9 A179b     connected 2098      full    10G     10Gbase-SR
+Eth1/41       03.17d.10 A179b    connected 2098      full    10G     10Gbase-SR
+Eth1/42       03.17d.11 A179b    connected 2098      full    10G     10Gbase-SR
+Eth1/43       03.17d.12 A179b    connected 2098      full    10G     10Gbase-SR
+Eth1/44       frei               xcvrAbsen 16        auto    auto    --
+Eth1/45       frei               xcvrAbsen 15        auto    auto    --
+Eth1/46       frei               xcvrAbsen 16        auto    auto    --
+Eth1/47       frei               xcvrAbsen 15        auto    auto    --
+Eth1/48       frei               xcvrAbsen 16        auto    auto    --
+Eth1/49       b-sw-rce-01 eth1/8 connected trunk     full    100G    QSFP-100G-SM-SR
+Eth1/50       b-sw-rce-02 eth1/8 connected trunk     full    100G    QSFP-100G-SM-SR
+Eth1/51       --                 xcvrAbsen routed    auto    auto    --
+Eth1/52       --                 xcvrAbsen routed    auto    auto    --
+Eth1/53       --                 xcvrAbsen routed    auto    auto    --
+Eth1/54       --                 xcvrAbsen routed    auto    auto    --
+
+--------------------------------------------------------------------------------
+Port          Name               Status    Vlan      Duplex  Speed   Type
+--------------------------------------------------------------------------------
+Po1           Uplink b-sw-rce-01 connected trunk     full    100G    --
+
+--------------------------------------------------------------------------------
+Port          Name               Status    Vlan      Duplex  Speed   Type
+--------------------------------------------------------------------------------
+Vlan1         --                 down      routed    auto    auto    --
+Vlan49        --                 down      routed    auto    auto    --

@@ -1,0 +1,44 @@
+NAME: "c93xx Stack", DESCR: "c93xx Stack"
+PID: C9300-48P         , VID: V02  , SN: FOC2340X01D
+
+NAME: "Switch 2", DESCR: "C9300-48P"
+PID: C9300-48P         , VID: V02  , SN: FOC2340X01D
+
+NAME: "StackPort2/1", DESCR: "StackPort2/1"
+PID: STACK-T1-50CM     , VID: V01  , SN: MOC2337A0GG
+
+NAME: "StackPort2/2", DESCR: "StackPort2/2"
+PID: STACK-T1-50CM     , VID: V01  , SN: MOC2337A0JD
+
+NAME: "Switch 2 - Power Supply A", DESCR: "Switch 2 - Power Supply A"
+PID: PWR-C1-715WAC-P   , VID: V01  , SN: DCC2330C07S
+
+NAME: "Switch 2 - Power Supply B", DESCR: "Switch 2 - Power Supply B"
+PID: PWR-C1-715WAC-P   , VID: V01  , SN: DCC2330C07R
+
+NAME: "Switch 2 FRU Uplink Module 1", DESCR: "2x40G Uplink Module"
+PID: C9300-NM-2Q       , VID: V02  , SN: FOC2413558R
+
+NAME: "Fo2/1/1", DESCR: "SFP-10GBase-SR"
+PID: SFP-10G-SR-S/QSA    , VID: V01  , SN: AVD2413D23R
+
+NAME: "Switch 3", DESCR: "C9300-48P"
+PID: C9300-48P         , VID: V02  , SN: FOC2340W011
+
+NAME: "StackPort3/1", DESCR: "StackPort3/1"
+PID: STACK-T1-50CM     , VID: V01  , SN: MOC2337A0JD
+
+NAME: "StackPort3/2", DESCR: "StackPort3/2"
+PID: STACK-T1-50CM     , VID: V01  , SN: MOC2337A0GG
+
+NAME: "Switch 3 - Power Supply A", DESCR: "Switch 3 - Power Supply A"
+PID: PWR-C1-715WAC-P   , VID: V01  , SN: DCC2330C0DX
+
+NAME: "Switch 3 - Power Supply B", DESCR: "Switch 3 - Power Supply B"
+PID: PWR-C1-715WAC-P   , VID: V01  , SN: DCC2330C0CT
+
+NAME: "Switch 3 FRU Uplink Module 1", DESCR: "2x40G Uplink Module"
+PID: C9300-NM-2Q       , VID: V02  , SN: FOC241355AJ
+
+NAME: "Fo3/1/1", DESCR: "SFP-10GBase-SR"
+PID: SFP-10G-SR-S/QSA    , VID: V01  , SN: AVD2413D2NC

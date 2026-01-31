@@ -1,0 +1,74 @@
+
+-------------------------------------------------------------------------------
+Interface                Description
+-------------------------------------------------------------------------------
+mgmt0                    --
+
+-------------------------------------------------------------------------------
+Port          Type   Speed   Description
+-------------------------------------------------------------------------------
+Eth1/1        eth    10G     03.17b.17 ES16 A177
+Eth1/2        eth    10G     03.17b.18 ES16 A177
+Eth1/3        eth    10G     03.17c.01 TON05 A021
+Eth1/4        eth    10G     03.17c.02 TON05 A021
+Eth1/5        eth    10G     03.17a.22 ES10 A102a
+Eth1/6        eth    10G     03.17a.23 ES10 A102a
+Eth1/7        eth    10G     03.17a.13 ES18 A034a
+Eth1/8        eth    10G     03.17a.14 ES18 A034a
+Eth1/9        eth    10G     BCE61
+Eth1/10       eth    10G     03.17a.17 ES23 A013
+Eth1/11       eth    10G     03.17a.18 ES23 A013
+Eth1/12       eth    10G     03.17a.19 ES23 A013
+Eth1/13       eth    10G     03.17a.09 ES17 A019
+Eth1/14       eth    10G     03.17a.10 ES17 A019
+Eth1/15       eth    10G     03.17a.11 ES17 A019
+Eth1/16       eth    10G     03.17a.07 ES14 A018
+Eth1/17       eth    10G     03.17a.05 ES14 A018
+Eth1/18       eth    10G     03.17a.06 ES14 A018
+Eth1/19       eth    10G     03.17a.01 ES13 A038a
+Eth1/20       eth    10G     03.17a.02 ES13 A038a
+Eth1/21       eth    10G     03.17a.03 ES13 A038a
+Eth1/22       eth    10G     03.17b.13 ES12 A038b
+Eth1/23       eth    10G     03.17b.14 ES12 A038b
+Eth1/24       eth    10G     03.17b.15 ES12 A038b
+Eth1/25       eth    10G     03.17b.5 bptaus01 A176a
+Eth1/26       eth    10G     03.17b.6 bptaus01 A176a
+Eth1/27       eth    10G     03.17b.7 bptaus01 A176a
+Eth1/28       eth    10G     03.17b.1 ES15 A176a
+Eth1/29       eth    10G     BCE61
+Eth1/30       eth    10G     03.17c.03 TON05
+Eth1/31       eth    10G     03.17c.04 TON05
+Eth1/32       eth    10G     03.17d.1 A179b
+Eth1/33       eth    10G     03.17d.2 A179b
+Eth1/34       eth    10G     03.17d.3 A179b
+Eth1/35       eth    10G     03.17d.4 A179b
+Eth1/36       eth    10G     03.17d.5 A179b
+Eth1/37       eth    10G     03.17d.6 A179b
+Eth1/38       eth    10G     03.17d.7 A179b
+Eth1/39       eth    10G     03.17d.8 A179b
+Eth1/40       eth    10G     03.17d.9 A179b
+Eth1/41       eth    10G     03.17d.10 A179b
+Eth1/42       eth    10G     03.17d.11 A179b
+Eth1/43       eth    10G     03.17d.12 A179b
+Eth1/44       eth    25G     frei
+Eth1/45       eth    25G     frei
+Eth1/46       eth    25G     frei
+Eth1/47       eth    25G     frei
+Eth1/48       eth    25G     frei
+Eth1/49       eth    100G    b-sw-rce-01 eth1/8
+Eth1/50       eth    100G    b-sw-rce-02 eth1/8
+Eth1/51       eth    100G    --
+Eth1/52       eth    100G    --
+Eth1/53       eth    100G    --
+Eth1/54       eth    100G    --
+
+-------------------------------------------------------------------------------
+Interface                Description
+-------------------------------------------------------------------------------
+Po1                      Uplink b-sw-rce-01/02
+
+-------------------------------------------------------------------------------
+Interface                Description
+-------------------------------------------------------------------------------
+Vlan1                    --
+Vlan49                   --

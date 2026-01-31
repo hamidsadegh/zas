@@ -1,0 +1,107 @@
+
+Port         Name               Status       Vlan       Duplex  Speed Type
+Gi2/0/1      direkt a122b       notconnect   2030         auto   auto 10/100/1000BaseTX
+Gi2/0/2      direkt a122b       notconnect   2030         auto   auto 10/100/1000BaseTX
+Gi2/0/3      2.12 179           connected    trunk        full a-1000 10/100/1000BaseTX
+Gi2/0/4      1.5.6              notconnect   2030         auto   auto 10/100/1000BaseTX
+Gi2/0/5      1.9.16             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi2/0/6      1.9.14             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi2/0/7      1.9.12             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi2/0/8      1.0.19 125         connected    trunk      a-full a-1000 10/100/1000BaseTX
+Gi2/0/9      1.2.4              notconnect   242          full    100 10/100/1000BaseTX
+Gi2/0/10     01.00.20           notconnect   2014         full    100 10/100/1000BaseTX
+Gi2/0/11     1.0.9              notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi2/0/12     a179a.1.0.10       connected    2014       a-full a-1000 10/100/1000BaseTX
+Gi2/0/13     1.7.3.y2           connected    2030       a-full a-1000 10/100/1000BaseTX
+Gi2/0/14     1.2.17             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi2/0/15     1.2.18             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi2/0/16     frei ap09          notconnect   59           auto   auto 10/100/1000BaseTX
+Gi2/0/17     1.5.3              notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi2/0/18     1.7.4              notconnect   2014         full   1000 10/100/1000BaseTX
+Gi2/0/19     1.5.10 y1          notconnect   2014         full    100 10/100/1000BaseTX
+Gi2/0/20     1.5.4              connected    2014       a-full   a-10 10/100/1000BaseTX
+Gi2/0/21     1.1.9              notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi2/0/22     1.0.17             notconnect   2014         full    100 10/100/1000BaseTX
+Gi2/0/23     1.5.8              connected    2032       a-full a-1000 10/100/1000BaseTX
+Gi2/0/24     1.0.21             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi2/0/25     1.0.3              notconnect   2014         full    100 10/100/1000BaseTX
+Gi2/0/26     1.0.23             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi2/0/27     1.2.2              connected    2014       a-full   a-10 10/100/1000BaseTX
+Gi2/0/28     1.2.7              notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi2/0/29     1.2.3              connected    2014         full   1000 10/100/1000BaseTX
+Gi2/0/30     1.2.1              notconnect   2014         full   1000 10/100/1000BaseTX
+Gi2/0/31     1.1.12             notconnect   2014         full    100 10/100/1000BaseTX
+Gi2/0/32     1.1.11 125         connected    trunk        full a-1000 10/100/1000BaseTX
+Gi2/0/33     1.1.8              connected    2014       a-full a-1000 10/100/1000BaseTX
+Gi2/0/34     1.1.7              connected    2014       a-full   a-10 10/100/1000BaseTX
+Gi2/0/35     1.1.6              notconnect   2014         full    100 10/100/1000BaseTX
+Gi2/0/36     1.1.2              notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi2/0/37     1.7.7              connected    2014       a-full a-1000 10/100/1000BaseTX
+Gi2/0/38     1.0.24             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi2/0/39     1.0.15             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi2/0/40     1.0.16             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi2/0/41     1.0.14             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi2/0/42     1.0.13             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi2/0/43     a179.01.04.24 b-wa connected    trunk        full a-1000 10/100/1000BaseTX
+Gi2/0/44     1.0.8              notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi2/0/45     1.0.7              connected    2014       a-full a-1000 10/100/1000BaseTX
+Gi2/0/46     1.0.6              notconnect   2014         full    100 10/100/1000BaseTX
+Gi2/0/47     1.0.5              notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi2/0/48     1.0.1              notconnect   2014         full    100 10/100/1000BaseTX
+Fo2/1/1      uplink core Fo2    connected    trunk        full    10G SFP-10GBase-SR
+Fo2/1/2                         notconnect   1            auto   auto unknown
+Ap2/0/1                         connected    1          a-full a-1000 App-hosting port
+Gi3/0/1                         notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/2      5.01 176           connected    trunk      a-full a-1000 10/100/1000BaseTX
+Gi3/0/3      1.2.11             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/4      2.19               notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/5      1.2.24             notconnect   2014         auto   auto 10/100/1000BaseTX
+
+Port         Name               Status       Vlan       Duplex  Speed Type
+Gi3/0/6      2.22 179d          connected    trunk      a-full a-1000 10/100/1000BaseTX
+Gi3/0/7      1.9.13             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/8      1.9.11             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/9      1.4.13             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/10     r1.4.2 a123        notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/11     1.9.8 a123         notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/12     1.0.12             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/13     1.2.23 miniswitch  notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/14     1.7.21             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/15     r1.2.15            connected    2014       a-full a-1000 10/100/1000BaseTX
+Gi3/0/16     r1.2.16            connected    2014       a-full a-1000 10/100/1000BaseTX
+Gi3/0/17     1.1.1              notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/18     1.7.17             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/19     1.7.16             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/20     1.7.10             connected    2030         full a-1000 10/100/1000BaseTX
+Gi3/0/21     1.7.13             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/22     1.7.12 a179b       notconnect   2014         full    100 10/100/1000BaseTX
+Gi3/0/23     1.7.11             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/24     1.7.09             connected    2014       a-full a-1000 10/100/1000BaseTX
+Gi3/0/25     1.0.11             notconnect   2030         auto   auto 10/100/1000BaseTX
+Gi3/0/26     1.2.7              notconnect   2030         auto   auto 10/100/1000BaseTX
+Gi3/0/27     1.2.20             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/28     1.7.10             notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/29     1.7.3              connected    2014       a-full   a-10 10/100/1000BaseTX
+Gi3/0/30     1.7.2              notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/31     1.7.1              connected    2014         full   1000 10/100/1000BaseTX
+Gi3/0/32     1.5.12             connected    2014       a-full a-1000 10/100/1000BaseTX
+Gi3/0/33     1.5.11             connected    2014       a-full   a-10 10/100/1000BaseTX
+Gi3/0/34     1.5.10.y2          connected    2030       a-full a-1000 10/100/1000BaseTX
+Gi3/0/35     NAC Test           notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/36     1.5.5 a176         connected    2014       a-full   a-10 10/100/1000BaseTX
+Gi3/0/37     1.7.8              connected    2014       a-full  a-100 10/100/1000BaseTX
+Gi3/0/38     1.1.10 a125        connected    2032       a-full a-1000 10/100/1000BaseTX
+Gi3/0/39     1.4.21 a123        notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/40     1.4.16 a124        notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/41     1.4.15 a124        notconnect   2046         auto   auto 10/100/1000BaseTX
+Gi3/0/42     a179a.1.4.14       connected    2014       a-full a-1000 10/100/1000BaseTX
+Gi3/0/43     1.9.6 a123         notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/44     1.2.8              connected    2014       a-full   a-10 10/100/1000BaseTX
+Gi3/0/45     1.9.10 y1          connected    2014       a-full a-1000 10/100/1000BaseTX
+Gi3/0/46     1.7.5              connected    2014       a-full   1000 10/100/1000BaseTX
+Gi3/0/47     1.2.9              notconnect   2014         auto   auto 10/100/1000BaseTX
+Gi3/0/48     1.4.1 a123 miniswi notconnect   2030         auto   auto 10/100/1000BaseTX
+Fo3/1/1      uplink core        connected    trunk        full    10G SFP-10GBase-SR
+Fo3/1/2                         notconnect   1            auto   auto unknown
+Ap3/0/1                         connected    1          a-full a-1000 App-hosting port
+Po1          uplink core        connected    trunk      a-full  a-10G N/A

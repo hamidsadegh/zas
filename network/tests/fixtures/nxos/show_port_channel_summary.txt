@@ -1,0 +1,20 @@
+port           port-channel   port-profile
+bppsw01-a587-b4# sh port-
+port-channel   port-profile
+bppsw01-a587-b4# sh port-channel summary
+Flags:  D - Down        P - Up in port-channel (members)
+        I - Individual  H - Hot-standby (LACP only)
+        s - Suspended   r - Module-removed
+        b - BFD Session Wait
+        S - Switched    R - Routed
+        U - Up (port-channel)
+        p - Up in delay-lacp mode (member)
+        M - Not in use. Min-links not met
+--------------------------------------------------------------------------------
+Group Port-       Type     Protocol  Member Ports
+      Channel
+--------------------------------------------------------------------------------
+1     Po1(SU)     Eth      LACP      Eth1/53(P)   Eth1/54(P)
+2     Po2(SU)     Eth      LACP      Eth1/51(P)   Eth1/52(P)
+3     Po3(SD)     Eth      LACP      Eth1/7(D)
+4     Po4(SD)     Eth      LACP      Eth1/8(D)

@@ -1,0 +1,26 @@
+NAME: "Chassis",  DESCR: "Nexus C93108TC-FX chassis"
+PID: N9K-C93108TC-FX     ,  VID: V03  ,  SN: FDO23030PM7
+
+NAME: "Slot 1 ",  DESCR: "48x10G              "
+PID: N9K-C93108TC-FX     ,  VID: V03  ,  SN: FDO23030PM7
+
+NAME: "GEM    ",  DESCR: "6x40/100G Switch    "
+PID: N9K-C93108TC-FX     ,  VID: V03  ,  SN: FDO23030PM7
+
+NAME: "power Supply 1",  DESCR: "PSU                 "
+PID: NXA-PAC-500W-PI     ,  VID: V01  ,  SN: LIT23022DT3
+
+NAME: "power Supply 2",  DESCR: "PSU                 "
+PID: NXA-PAC-500W-PI     ,  VID: V01  ,  SN: LIT23022AUN
+
+NAME: "Fan 1  ",  DESCR: "fan                 "
+PID: NXA-FAN-30CFM-B     ,  VID: N/A  ,  SN: N/A
+
+NAME: "Fan 2  ",  DESCR: "fan                 "
+PID: NXA-FAN-30CFM-B     ,  VID: N/A  ,  SN: N/A
+
+NAME: "Fan 3  ",  DESCR: "fan                 "
+PID: NXA-FAN-30CFM-B     ,  VID: N/A  ,  SN: N/A
+
+NAME: "Fan 4  ",  DESCR: "fan                 "
+PID: NXA-FAN-30CFM-B     ,  VID: N/A  ,  SN: N/A
