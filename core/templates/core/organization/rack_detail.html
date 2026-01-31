@@ -4,11 +4,11 @@
 
 {% block styles %}
 .rack-shell {
-    max-width: none;
-    width: 80vw;
+    max-width: 1200px;
+    width: min(1200px, 96vw);
     margin: 0 auto;
     display: grid;
-    grid-template-columns: 360px 3fr;
+    grid-template-columns: 340px minmax(0, 1fr);
     gap: 1.5rem;
 }
 .card {
@@ -145,7 +145,6 @@
     display: inline-block;
 }
 @media (max-width: 960px) { .rack-shell { grid-template-columns: 1fr; } }
-@media (min-width: 960px) { .rack-views { grid-template-columns: 1fr 1fr; } }
 main {
     max-width: none;
     width: 95vw;
@@ -233,54 +232,6 @@ main {
                                             </div>
                                         {% else %}
                                             {% if row.device.device_type.front_image %}
-                                                <img src="{{ row.device.device_type.front_image.url }}" alt="{{ row.device.name }} front" class="device-img">
-                                            {% elif row.device.device_type.front_svg %}
-                                                <img src="{{ row.device.device_type.front_svg.url }}" alt="{{ row.device.name }} front" class="device-img">
-                                            {% endif %}
-                                        {% endif %}
-                                    </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-                <div class="rack-viewport">
-                    <div class="muted" style="margin-bottom:0.4rem;">Rear</div>
-                    <div class="units">
-                        {% for row in layout %}
-                            <div class="unit-row">
-                                <div class="unit-label">{% if not row.occupied %}U{{ row.unit }}{% endif %}</div>
-                                <div class="unit-slot" style="{% if row.occupied and not row.device %}background: transparent; border: none; padding:0; min-height:0;{% endif %}">
-                                    {% if row.device %}
-                                    <div class="device-block" style="background:#eef2ff; border-color:#cbd5f5; min-height: {{ row.render_height_px }}px; height: auto;">
-                                        <div class="device-name">
-                                            <a href="{% url 'device_detail' row.device.id %}">{{ row.device.name }}</a>
-                                        </div>
-                                        <div class="device-role">
-                                            {{ row.device.device_type.model|default:"" }}
-                                            {% if row.device.role %} · {{ row.device.role.name }}{% endif %}
-                                        </div>
-                                        <div class="muted" style="font-size:0.85rem;">Spans {{ row.height }}U{% if row.stack_count %} · Stack {{ row.stack_count }}{% endif %}</div>
-                                        {% if row.stack_count and row.stack_count > 1 %}
-                                            <div class="stack-images">
-                                                {% for num in row.stack_range %}
-                                                    <div style="position:relative;">
-                                                        <span class="pill" style="position:absolute; top:6px; left:6px; padding:0.15rem 0.4rem; font-size:0.75rem;">#{{ num }}</span>
-                                                    {% if row.device.device_type.rear_image %}
-                                                        <img src="{{ row.device.device_type.rear_image.url }}" alt="{{ row.device.name }} rear" class="device-img">
-                                                    {% elif row.device.device_type.front_image %}
-                                                        <img src="{{ row.device.device_type.front_image.url }}" alt="{{ row.device.name }} front" class="device-img">
-                                                    {% elif row.device.device_type.front_svg %}
-                                                        <img src="{{ row.device.device_type.front_svg.url }}" alt="{{ row.device.name }} front" class="device-img">
-                                                    {% endif %}
-                                                    </div>
-                                                {% endfor %}
-                                            </div>
-                                        {% else %}
-                                            {% if row.device.device_type.rear_image %}
-                                                <img src="{{ row.device.device_type.rear_image.url }}" alt="{{ row.device.name }} rear" class="device-img">
-                                            {% elif row.device.device_type.front_image %}
                                                 <img src="{{ row.device.device_type.front_image.url }}" alt="{{ row.device.name }} front" class="device-img">
                                             {% elif row.device.device_type.front_svg %}
                                                 <img src="{{ row.device.device_type.front_svg.url }}" alt="{{ row.device.name }} front" class="device-img">
