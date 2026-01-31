@@ -58,6 +58,7 @@
                         <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'name' %}-name{% elif sort_field == '-name' %}name{% else %}name{% endif %}">Interface</a></th>
                         <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'description' %}-description{% elif sort_field == '-description' %}description{% else %}description{% endif %}">Description</a></th>
                         <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'ip_address' %}-ip_address{% elif sort_field == '-ip_address' %}ip_address{% else %}ip_address{% endif %}">IP / VLAN</a></th>
+                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'speed' %}-speed{% elif sort_field == '-speed' %}speed{% else %}speed{% endif %}">Speed</a></th>
                         <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'status' %}-status{% elif sort_field == '-status' %}status{% else %}status{% endif %}">Status</a></th>
                         <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'device__site__name' %}-device__site__name{% elif sort_field == '-device__site__name' %}device__site__name{% else %}device__site__name{% endif %}">Site</a></th>
                     </tr>
@@ -76,6 +77,19 @@
                                 {{ interface.vlan_raw }}
                             {% elif interface.access_vlan %}
                                 VLAN {{ interface.access_vlan.vlan_id }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if interface.status == "notconnected" %}
+                                -
+                            {% elif interface.speed != None %}
+                                {% if interface.speed > 1000 %}
+                                    {% widthratio interface.speed 1000 1 %}G
+                                {% else %}
+                                    {{ interface.speed }}
+                                {% endif %}
                             {% else %}
                                 -
                             {% endif %}

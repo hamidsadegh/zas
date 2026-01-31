@@ -53,7 +53,7 @@ def _build_inventory_rows(search_query):
             "area",
             "rack",
         )
-        .prefetch_related("modules")
+        .prefetch_related("modules", "tags")
         .all()
     )
 
@@ -508,6 +508,7 @@ def err_disabled_interfaces(request):
         "name",
         "description",
         "ip_address",
+        "speed",
         "status",
         "device__site__name",
     }
@@ -625,6 +626,17 @@ def inventory_list(request):
     rows = _build_inventory_rows(search_query)
     if site_filter != "all":
         rows = [row for row in rows if row.get("device_site_id") == site_filter]
+    tag_choices = list(Tag.objects.all().order_by("name"))
+    tag_filter = request.GET.get("tag", "").strip()
+    tag_ids = {str(tag.id) for tag in tag_choices}
+    if tag_filter and tag_filter in tag_ids:
+        rows = [
+            row
+            for row in rows
+            if any(str(tag.id) == tag_filter for tag in row["device"].tags.all())
+        ]
+    else:
+        tag_filter = ""
     rows = _sort_inventory_rows(rows, sort_field)
 
     paginate_by = _get_paginate_by(request, default=50)
@@ -640,6 +652,8 @@ def inventory_list(request):
         "per_page_options": PER_PAGE_OPTIONS,
         "site_choices": site_choices,
         "site_filter": site_filter,
+        "tag_choices": tag_choices,
+        "tag_filter": tag_filter,
     }
     return render(request, "dcim/inventory.html", context)
 
@@ -649,10 +663,20 @@ def inventory_export(request):
     search_query = request.GET.get("search", "").strip()
     sort_field = request.GET.get("sort", "device_name")
     site_filter = request.GET.get("site", "all")
+    tag_filter = request.GET.get("tag", "").strip()
+    tag_ids = set(
+        Tag.objects.filter(id=tag_filter).values_list("id", flat=True)
+    )
 
     rows = _build_inventory_rows(search_query)
     if site_filter != "all":
         rows = [row for row in rows if row.get("device_site_id") == site_filter]
+    if tag_filter and str(tag_filter) in {str(tag_id) for tag_id in tag_ids}:
+        rows = [
+            row
+            for row in rows
+            if any(str(tag.id) == tag_filter for tag in row["device"].tags.all())
+        ]
     rows = _sort_inventory_rows(rows, sort_field)
 
     wb = Workbook()
