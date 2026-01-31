@@ -17,6 +17,7 @@ from dcim.models import (
     DeviceModule,
     DeviceRuntimeStatus,
     DeviceStackMember,
+    DeviceType,
     Interface,
 )
 from dcim.choices import (
@@ -102,6 +103,11 @@ class SyncService:
             # Apply retrieved data
             self._apply_version(device, runtime, results[self.VERSION_CMD])
             self._apply_inventory(device, results[self.INVENTORY_CMD])
+            self._update_device_type(
+                device=device,
+                version_result=results[self.VERSION_CMD],
+                inventory_result=results[self.INVENTORY_CMD],
+            )
             if is_nxos and self.IF_TRANSCEIVER_CMD in results:
                 self._apply_transceivers(device, results[self.IF_TRANSCEIVER_CMD])
 
@@ -291,6 +297,84 @@ class SyncService:
                 device=device,
                 name__in=no_serial_names,
             ).filter(Q(serial_number__isnull=True) | Q(serial_number="")).delete()
+
+    def _update_device_type(self, *, device: Device, version_result: dict, inventory_result: dict) -> None:
+        model = self._model_from_inventory(inventory_result.get("parsed"), device.serial_number)
+        if not model:
+            model = self._extract_model_from_version(version_result.get("parsed"))
+        if not model:
+            return
+
+        qs = DeviceType.objects.filter(model__iexact=model)
+        if device.device_type and device.device_type.vendor_id:
+            qs = qs.filter(vendor=device.device_type.vendor)
+        device_type = qs.first()
+        if not device_type:
+            logger.warning("DeviceType model '%s' not found for %s", model, device)
+            return
+        if device.device_type_id != device_type.id:
+            device.device_type = device_type
+            device.save(update_fields=["device_type"])
+
+    @staticmethod
+    def _extract_model_from_version(parsed_version) -> str | None:
+        if not parsed_version:
+            return None
+        data = parsed_version
+        if isinstance(data, dict):
+            data = [data]
+        if not isinstance(data, list) or not data:
+            return None
+        entry = data[0]
+        if not isinstance(entry, dict):
+            return None
+        for key in ("hardware", "model", "platform", "chassis"):
+            value = entry.get(key)
+            if isinstance(value, list) and value:
+                return str(value[0])
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+        return None
+
+    @staticmethod
+    def _model_from_inventory(parsed_inventory, device_serial: str | None) -> str | None:
+        if not parsed_inventory:
+            return None
+        entries = [entry for entry in parsed_inventory if isinstance(entry, dict)]
+        if not entries:
+            return None
+
+        serial_value = (device_serial or "").strip()
+        if serial_value:
+            for entry in entries:
+                sn = str(entry.get("sn") or entry.get("serial") or "").strip()
+                if sn and sn == serial_value:
+                    pid = str(entry.get("pid") or entry.get("PID") or "").strip()
+                    if pid:
+                        return pid
+
+        for entry in entries:
+            name = str(entry.get("name") or "").strip().lower()
+            if "chassis" in name or name.startswith("switch"):
+                pid = str(entry.get("pid") or entry.get("PID") or "").strip()
+                if pid:
+                    return pid
+
+        skip_tokens = ("STACK", "SFP", "QSFP", "FAN", "PWR", "PSU", "NM-", "TRANSCEIVER")
+        for entry in entries:
+            pid = str(entry.get("pid") or entry.get("PID") or "").strip()
+            if not pid:
+                continue
+            upper = pid.upper()
+            if any(token in upper for token in skip_tokens):
+                continue
+            return pid
+
+        for entry in entries:
+            pid = str(entry.get("pid") or entry.get("PID") or "").strip()
+            if pid:
+                return pid
+        return None
 
     def _apply_transceivers(self, device: Device, result: dict):
         entries = self._parse_transceiver_entries(result)

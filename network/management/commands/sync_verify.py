@@ -119,6 +119,8 @@ class Command(BaseCommand):
                 "uptime_seconds": int(device.uptime.total_seconds()) if device.uptime else None,
                 "last_reboot": device.last_reboot.isoformat() if device.last_reboot else "",
                 "is_stacked": device.is_stacked,
+                "device_type": device.device_type.model if device.device_type else "",
+                "device_platform": device.device_type.platform if device.device_type else "",
             },
             "interfaces": self._interface_snapshot(device),
             "modules": self._module_snapshot(device),
