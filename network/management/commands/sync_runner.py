@@ -1,4 +1,7 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 from django.core.management.base import BaseCommand, CommandError
+from django.db import close_old_connections
 from django.utils import timezone
 
 from dcim.models import Device
@@ -18,7 +21,18 @@ class Command(BaseCommand):
         parser.add_argument(
             "--no-config",
             action="store_true",
-            help="Skip running-config collection",
+            help="Skip running-config collection (default behavior)",
+        )
+        parser.add_argument(
+            "--with-config",
+            action="store_true",
+            help="Collect running-config during sync",
+        )
+        parser.add_argument(
+            "--threads",
+            type=int,
+            default=10,
+            help="Number of parallel threads (default: 10)",
         )
 
     def handle(self, *args, **options):
@@ -33,7 +47,8 @@ class Command(BaseCommand):
             device = devices[0]
             service = SyncService(site=device.site)
             self.stdout.write(self.style.NOTICE(f"Starting sync for device: {device.name} ({device.site})"))
-            result = service.sync_device(device, include_config=not options.get("no_config", False))
+            include_config = options.get("with_config", False)
+            result = service.sync_device(device, include_config=include_config)
             if result.get("success"):
                 self.stdout.write(self.style.SUCCESS(f"[OK] {device.name}"))
             else:
@@ -48,17 +63,51 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.NOTICE(f"Starting sync for site: {site} ({qs.count()} devices)"))
 
-        service = SyncService(site=site)
         success = 0
         failed = 0
-        for device in qs:
-            result = service.sync_device(device, include_config=not options.get("no_config", False))
-            if result.get("success"):
-                success += 1
-                self.stdout.write(self.style.SUCCESS(f"[OK] {device.name}"))
-            else:
-                failed += 1
-                self.stdout.write(self.style.ERROR(f"[FAIL] {device.name}: {result.get('error')}"))
+        include_config = options.get("with_config", False)
+        devices = list(qs)
+        threads = options.get("threads") or 1
+        if threads < 1:
+            threads = 1
+
+        if threads == 1 or len(devices) <= 1:
+            service = SyncService(site=site)
+            for device in devices:
+                result = service.sync_device(device, include_config=include_config)
+                if result.get("success"):
+                    success += 1
+                    self.stdout.write(self.style.SUCCESS(f"[OK] {device.name}"))
+                else:
+                    failed += 1
+                    self.stdout.write(self.style.ERROR(f"[FAIL] {device.name}: {result.get('error')}"))
+        else:
+            def _sync_worker(target_device):
+                close_old_connections()
+                try:
+                    service = SyncService(site=target_device.site)
+                    return service.sync_device(target_device, include_config=include_config)
+                finally:
+                    close_old_connections()
+
+            max_workers = min(threads, len(devices))
+            self.stdout.write(self.style.NOTICE(f"Using {max_workers} threads"))
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = {executor.submit(_sync_worker, device): device for device in devices}
+                for future in as_completed(futures):
+                    device = futures[future]
+                    try:
+                        result = future.result()
+                    except Exception as exc:
+                        failed += 1
+                        self.stdout.write(self.style.ERROR(f"[FAIL] {device.name}: {exc}"))
+                        continue
+                    if result.get("success"):
+                        success += 1
+                        self.stdout.write(self.style.SUCCESS(f"[OK] {device.name}"))
+                    else:
+                        failed += 1
+                        self.stdout.write(self.style.ERROR(f"[FAIL] {device.name}: {result.get('error')}"))
 
         self.stdout.write(
             self.style.SUCCESS(

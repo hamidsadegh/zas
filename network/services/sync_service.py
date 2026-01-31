@@ -18,7 +18,6 @@ from dcim.models import (
     DeviceRuntimeStatus,
     DeviceStackMember,
     Interface,
-    VLAN,
 )
 from dcim.choices import (
     DevicePlatformChoices,
@@ -38,7 +37,6 @@ logger = logging.getLogger(__name__)
 class SyncService:
 
     def __init__(self, *, site):
-        self.site = site
         self.now = timezone.now()
         self.VERSION_CMD = cli.VERSION_CMD
         self.INVENTORY_CMD = cli.INVENTORY_CMD
@@ -46,14 +44,19 @@ class SyncService:
         self.IF_DESC_CMD = cli.IF_DESC_CMD
         self.IF_IP_BRIEF_CMD = cli.IF_IP_BRIEF_CMD
         self.IF_TRANSCEIVER_CMD = cli.IF_TRANSCEIVER_CMD
-        self.PORTCHANNEL_SUMMARY_CMD = cli.PORTCHANNEL_SUMMARY_ISO_CMD
         self.RUNNING_CONFIG_CMD = cli.RUNNING_CONFIG_CMD
         self.STACK_SWITCH_CMD = cli.STACK_SWITCH_CMD
 
     # =================================================
     # PUBLIC API
     # =================================================
-    def sync_device(self, device: Device, *, include_config: bool = True) -> dict:
+    def sync_device(
+        self,
+        device: Device,
+        *,
+        include_config: bool = False,
+        return_results: bool = False,
+    ) -> dict:
         with transaction.atomic():
             runtime, _ = DeviceRuntimeStatus.objects.get_or_create(device=device)
             runtime.last_check = self.now
@@ -68,42 +71,24 @@ class SyncService:
                 in (DevicePlatformChoices.IOS, DevicePlatformChoices.IOS_XE)
             )
 
-            # Adjust Portchannel commands based on platform
-            if is_nxos:
-                self.PORTCHANNEL_SUMMARY_CMD = cli.PORTCHANNEL_SUMMARY_NXOS_CMD
-            else:
-                self.PORTCHANNEL_SUMMARY_CMD = cli.PORTCHANNEL_SUMMARY_ISO_CMD
+            portchannel_cmd = (
+                cli.PORTCHANNEL_SUMMARY_NXOS_CMD
+                if is_nxos
+                else cli.PORTCHANNEL_SUMMARY_ISO_CMD
+            )
 
             hostname_lower = (device.name or "").lower()
             is_aci_leaf_spine = "leaf" in hostname_lower or "spine" in hostname_lower
 
-            # SSH Connection and Data Retrieval
             try:
-                with NetmikoAdapter(device) as ssh:
-                    results = {
-                        self.VERSION_CMD: ssh.run_command(self.VERSION_CMD),
-                        self.INVENTORY_CMD: ssh.run_command(self.INVENTORY_CMD),
-                    }
-                    if not is_aci_leaf_spine:
-                        results.update(
-                            {
-                                self.IF_STATUS_CMD: ssh.run_command(self.IF_STATUS_CMD),
-                                self.IF_DESC_CMD: ssh.run_command(self.IF_DESC_CMD),
-                                self.IF_IP_BRIEF_CMD: ssh.run_command(self.IF_IP_BRIEF_CMD),
-                                self.PORTCHANNEL_SUMMARY_CMD: ssh.run_command(
-                                    self.PORTCHANNEL_SUMMARY_CMD
-                                ),
-                            }
-                        )
-                    if is_ios_stack:
-                        results[self.STACK_SWITCH_CMD] = ssh.run_command(self.STACK_SWITCH_CMD)
-                    if is_nxos:
-                        results[self.IF_TRANSCEIVER_CMD] = ssh.run_command(
-                            self.IF_TRANSCEIVER_CMD
-                        )
-                    if include_config:
-                        results[self.RUNNING_CONFIG_CMD] = ssh.run_command(self.RUNNING_CONFIG_CMD)
-
+                results = self._collect_results_with_retry(
+                    device=device,
+                    include_config=include_config,
+                    is_ios_stack=is_ios_stack,
+                    is_nxos=is_nxos,
+                    is_aci_leaf_spine=is_aci_leaf_spine,
+                    portchannel_cmd=portchannel_cmd,
+                )
             except Exception as exc:
                 runtime.reachable_ssh = False
                 runtime.save(update_fields=["reachable_ssh", "last_check"])
@@ -126,7 +111,7 @@ class SyncService:
                     status_result=results[self.IF_STATUS_CMD],
                     desc_result=results[self.IF_DESC_CMD],
                     ip_result=results[self.IF_IP_BRIEF_CMD],
-                    po_result=results[self.PORTCHANNEL_SUMMARY_CMD],
+                    po_result=results[portchannel_cmd],
                 )
 
             if include_config:
@@ -141,7 +126,74 @@ class SyncService:
             if is_ios_stack and self.STACK_SWITCH_CMD in results:
                 self._apply_stack_members(device, results[self.STACK_SWITCH_CMD])
 
-            return {"device": device, "success": True}
+            payload = {"device": device, "success": True}
+            if return_results:
+                payload["results"] = results
+            return payload
+
+    def _collect_results_with_retry(
+        self,
+        *,
+        device: Device,
+        include_config: bool,
+        is_ios_stack: bool,
+        is_nxos: bool,
+        is_aci_leaf_spine: bool,
+        portchannel_cmd: str,
+    ) -> dict:
+        last_exc = None
+        for attempt in range(2):
+            try:
+                return self._collect_results(
+                    device=device,
+                    include_config=include_config,
+                    is_ios_stack=is_ios_stack,
+                    is_nxos=is_nxos,
+                    is_aci_leaf_spine=is_aci_leaf_spine,
+                    portchannel_cmd=portchannel_cmd,
+                )
+            except Exception as exc:
+                last_exc = exc
+                logger.warning(
+                    "SSH sync failed for %s (attempt %s/2): %s",
+                    device,
+                    attempt + 1,
+                    exc,
+                )
+        raise last_exc
+
+    def _collect_results(
+        self,
+        *,
+        device: Device,
+        include_config: bool,
+        is_ios_stack: bool,
+        is_nxos: bool,
+        is_aci_leaf_spine: bool,
+        portchannel_cmd: str,
+    ) -> dict:
+        with NetmikoAdapter(device, allow_autodetect=False) as ssh:
+            results = {
+                self.VERSION_CMD: ssh.run_command_raw(self.VERSION_CMD),
+                self.INVENTORY_CMD: ssh.run_command_raw(self.INVENTORY_CMD),
+            }
+            if not is_aci_leaf_spine:
+                results.update(
+                    {
+                        self.IF_STATUS_CMD: ssh.run_command_raw(self.IF_STATUS_CMD),
+                        self.IF_DESC_CMD: ssh.run_command_raw(self.IF_DESC_CMD),
+                        self.IF_IP_BRIEF_CMD: ssh.run_command_raw(self.IF_IP_BRIEF_CMD),
+                        portchannel_cmd: ssh.run_command_raw(portchannel_cmd),
+                    }
+                )
+            if is_ios_stack:
+                results[self.STACK_SWITCH_CMD] = ssh.run_command_raw(self.STACK_SWITCH_CMD)
+            if is_nxos:
+                results[self.IF_TRANSCEIVER_CMD] = ssh.run_command_raw(self.IF_TRANSCEIVER_CMD)
+            if include_config:
+                results[self.RUNNING_CONFIG_CMD] = ssh.run_command_raw(self.RUNNING_CONFIG_CMD)
+        self._parse_results(device, results)
+        return results
 
     # =================================================
     # VERSION / INVENTORY / CONFIG
@@ -158,13 +210,17 @@ class SyncService:
         if parsed and isinstance(parsed, list):
             entry = parsed[0]
             serial = entry.get("serial") or entry.get("serial_number")
-            if isinstance(serial, list): 
+            if isinstance(serial, list):
                 serial = serial[0] if serial else ""
             image = entry.get("version") or entry.get("running_image") or entry.get("os")
             uptime_seconds = self._parse_uptime(entry.get("uptime"))
-        else:
-            serial = self._parse_serial_from_text(raw)
+            if not uptime_seconds:
+                uptime_seconds = self._uptime_from_parts(entry)
+        if not uptime_seconds:
             uptime_seconds = self._parse_uptime(self._extract_uptime_line(raw))
+        if not serial:
+            serial = self._parse_serial_from_text(raw)
+        if not image:
             image = self._parse_image_from_text(raw)
 
         now = self.now
@@ -263,6 +319,73 @@ class SyncService:
         hostname = (device.name or "").lower()
         return "leaf" in hostname or "spine" in hostname
 
+    def _parse_results(self, device: Device, results: dict) -> None:
+        for command, result in results.items():
+            if not isinstance(result, dict):
+                continue
+            raw = result.get("raw") or ""
+            if not raw:
+                continue
+            template_name = self._template_for_command(device, command)
+            if not template_name:
+                continue
+            parsed = self._parse_with_textfsm(raw, template_name, device=device)
+            if parsed:
+                result["parsed"] = parsed
+
+    def _template_for_command(self, device: Device, command: str) -> str | None:
+        platform = device.device_type.platform if device.device_type else None
+        if platform in (DevicePlatformChoices.IOS, DevicePlatformChoices.IOS_XE):
+            templates = {
+                self.VERSION_CMD: "cisco_ios_show_version.textfsm",
+                self.INVENTORY_CMD: "cisco_ios_show_inventory.textfsm",
+                self.IF_STATUS_CMD: "cisco_ios_show_interface_status.textfsm",
+                self.IF_DESC_CMD: "cisco_ios_show_interface_description.textfsm",
+                self.IF_IP_BRIEF_CMD: "cisco_ios_show_ip_interface_brief.textfsm",
+                cli.PORTCHANNEL_SUMMARY_ISO_CMD: "cisco_ios_show_etherchannel_summary.textfsm",
+            }
+            return templates.get(command)
+        if platform == DevicePlatformChoices.NX_OS:
+            if self._is_aci_leaf_spine(device) and command == self.VERSION_CMD:
+                return None
+            templates = {
+                self.VERSION_CMD: "cisco_nxos_show_version.textfsm",
+                self.INVENTORY_CMD: "cisco_nxos_show_inventory.textfsm",
+                self.IF_STATUS_CMD: "cisco_nxos_show_interface_status.textfsm",
+                self.IF_DESC_CMD: "cisco_nxos_show_interface_description.textfsm",
+                self.IF_IP_BRIEF_CMD: "cisco_nxos_show_ip_interface_brief.textfsm",
+                cli.PORTCHANNEL_SUMMARY_NXOS_CMD: "cisco_nxos_show_port-channel_summary.textfsm",
+                self.IF_TRANSCEIVER_CMD: "cisco_nxos_show_interface_transceiver.textfsm",
+            }
+            return templates.get(command)
+        return None
+
+    def _parse_with_textfsm(self, raw: str, template_name: str, *, device: Device) -> list[dict] | None:
+        template_path = (
+            Path(settings.BASE_DIR)
+            / "network"
+            / "parsers"
+            / "textfsm"
+            / template_name
+        )
+        try:
+            with open(template_path, "r", encoding="utf-8") as handle:
+                fsm = textfsm.TextFSM(handle)
+                results = fsm.ParseText(raw)
+        except Exception as exc:
+            logger.warning(
+                "TextFSM parse failed for %s (%s): %s",
+                device,
+                template_name,
+                exc,
+            )
+            return None
+
+        if not results:
+            return None
+        headers = [header.lower() for header in fsm.header]
+        return [dict(zip(headers, row)) for row in results]
+
     def _parse_aci_show_version(self, raw: str) -> list[dict] | None:
         template_path = (
             Path(settings.BASE_DIR)
@@ -321,6 +444,8 @@ class SyncService:
                 entry,
                 ["serial", "serial_number", "sn"],
             )
+            if not self._has_valid_serial(serial):
+                continue
             vendor_name = entry.get("name") if isinstance(entry.get("name"), str) else ""
             part_number = self._first_match(
                 entry,
@@ -403,6 +528,8 @@ class SyncService:
             interface = entry.get("interface")
             module_type = entry.get("type")
             serial = entry.get("serial")
+            if not self._has_valid_serial(serial):
+                continue
             vendor_name = entry.get("vendor")
             part_number = entry.get("part")
             name = self._format_transceiver_name(interface, module_type, serial)
@@ -575,6 +702,18 @@ class SyncService:
                 return value
         return True
 
+    @staticmethod
+    def _has_valid_serial(serial: str | None) -> bool:
+        serial_value = str(serial or "").strip()
+        if not serial_value:
+            return False
+        serial_upper = serial_value.upper()
+        if serial_upper in ("N/A", "UNKNOWN", "N"):
+            return False
+        if serial_upper.startswith("UNKNOWN:"):
+            return False
+        return True
+
     def _record_config(
         self,
         device: Device,
@@ -654,11 +793,27 @@ class SyncService:
 
         # ---- port-channel ----
         for e in po_result.get("parsed", []) or []:
-            po = self._normalize_iface(e.get("port_channel"))
+            po_raw = (
+                e.get("port_channel")
+                or e.get("bundle_name")
+                or e.get("bundle")
+                or e.get("portchannel")
+            )
+            if isinstance(po_raw, str):
+                po_raw = po_raw.split("(")[0]
+            po = self._normalize_iface(po_raw)
             if not po:
                 continue
-            for m in (e.get("interfaces") or "").split():
-                member = self._normalize_iface(m)
+            members = []
+            if isinstance(e.get("interfaces"), str):
+                members = e.get("interfaces").split()
+            elif isinstance(e.get("member_interface"), list):
+                members = e.get("member_interface")
+            elif isinstance(e.get("member_interface"), str):
+                members = [e.get("member_interface")]
+            for m in members:
+                member_name = m.split("(")[0] if isinstance(m, str) else ""
+                member = self._normalize_iface(member_name)
                 if member:
                     lag_map[member] = po
 
@@ -859,6 +1014,27 @@ class SyncService:
             m = re.search(rf"(\d+)\s+{k}", uptime_str, re.I)
             if m:
                 total += int(m.group(1)) * mult
+        return total or None
+
+    @staticmethod
+    def _uptime_from_parts(entry: dict) -> int | None:
+        total = 0
+        parts = {
+            "uptime_years": 365 * 24 * 3600,
+            "uptime_weeks": 7 * 24 * 3600,
+            "uptime_days": 24 * 3600,
+            "uptime_hours": 3600,
+            "uptime_minutes": 60,
+            "uptime_seconds": 1,
+        }
+        for key, mult in parts.items():
+            value = entry.get(key)
+            if value is None or value == "":
+                continue
+            try:
+                total += int(value) * mult
+            except (TypeError, ValueError):
+                continue
         return total or None
 
     @staticmethod

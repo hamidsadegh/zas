@@ -48,11 +48,12 @@ class AutoAssignmentService:
         self.include_config = include_config
         self._is_aci = False
 
-    def assign(self):
+    def assign(self, *, return_details: bool = False):
         """
         Main entrypoint. Returns {"device": Device, "success": bool, "error": str|None}
         """
         device = None
+        details = {}
         try:
             credential = self._get_ssh_credential()
             hostname_lower = (self.candidate.hostname or "").lower()
@@ -65,6 +66,7 @@ class AutoAssignmentService:
                 location_raw, parsed_version, stack_raw = self._collect_details(
                     conn, device_type, version_raw
                 )
+                conn.disconnect()
                 stack_members_data = self._parse_stack_members(stack_raw) if stack_raw else []
                 stack_count = len(stack_members_data) if stack_members_data else 0
 
@@ -80,6 +82,19 @@ class AutoAssignmentService:
                 device_type_obj = self._resolve_device_type_obj(device_type, model_name)
                 role = self._resolve_role()
                 tags = self._resolve_tags()
+                details = {
+                    "device_type": device_type,
+                    "include_config": include_config,
+                    "model_name": model_name,
+                    "version_raw": version_raw,
+                    "parsed_version": parsed_version,
+                    "location_raw": location_raw,
+                    "area_name": area_name,
+                    "rack_name": rack_name,
+                    "requested_unit": requested_unit,
+                    "stack_raw": stack_raw,
+                    "stack_members": stack_members_data,
+                }
 
                 device = Device.objects.create(
                     name=self.candidate.hostname or str(self.candidate.ip_address),
@@ -111,6 +126,9 @@ class AutoAssignmentService:
                             logger.warning("Tag '%s' not found; skipping.", name)
                     if extra_tags:
                         device.tags.add(*extra_tags)
+                details["tags"] = [
+                    tag.name for tag in device.tags.all().order_by("name")
+                ]
                 if stack_members_data:
                     DeviceStackMember.objects.filter(device=device).delete()
                     DeviceStackMember.objects.bulk_create(
@@ -140,11 +158,64 @@ class AutoAssignmentService:
             sync_service = SyncService(site=device.site)
             sync_service.sync_device(device, include_config=include_config)
 
-            return {"device": device, "success": True, "error": None}
+            payload = {"device": device, "success": True, "error": None}
+            if return_details:
+                payload["details"] = details
+            return payload
 
         except Exception as exc:
             logger.exception("Auto-assignment failed for candidate %s", self.candidate)
-            return {"device": device, "success": False, "error": str(exc)}
+            payload = {"device": device, "success": False, "error": str(exc)}
+            if return_details and details:
+                payload["details"] = details
+            return payload
+
+    def collect_details(self):
+        """
+        Dry-run: collect device facts without writing to the database.
+        """
+        details = {}
+        try:
+            credential = self._get_ssh_credential()
+            hostname_lower = (self.candidate.hostname or "").lower()
+            include_config = self.include_config
+            if "leaf" in hostname_lower or "spine" in hostname_lower:
+                self._is_aci = True
+                include_config = False
+
+            conn, device_type, version_raw = self._detect_device_type_via_version(credential)
+            location_raw, parsed_version, stack_raw = self._collect_details(
+                conn, device_type, version_raw
+            )
+            conn.disconnect()
+            stack_members_data = self._parse_stack_members(stack_raw) if stack_raw else []
+            stack_count = len(stack_members_data) if stack_members_data else 0
+
+            area_name, rack_name, requested_unit = self._parse_snmp_location(location_raw)
+
+            details = {
+                "device_type": device_type,
+                "include_config": include_config,
+                "model_name": self._extract_model_from_version(parsed_version),
+                "version_raw": version_raw,
+                "parsed_version": parsed_version,
+                "location_raw": location_raw,
+                "area_name": area_name,
+                "rack_name": rack_name,
+                "requested_unit": requested_unit,
+                "stack_raw": stack_raw,
+                "stack_members": stack_members_data,
+                "stack_count": stack_count,
+            }
+            details["tags"] = [tag.name for tag in self._resolve_tags()]
+            return {"device": None, "success": True, "error": None, "details": details}
+
+        except Exception as exc:
+            logger.exception("Auto-assignment dry-run failed for candidate %s", self.candidate)
+            payload = {"device": None, "success": False, "error": str(exc)}
+            if details:
+                payload["details"] = details
+            return payload
 
     # -------------------------------------------------
     # Resolution helpers
