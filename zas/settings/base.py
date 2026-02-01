@@ -144,6 +144,7 @@ INSTALLED_APPS = [
     'network',
     'accounts',
     'automation',
+    'topology',
     'django_crontab',
     'django_celery_beat',
 

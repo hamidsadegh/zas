@@ -206,9 +206,9 @@ class Command(BaseCommand):
                 self.stdout.write(f"    parsed_version: {details.get('parsed_version')}")
                 self.stdout.write(f"    stack_members: {details.get('stack_members')}")
                 self.stdout.write(
-                    f\"    area={details.get('area_name')} rack={details.get('rack_name')} unit={details.get('requested_unit')}\"
+                    f"    area={details.get('area_name')} rack={details.get('rack_name')} unit={details.get('requested_unit')}"
                 )
                 self.stdout.write(f"    model_name: {details.get('model_name')}")
                 self.stdout.write(f"    device_type: {details.get('device_type')}")
                 if details.get("tags"):
-                    self.stdout.write(f\"    tags: {details.get('tags')}\")
+                    self.stdout.write(f"    tags: {details.get('tags')}")

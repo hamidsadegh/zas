@@ -1,0 +1,11 @@
+Value Required INTF (\S+)
+Value Required IPADDR ([a-zA-Z0-9./]+)
+Value STATUS (\S+)
+Value PROTO (\S+)
+
+Start
+  ^\s*IP\s+Interface\s+Status\s+for\s+VRF.*$$
+  ^\s*Interface\s+Address\s+Interface\s+Status\s*$$
+  ^\s*${INTF}\s+${IPADDR}\s+${STATUS}(?:\s+${PROTO})?\s*$$ -> Record
+  ^\s+\(.*\)\s*$$
+  ^\s*$$

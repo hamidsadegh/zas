@@ -363,6 +363,10 @@ class DeviceDetailView(LoginRequiredMixin, DetailView):
             context["latest_config_preview"] = ""
         context["available_tags"] = Tag.objects.all().order_by("name")
         context["stack_members"] = device.stack_members.order_by("switch_number")
+        context["neighbors"] = (
+            device.topology_neighbors.select_related("local_interface", "neighbor_device")
+            .order_by("protocol", "local_interface__name", "neighbor_name", "-last_seen")
+        )
         return context
 
 

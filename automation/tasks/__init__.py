@@ -122,3 +122,6 @@ def cleanup_reachability_history(days: int = 7):
         id__in=job_ids,
         job_type=JobType.REACHABILITY,
     ).delete()
+
+
+from .topology_collector import collect_topology_neighbors, cleanup_topology_neighbors  # noqa: E402,F401

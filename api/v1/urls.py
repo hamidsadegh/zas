@@ -5,5 +5,6 @@ urlpatterns = [
     path("accounts/", include("api.v1.accounts.urls")),
     path("dcim/", include("api.v1.dcim.urls")),
     path("ipam/", include("api.v1.ipam.urls")),
+    path("topology/", include("api.v1.topology.urls")),
 ]
  

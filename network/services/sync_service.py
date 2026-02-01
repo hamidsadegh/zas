@@ -1,6 +1,7 @@
 import hashlib
 import logging
 import re
+import ipaddress
 from pathlib import Path
 
 import textfsm
@@ -111,14 +112,13 @@ class SyncService:
             if is_nxos and self.IF_TRANSCEIVER_CMD in results:
                 self._apply_transceivers(device, results[self.IF_TRANSCEIVER_CMD])
 
-            if not is_aci_leaf_spine:
-                self._apply_interfaces(
-                    device=device,
-                    status_result=results[self.IF_STATUS_CMD],
-                    desc_result=results[self.IF_DESC_CMD],
-                    ip_result=results[self.IF_IP_BRIEF_CMD],
-                    po_result=results[portchannel_cmd],
-                )
+            self._apply_interfaces(
+                device=device,
+                status_result=results[self.IF_STATUS_CMD],
+                desc_result=results[self.IF_DESC_CMD],
+                ip_result=results[self.IF_IP_BRIEF_CMD],
+                po_result=results[portchannel_cmd],
+            )
 
             if include_config:
                 cfg = results.get(self.RUNNING_CONFIG_CMD, {})
@@ -131,6 +131,8 @@ class SyncService:
 
             if is_ios_stack and self.STACK_SWITCH_CMD in results:
                 self._apply_stack_members(device, results[self.STACK_SWITCH_CMD])
+
+            self._collect_topology_neighbors(device)
 
             payload = {"device": device, "success": True}
             if return_results:
@@ -183,15 +185,14 @@ class SyncService:
                 self.VERSION_CMD: ssh.run_command_raw(self.VERSION_CMD),
                 self.INVENTORY_CMD: ssh.run_command_raw(self.INVENTORY_CMD),
             }
-            if not is_aci_leaf_spine:
-                results.update(
-                    {
-                        self.IF_STATUS_CMD: ssh.run_command_raw(self.IF_STATUS_CMD),
-                        self.IF_DESC_CMD: ssh.run_command_raw(self.IF_DESC_CMD),
-                        self.IF_IP_BRIEF_CMD: ssh.run_command_raw(self.IF_IP_BRIEF_CMD),
-                        portchannel_cmd: ssh.run_command_raw(portchannel_cmd),
-                    }
-                )
+            results.update(
+                {
+                    self.IF_STATUS_CMD: ssh.run_command_raw(self.IF_STATUS_CMD),
+                    self.IF_DESC_CMD: ssh.run_command_raw(self.IF_DESC_CMD),
+                    self.IF_IP_BRIEF_CMD: ssh.run_command_raw(self.IF_IP_BRIEF_CMD),
+                    portchannel_cmd: ssh.run_command_raw(portchannel_cmd),
+                }
+            )
             if is_ios_stack:
                 results[self.STACK_SWITCH_CMD] = ssh.run_command_raw(self.STACK_SWITCH_CMD)
             if is_nxos:
@@ -200,6 +201,13 @@ class SyncService:
                 results[self.RUNNING_CONFIG_CMD] = ssh.run_command_raw(self.RUNNING_CONFIG_CMD)
         self._parse_results(device, results)
         return results
+
+    def _collect_topology_neighbors(self, device: Device) -> None:
+        try:
+            from automation.tasks.topology_collector import collect_neighbors_for_device
+            collect_neighbors_for_device(device)
+        except Exception as exc:
+            logger.warning("Topology collection failed for %s: %s", device.name, exc)
 
     # =================================================
     # VERSION / INVENTORY / CONFIG
@@ -435,9 +443,17 @@ class SyncService:
             templates = {
                 self.VERSION_CMD: "cisco_nxos_show_version.textfsm",
                 self.INVENTORY_CMD: "cisco_nxos_show_inventory.textfsm",
-                self.IF_STATUS_CMD: "cisco_nxos_show_interface_status.textfsm",
+                self.IF_STATUS_CMD: (
+                    "cisco_aci_show_interface_status.textfsm"
+                    if self._is_aci_leaf_spine(device)
+                    else "cisco_nxos_show_interface_status.textfsm"
+                ),
                 self.IF_DESC_CMD: "cisco_nxos_show_interface_description.textfsm",
-                self.IF_IP_BRIEF_CMD: "cisco_nxos_show_ip_interface_brief.textfsm",
+                self.IF_IP_BRIEF_CMD: (
+                    "cisco_aci_show_ip_interface_brief.textfsm"
+                    if self._is_aci_leaf_spine(device)
+                    else "cisco_nxos_show_ip_interface_brief.textfsm"
+                ),
                 cli.PORTCHANNEL_SUMMARY_NXOS_CMD: "cisco_nxos_show_port-channel_summary.textfsm",
                 self.IF_TRANSCEIVER_CMD: "cisco_nxos_show_interface_transceiver.textfsm",
             }
@@ -867,12 +883,26 @@ class SyncService:
             status = (e.get("status") or "").lower()
             proto = (e.get("proto") or "").lower()
             ip_value = (ip or "").strip()
-            if ip_value and ip_value.lower() != "unassigned":
-                ip_map[name] = {
-                    "ip": ip_value,
-                    "status": status,   # interface status
-                    "proto": proto,     # protocol status
-                }
+            ip_lower = ip_value.lower()
+            if (
+                ip_value
+                and ip_lower not in ("unassigned", "unnumbered")
+                and not ip_value.startswith("(")
+            ):
+                parsed_ip = None
+                try:
+                    if "/" in ip_value:
+                        parsed_ip = str(ipaddress.ip_interface(ip_value).ip)
+                    else:
+                        parsed_ip = str(ipaddress.ip_address(ip_value))
+                except ValueError:
+                    parsed_ip = None
+                if parsed_ip:
+                    ip_map[name] = {
+                        "ip": parsed_ip,
+                        "status": status,   # interface status
+                        "proto": proto,     # protocol status
+                    }
                 ip_seen[name] = ip_map[name]
 
         # ---- port-channel ----

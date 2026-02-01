@@ -317,6 +317,52 @@
             <p>No interfaces found.</p>
         {% endif %}
     </div>
+
+    <div class="detail-card interfaces-card" id="neighbors" data-neighbors-endpoint="{% url 'topology-device-neighbors' device.id %}">
+        <div class="detail-actions" style="margin-bottom: 1.2rem;">
+            <h3 style="margin: 0;">Neighbors</h3>
+        </div>
+        {% if neighbors %}
+        {% regroup neighbors by protocol as neighbors_by_protocol %}
+        {% for group in neighbors_by_protocol %}
+        <details class="neighbor-group" style="margin-bottom:0.75rem; border:1px solid var(--border); border-radius:12px; background:#f8fafc; padding:0.4rem 0.6rem;">
+            <summary style="cursor:pointer; font-weight:600; color:var(--text); padding:0.35rem 0.2rem;">
+                {{ group.grouper|upper }} ({{ group.list|length }})
+            </summary>
+            <div class="table-scroll" style="margin-top:0.5rem;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Local Interface</th>
+                            <th>Neighbor</th>
+                            <th>Neighbor Interface</th>
+                            <th>Last Seen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in group.list %}
+                        <tr>
+                            <td>{{ entry.local_interface.name }}</td>
+                            <td>
+                                {% if entry.neighbor_device %}
+                                    <a class="table-link" href="{% url 'device_detail' entry.neighbor_device.id %}">{{ entry.neighbor_device.name }}</a>
+                                {% else %}
+                                    {{ entry.neighbor_name }}
+                                {% endif %}
+                            </td>
+                            <td>{{ entry.neighbor_interface|default:"—" }}</td>
+                            <td>{{ entry.last_seen|date:"Y-m-d H:i" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </details>
+        {% endfor %}
+        {% else %}
+            <p>No neighbors observed.</p>
+        {% endif %}
+    </div>
 </section>
 {% include "dcim/device_terminal.html" %}
 <script>

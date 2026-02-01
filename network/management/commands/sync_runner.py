@@ -19,6 +19,10 @@ class Command(BaseCommand):
         parser.add_argument("--limit", type=int, help="Limit number of devices to sync")
         parser.add_argument("--device", help="Limit sync to a specific device name")
         parser.add_argument(
+            "--tag",
+            help="Limit sync to devices with a specific tag name",
+        )
+        parser.add_argument(
             "--no-config",
             action="store_true",
             help="Skip running-config collection (default behavior)",
@@ -57,6 +61,9 @@ class Command(BaseCommand):
 
         site = self._resolve_site(options)
         qs = Device.objects.filter(site=site).order_by("name")
+        tag_name = options.get("tag")
+        if tag_name:
+            qs = qs.filter(tags__name__iexact=tag_name)
         limit = options.get("limit")
         if limit and limit > 0:
             qs = qs[:limit]
