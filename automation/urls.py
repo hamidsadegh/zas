@@ -1,3 +1,10 @@
-# API routes moved to api.v1.automation.urls
+from django.urls import path
 
-urlpatterns = []
+from automation.views import TaskListView, TaskScheduleView
+
+app_name = "automation"
+
+urlpatterns = [
+    path("tasks/", TaskListView.as_view(), name="task_list"),
+    path("tasks/<uuid:task_id>/schedule/", TaskScheduleView.as_view(), name="task_schedule"),
+]

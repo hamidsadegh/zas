@@ -1,7 +1,13 @@
 from django.contrib import admin
 from django import forms
 
-from automation.models import AutomationJob, JobRun, DeviceTelemetry, AutomationSchedule
+from automation.models import (
+    AutomationJob,
+    JobRun,
+    DeviceTelemetry,
+    AutomationSchedule,
+    AutomationTaskDefinition,
+)
 
 
 @admin.register(AutomationJob)
@@ -28,6 +34,13 @@ class JobRunAdmin(admin.ModelAdmin):
 class DeviceTelemetryAdmin(admin.ModelAdmin):
     list_display = ("device", "timestamp", "cpu_usage", "memory_usage", "uptime")
     search_fields = ("device__name",)
+
+
+@admin.register(AutomationTaskDefinition)
+class AutomationTaskDefinitionAdmin(admin.ModelAdmin):
+    list_display = ("name", "task_name", "category", "managed_by", "supports_schedule", "updated_at")
+    list_filter = ("category", "managed_by", "supports_schedule")
+    search_fields = ("name", "task_name")
 
 class AutomationScheduleForm(forms.ModelForm):
     class Meta:

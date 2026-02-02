@@ -1,0 +1,207 @@
+{% extends "core/base.html" %}
+{% block title %}Schedule Task{% endblock %}
+
+{% block styles %}
+main { max-width: 900px; }
+.tag {
+    display: inline-block;
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+.header h1 { margin: 0.2rem 0 0.4rem; }
+.muted { color: var(--muted); }
+.form-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+}
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.8rem 1.2rem;
+    margin-bottom: 1.5rem;
+}
+.info-item span {
+    display: block;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+.info-item strong { font-size: 0.95rem; }
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+.form-field label { font-weight: 600; }
+.form-field input,
+.form-field select {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.5rem 0.75rem;
+}
+.form-field small { color: var(--muted); }
+.checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #f8fafc;
+}
+.error-list { color: #991b1b; font-weight: 600; margin: 0.5rem 0; }
+.form-actions {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 1.5rem;
+}
+.btn {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.55rem 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: #fff;
+    text-decoration: none;
+    color: var(--text);
+}
+.btn.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+@media (max-width: 700px) {
+    .info-grid, .form-grid { grid-template-columns: 1fr; }
+}
+{% endblock %}
+
+{% block content %}
+<section class="header">
+    <div>
+        <p class="tag">Automation</p>
+        <h1>Schedule Task</h1>
+        <p class="muted">Define how often this task should execute.</p>
+    </div>
+</section>
+
+<div class="form-card">
+    <div class="info-grid">
+        <div class="info-item">
+            <span>Task</span>
+            <strong>{{ task.name }}</strong>
+            <div class="muted">{{ task.task_name }}</div>
+        </div>
+        <div class="info-item">
+            <span>Managed by</span>
+            <strong>{{ task.get_managed_by_display }}</strong>
+        </div>
+        {% if schedule %}
+        <div class="info-item">
+            <span>Current schedule</span>
+            <strong>{{ schedule.schedule_summary }}</strong>
+            <div class="muted">{% if schedule.enabled %}Enabled{% else %}Disabled{% endif %}</div>
+        </div>
+        <div class="info-item">
+            <span>Last run</span>
+            <strong>{{ schedule.periodic_task.last_run_at|default:"Never" }}</strong>
+            <div class="muted">Runs: {{ schedule.periodic_task.total_run_count|default:0 }}</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="error-list">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="form-grid" style="margin-bottom: 1rem;">
+            <div class="checkbox-field">
+                {{ form.enabled }}
+                <label for="{{ form.enabled.id_for_label }}">Enabled</label>
+            </div>
+            <div class="form-field">
+                <label for="{{ form.schedule_type.id_for_label }}">Schedule type</label>
+                {{ form.schedule_type }}
+                {% for error in form.schedule_type.errors %}
+                    <div class="error-list">{{ error }}</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-grid" data-schedule-block="interval">
+            <div class="form-field">
+                <label for="{{ form.interval_seconds.id_for_label }}">Interval (seconds)</label>
+                {{ form.interval_seconds }}
+                <small>Runs every N seconds.</small>
+                {% for error in form.interval_seconds.errors %}
+                    <div class="error-list">{{ error }}</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-grid" data-schedule-block="crontab" style="margin-top: 1rem;">
+            <div class="form-field">
+                <label for="{{ form.minute.id_for_label }}">Minute</label>
+                {{ form.minute }}
+            </div>
+            <div class="form-field">
+                <label for="{{ form.hour.id_for_label }}">Hour</label>
+                {{ form.hour }}
+            </div>
+            <div class="form-field">
+                <label for="{{ form.day_of_month.id_for_label }}">Day of month</label>
+                {{ form.day_of_month }}
+            </div>
+            <div class="form-field">
+                <label for="{{ form.month_of_year.id_for_label }}">Month of year</label>
+                {{ form.month_of_year }}
+            </div>
+            <div class="form-field">
+                <label for="{{ form.day_of_week.id_for_label }}">Day of week</label>
+                {{ form.day_of_week }}
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn primary">Save schedule</button>
+            <a class="btn" href="{% url 'automation:task_list' %}">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+const scheduleType = document.getElementById("{{ form.schedule_type.id_for_label }}");
+const intervalBlock = document.querySelector('[data-schedule-block="interval"]');
+const crontabBlock = document.querySelector('[data-schedule-block="crontab"]');
+
+function toggleBlocks() {
+    if (!scheduleType) return;
+    const isInterval = scheduleType.value === "interval";
+    if (intervalBlock) intervalBlock.style.display = isInterval ? "grid" : "none";
+    if (crontabBlock) crontabBlock.style.display = isInterval ? "none" : "grid";
+}
+
+if (scheduleType) {
+    scheduleType.addEventListener("change", toggleBlocks);
+    toggleBlocks();
+}
+</script>
+{% endblock %}

@@ -31,6 +31,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),                    # /admin/login/ is default login
     path("api/", include("api.urls")),                  # DRF API (versioned)
     path("", include(html_patterns)),                   # HTML views
+    path("automation/", include(("automation.urls", "automation"), namespace="automation")),
     path("dcim/", include("dcim.urls")),                # DCIM app URLs
     path("ipam/", include(("ipam.urls", "ipam"), namespace="ipam")),
     path("api-auth/", include("rest_framework.urls")),  # DRF login/logout for browsable API

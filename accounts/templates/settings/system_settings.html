@@ -269,7 +269,7 @@ main {
                 <div>
                     <p class="tag">Automation</p>
                     <h2 style="margin: 0;">Reachability Settings</h2>
-                    <p style="margin: 0; color: var(--muted);">Choose which probes to run and how often devices are polled.</p>
+                    <p style="margin: 0; color: var(--muted);">Choose which probes to run and how often device reachability is checked.</p>
                 </div>
                 <div class="meta-line">
                     Last run: {{ settings_obj.reachability_last_run|default:"Never" }}
@@ -382,6 +382,20 @@ main {
                         {% endif %}
                     </span>
                 </div>
+            </div>
+        </div>
+
+        <div class="settings-form section-card" aria-label="Automation task scheduler">
+            <div class="section-heading">
+                <div>
+                    <p class="tag">Automation</p>
+                    <h2 style="margin: 0;">Task Scheduler</h2>
+                    <p style="margin: 0; color: var(--muted);">Review Celery tasks, schedules, and last run details.</p>
+                </div>
+                <div class="meta-line">Automation control center</div>
+            </div>
+            <div class="form-actions" style="justify-content: flex-start;">
+                <a class="btn btn-primary" href="{% url 'automation:task_list' %}">Open Automation Tasks</a>
             </div>
         </div>
 
