@@ -1,6 +1,7 @@
 from .discovery import (
     AutoAssignJob,
     AutoAssignJobItem,
+    DiscoveryScanJob,
     DiscoveryCandidate,
     DiscoveryFilter,
     DiscoveryRange,
@@ -12,4 +13,5 @@ __all__ = [
     "DiscoveryRange",
     "AutoAssignJob",
     "AutoAssignJobItem",
+    "DiscoveryScanJob",
 ]

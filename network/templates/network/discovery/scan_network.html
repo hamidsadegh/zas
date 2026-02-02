@@ -90,6 +90,31 @@
     font-weight: 600;
 }
 .scan-status.is-active { display: flex; }
+.scan-status.is-done .scan-spinner,
+.scan-status.is-done [data-scan-dots] { display: none; }
+.scan-results {
+    display: none;
+    margin-top: 1rem;
+}
+.scan-results.is-active { display: block; }
+.scan-results table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+}
+.scan-results th,
+.scan-results td {
+    text-align: left;
+    padding: 0.45rem 0.4rem;
+    border-bottom: 1px solid var(--border);
+}
+.scan-results th {
+    color: var(--muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+}
 .scan-spinner {
     width: 16px;
     height: 16px;
@@ -258,7 +283,7 @@
 
     <div class="card">
         <h3 style="margin-top:0;">Run scan</h3>
-        <form method="post" data-scan-form>
+        <form method="post" data-scan-form data-scan-job-id="{{ scan_job.id|default_if_none:'' }}" data-scan-status-url="{{ scan_status_url|default_if_none:'' }}" data-scan-results-url="{{ scan_results_url|default_if_none:'' }}">
             {% csrf_token %}
             <input type="hidden" name="action" value="scan">
             <input type="hidden" name="site_id" value="{{ site.id }}">
@@ -301,7 +326,21 @@
             </div>
             <div class="scan-status" data-scan-status style="margin-top:1rem;">
                 <span class="scan-spinner" aria-hidden="true"></span>
-                <span>Scanning<span class="scan-dots"></span></span>
+                <span data-scan-status-text>Scanning<span class="scan-dots" data-scan-dots></span></span>
+            </div>
+            <div class="scan-results" data-scan-results>
+                <h4 style="margin: 0 0 0.6rem;">Found devices</h4>
+                <div class="muted" data-scan-results-meta></div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Device</th>
+                            <th>IP</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody data-scan-results-body></tbody>
+                </table>
             </div>
             <div style="margin-top:1rem;">
                 <button class="btn primary" type="submit" data-scan-submit>Run scan</button>
@@ -333,7 +372,14 @@
         ].map((name) => scanForm.querySelector(`input[name="${name}"]`))
             .filter(Boolean);
         const status = scanForm.querySelector("[data-scan-status]");
+        const statusText = scanForm.querySelector("[data-scan-status-text]");
         const submitBtn = scanForm.querySelector("[data-scan-submit]");
+        const resultsWrap = scanForm.querySelector("[data-scan-results]");
+        const resultsMeta = scanForm.querySelector("[data-scan-results-meta]");
+        const resultsBody = scanForm.querySelector("[data-scan-results-body]");
+        const jobId = scanForm.dataset.scanJobId;
+        const statusUrl = scanForm.dataset.scanStatusUrl;
+        const resultsUrl = scanForm.dataset.scanResultsUrl;
 
         const setMode = (mode) => {
             const enabled = new Set(modeFields[mode] || []);
@@ -362,6 +408,110 @@
                 submitBtn.textContent = "Scanning...";
             }
         });
+
+        const updateStatusText = (data) => {
+            if (!status || !statusText) {
+                return;
+            }
+            status.classList.add("is-active");
+            if (data.status === "completed") {
+                status.classList.add("is-done");
+                statusText.textContent = `Discovery scan finished: ${data.total_ranges} ranges, ${data.alive} alive, ${data.exact} exact, ${data.mismatch} mismatches, ${data.new} new/unclassified.`;
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = "Run scan";
+                }
+                return "done";
+            }
+            if (data.status === "failed") {
+                status.classList.add("is-done");
+                statusText.textContent = `Scan failed: ${data.error || "Unknown error"}`;
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = "Run scan";
+                }
+                return "done";
+            }
+            const total = data.total_ranges || 0;
+            const processed = data.processed_ranges || 0;
+            if (total > 0) {
+                statusText.textContent = `Scanning ${processed}/${total} ranges...`;
+            } else {
+                statusText.textContent = "Scanning...";
+            }
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = "Scanning...";
+            }
+            return "running";
+        };
+
+        const renderResults = (data) => {
+            if (!resultsWrap || !resultsBody) {
+                return;
+            }
+            resultsBody.innerHTML = "";
+            if (resultsMeta) {
+                resultsMeta.textContent = `${data.count} devices in this scan.`;
+            }
+            data.items.forEach((item) => {
+                const row = document.createElement("tr");
+                const nameCell = document.createElement("td");
+                const ipCell = document.createElement("td");
+                const statusCell = document.createElement("td");
+                if (item.detail_url && item.hostname) {
+                    const link = document.createElement("a");
+                    link.href = item.detail_url;
+                    link.textContent = item.hostname;
+                    nameCell.appendChild(link);
+                } else {
+                    nameCell.textContent = item.hostname || "-";
+                }
+                ipCell.textContent = item.ip_address || "-";
+                statusCell.textContent = item.status || "-";
+                row.appendChild(nameCell);
+                row.appendChild(ipCell);
+                row.appendChild(statusCell);
+                resultsBody.appendChild(row);
+            });
+            resultsWrap.classList.add("is-active");
+        };
+
+        const fetchResults = () => {
+            if (!resultsUrl) {
+                return;
+            }
+            fetch(resultsUrl, { credentials: "same-origin" })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.status === "completed") {
+                        renderResults(data);
+                    }
+                })
+                .catch(() => {});
+        };
+
+        if (jobId && statusUrl) {
+            const poll = () => {
+                fetch(statusUrl, { credentials: "same-origin" })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        const state = updateStatusText(data);
+                        if (state !== "done") {
+                            setTimeout(poll, 2000);
+                            return;
+                        }
+                        fetchResults();
+                    })
+                    .catch(() => {
+                        if (statusText) {
+                            statusText.textContent = "Scanning...";
+                        }
+                        setTimeout(poll, 3000);
+                    });
+            };
+            poll();
+        }
     })();
 </script>
 {% endblock %}

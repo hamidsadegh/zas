@@ -185,3 +185,65 @@ class AutoAssignJobItem(models.Model):
     def __str__(self):
         label = self.hostname or str(self.ip_address) if self.ip_address else "candidate"
         return f"{label} ({'ok' if self.success else 'failed'})"
+
+
+class DiscoveryScanJob(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        RUNNING = "running", "Running"
+        COMPLETED = "completed", "Completed"
+        FAILED = "failed", "Failed"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="discovery_scan_jobs",
+    )
+    site = models.ForeignKey(
+        Site,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="discovery_scan_jobs",
+    )
+    scan_kind = models.CharField(
+        max_length=16,
+        choices=(
+            ("all", "All ranges"),
+            ("single", "Single IP"),
+            ("cidr", "CIDR"),
+            ("range", "Range"),
+        ),
+        default="all",
+    )
+    scan_method = models.CharField(
+        max_length=10,
+        choices=(("tcp", "TCP"), ("icmp", "ICMP")),
+        default="tcp",
+    )
+    scan_port = models.PositiveIntegerField(default=22)
+    scan_params = models.JSONField(default=dict, blank=True)
+    total_ranges = models.PositiveIntegerField(default=0)
+    processed_ranges = models.PositiveIntegerField(default=0)
+    alive_count = models.PositiveIntegerField(default=0)
+    exact_count = models.PositiveIntegerField(default=0)
+    mismatch_count = models.PositiveIntegerField(default=0)
+    new_count = models.PositiveIntegerField(default=0)
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
+    error_message = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Discovery scan {self.id}"

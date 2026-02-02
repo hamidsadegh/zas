@@ -5,6 +5,7 @@ from django import forms
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.http import JsonResponse
 from django.db import models, transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -15,9 +16,10 @@ from network.models.discovery import (
     DiscoveryCandidate,
     DiscoveryFilter,
     DiscoveryRange,
+    DiscoveryScanJob,
 )
 from network.services.discover_network import NetworkDiscoveryService
-from network.tasks import run_auto_assign_job
+from network.tasks import run_auto_assign_job, run_discovery_scan_job
 from dcim.models import (
     Area,
     Device,
@@ -684,66 +686,43 @@ def discovery_scan(request):
             scan_kind = request.POST.get("scan_kind") or "all"
             scan_method = request.POST.get("scan_method") or "tcp"
             scan_port = int(request.POST.get("scan_port") or 22)
-            service = NetworkDiscoveryService(site=site)
 
+            scan_params = {}
             try:
-                if scan_kind == "all":
-                    stats = service.run()
-                else:
-                    ranges = []
-                    if scan_kind == "single":
-                        ip_value = (request.POST.get("single_ip") or "").strip()
-                        ip_obj = ipaddress.ip_address(ip_value)
-                        prefix = 32 if ip_obj.version == 4 else 128
-                        ranges = [
-                            SimpleNamespace(
-                                cidr=f"{ip_obj}/{prefix}",
-                                scan_method=scan_method,
-                                scan_port=scan_port,
-                            )
-                        ]
-                    elif scan_kind == "cidr":
-                        cidr_value = (request.POST.get("cidr") or "").strip()
-                        network = ipaddress.ip_network(cidr_value, strict=False)
-                        ranges = [
-                            SimpleNamespace(
-                                cidr=str(network),
-                                scan_method=scan_method,
-                                scan_port=scan_port,
-                            )
-                        ]
-                    elif scan_kind == "range":
-                        start_ip = ipaddress.ip_address((request.POST.get("start_ip") or "").strip())
-                        end_ip = ipaddress.ip_address((request.POST.get("end_ip") or "").strip())
-                        if start_ip.version != end_ip.version:
-                            raise ValueError("Start and end IP versions must match.")
-                        if int(start_ip) > int(end_ip):
-                            raise ValueError("Start IP must be before end IP.")
-                        ranges = [
-                            SimpleNamespace(
-                                cidr=str(net),
-                                scan_method=scan_method,
-                                scan_port=scan_port,
-                            )
-                            for net in ipaddress.summarize_address_range(start_ip, end_ip)
-                        ]
-                    else:
-                        raise ValueError("Unsupported scan type.")
-
-                    stats = service.run_for_ranges(ranges)
-
-                messages.success(
-                    request,
-                    (
-                        "Discovery scan finished: "
-                        f"{stats['ranges']} ranges, {stats['alive']} alive, "
-                        f"{stats['exact']} exact, {stats['mismatch']} mismatches, "
-                        f"{stats['new']} new/unclassified."
-                    ),
-                )
+                if scan_kind == "single":
+                    ip_value = (request.POST.get("single_ip") or "").strip()
+                    ipaddress.ip_address(ip_value)
+                    scan_params["single_ip"] = ip_value
+                elif scan_kind == "cidr":
+                    cidr_value = (request.POST.get("cidr") or "").strip()
+                    ipaddress.ip_network(cidr_value, strict=False)
+                    scan_params["cidr"] = cidr_value
+                elif scan_kind == "range":
+                    start_ip = ipaddress.ip_address((request.POST.get("start_ip") or "").strip())
+                    end_ip = ipaddress.ip_address((request.POST.get("end_ip") or "").strip())
+                    if start_ip.version != end_ip.version:
+                        raise ValueError("Start and end IP versions must match.")
+                    if int(start_ip) > int(end_ip):
+                        raise ValueError("Start IP must be before end IP.")
+                    scan_params["start_ip"] = str(start_ip)
+                    scan_params["end_ip"] = str(end_ip)
+                elif scan_kind != "all":
+                    raise ValueError("Unsupported scan type.")
             except Exception as exc:
                 messages.error(request, f"Scan failed: {exc}")
-            return redirect(f"{reverse('network:discovery_scan')}?site={site.id}")
+                return redirect(f"{reverse('network:discovery_scan')}?site={site.id}")
+
+            job = DiscoveryScanJob.objects.create(
+                requested_by=request.user,
+                site=site,
+                scan_kind=scan_kind,
+                scan_method=scan_method,
+                scan_port=scan_port,
+                scan_params=scan_params,
+            )
+            run_discovery_scan_job.delay(str(job.id))
+            messages.success(request, "Discovery scan started. This can take a few minutes.")
+            return redirect(f"{reverse('network:discovery_scan')}?site={site.id}&job={job.id}")
 
     ranges = DiscoveryRange.objects.filter(site=site).order_by("cidr")
     filters = DiscoveryFilter.objects.filter(site=site).order_by("id")
@@ -753,5 +732,73 @@ def discovery_scan(request):
         "site": site,
         "ranges": ranges,
         "filters": filters,
+        "scan_job": None,
+        "scan_status_url": None,
+        "scan_results_url": None,
     }
+    job_id = request.GET.get("job")
+    if job_id:
+        scan_job = DiscoveryScanJob.objects.filter(id=job_id).first()
+        if scan_job:
+            context["scan_job"] = scan_job
+            context["scan_status_url"] = reverse("network:discovery_scan_status", args=[scan_job.id])
+            context["scan_results_url"] = reverse("network:discovery_scan_results", args=[scan_job.id])
     return render(request, "network/discovery/scan_network.html", context)
+
+
+@login_required
+def discovery_scan_status(request, job_id):
+    job = get_object_or_404(DiscoveryScanJob, id=job_id)
+    return JsonResponse(
+        {
+            "id": str(job.id),
+            "status": job.status,
+            "scan_kind": job.scan_kind,
+            "total_ranges": job.total_ranges,
+            "processed_ranges": job.processed_ranges,
+            "alive": job.alive_count,
+            "exact": job.exact_count,
+            "mismatch": job.mismatch_count,
+            "new": job.new_count,
+            "error": job.error_message,
+        }
+    )
+
+
+@login_required
+def discovery_scan_results(request, job_id):
+    job = get_object_or_404(DiscoveryScanJob, id=job_id)
+    candidates = DiscoveryCandidate.objects.filter(site=job.site)
+
+    if job.started_at:
+        candidates = candidates.filter(last_seen__gte=job.started_at)
+    if job.completed_at:
+        candidates = candidates.filter(last_seen__lte=job.completed_at)
+
+    items = []
+    for candidate in candidates.order_by("hostname", "ip_address"):
+        if candidate.classified and candidate.accepted is True:
+            status = "exact"
+        elif candidate.classified and candidate.accepted is False:
+            status = "mismatch"
+        else:
+            status = "new/unclassified"
+
+        items.append(
+            {
+                "id": str(candidate.id),
+                "hostname": candidate.hostname or "",
+                "ip_address": str(candidate.ip_address),
+                "status": status,
+                "detail_url": reverse("network:discovery_candidate_detail", args=[candidate.id]),
+            }
+        )
+
+    return JsonResponse(
+        {
+            "id": str(job.id),
+            "status": job.status,
+            "count": len(items),
+            "items": items,
+        }
+    )
