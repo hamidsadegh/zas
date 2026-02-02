@@ -43,6 +43,32 @@
 
     <div class="detail-card interfaces-card">
         {% if rows %}
+        <div class="pagination-wrapper">
+            <div class="range-info">
+                Showing {{ rows.start_index }}–{{ rows.end_index }} of {{ rows.paginator.count }} records
+            </div>
+            <ul class="pagination">
+                {% if rows.has_previous %}
+                    <li><a href="?page={{ rows.previous_page_number }}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}{% if site_filter %}&site={{ site_filter }}{% endif %}{% if tag_filter %}&tag={{ tag_filter|urlencode }}{% endif %}">Previous</a></li>
+                {% else %}
+                    <li><span>Previous</span></li>
+                {% endif %}
+
+                {% for num in rows.paginator.page_range %}
+                    {% if rows.number == num %}
+                        <li class="active"><span>{{ num }}</span></li>
+                    {% elif num > rows.number|add:-3 and num < rows.number|add:3 %}
+                        <li><a href="?page={{ num }}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}{% if site_filter %}&site={{ site_filter }}{% endif %}{% if tag_filter %}&tag={{ tag_filter|urlencode }}{% endif %}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if rows.has_next %}
+                    <li><a href="?page={{ rows.next_page_number }}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}{% if site_filter %}&site={{ site_filter }}{% endif %}{% if tag_filter %}&tag={{ tag_filter|urlencode }}{% endif %}">Next</a></li>
+                {% else %}
+                    <li><span>Next</span></li>
+                {% endif %}
+            </ul>
+        </div>
         <div class="table-scroll">
             <table class="data-table">
                 <thead>
