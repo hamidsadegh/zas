@@ -1,3 +1,6 @@
+import ipaddress
+from types import SimpleNamespace
+
 from django import forms
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -6,7 +9,14 @@ from django.db import models, transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
-from network.models.discovery import AutoAssignJob, AutoAssignJobItem, DiscoveryCandidate
+from network.models.discovery import (
+    AutoAssignJob,
+    AutoAssignJobItem,
+    DiscoveryCandidate,
+    DiscoveryFilter,
+    DiscoveryRange,
+)
+from network.services.discover_network import NetworkDiscoveryService
 from network.tasks import run_auto_assign_job
 from dcim.models import (
     Area,
@@ -573,3 +583,175 @@ def create_device_from_candidate(request, pk):
         "form": form,
     }
     return render(request, "network/discovery/assign_device.html", context)
+
+
+@login_required
+def discovery_scan(request):
+    sites = list(Site.objects.order_by("name"))
+    if not sites:
+        messages.error(request, "No sites available for discovery scanning.")
+        return render(
+            request,
+            "network/discovery/scan_network.html",
+            {"sites": [], "site": None, "ranges": [], "filters": []},
+        )
+
+    site_id = request.GET.get("site") or request.POST.get("site_id")
+    site = next((s for s in sites if str(s.id) == str(site_id)), None) or sites[0]
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        if action == "add_range":
+            cidr = (request.POST.get("cidr") or "").strip()
+            scan_method = request.POST.get("scan_method") or "tcp"
+            scan_port = int(request.POST.get("scan_port") or 22)
+            description = (request.POST.get("description") or "").strip()
+            enabled = request.POST.get("enabled") == "on"
+            if cidr:
+                DiscoveryRange.objects.update_or_create(
+                    site=site,
+                    cidr=cidr,
+                    defaults={
+                        "scan_method": scan_method,
+                        "scan_port": scan_port,
+                        "description": description,
+                        "enabled": enabled,
+                    },
+                )
+                messages.success(request, f"Discovery range {cidr} saved.")
+            else:
+                messages.error(request, "CIDR is required for a discovery range.")
+            return redirect(f"{reverse('network:discovery_scan')}?site={site.id}")
+
+        if action == "update_range":
+            range_id = request.POST.get("range_id")
+            discovery_range = DiscoveryRange.objects.filter(id=range_id, site=site).first()
+            if discovery_range:
+                discovery_range.cidr = (request.POST.get("cidr") or "").strip()
+                discovery_range.scan_method = request.POST.get("scan_method") or "tcp"
+                discovery_range.scan_port = int(request.POST.get("scan_port") or 22)
+                discovery_range.description = (request.POST.get("description") or "").strip()
+                discovery_range.enabled = request.POST.get("enabled") == "on"
+                discovery_range.save()
+                messages.success(request, "Discovery range updated.")
+            else:
+                messages.error(request, "Discovery range not found.")
+            return redirect(f"{reverse('network:discovery_scan')}?site={site.id}")
+
+        if action == "delete_range":
+            range_id = request.POST.get("range_id")
+            DiscoveryRange.objects.filter(id=range_id, site=site).delete()
+            messages.success(request, "Discovery range removed.")
+            return redirect(f"{reverse('network:discovery_scan')}?site={site.id}")
+
+        if action == "add_filter":
+            include = (request.POST.get("hostname_contains") or "").strip()
+            exclude = (request.POST.get("hostname_not_contains") or "").strip()
+            description = (request.POST.get("description") or "").strip()
+            enabled = request.POST.get("enabled") == "on"
+            DiscoveryFilter.objects.create(
+                site=site,
+                hostname_contains=include,
+                hostname_not_contains=exclude,
+                description=description,
+                enabled=enabled,
+            )
+            messages.success(request, "Discovery filter added.")
+            return redirect(f"{reverse('network:discovery_scan')}?site={site.id}")
+
+        if action == "update_filter":
+            filter_id = request.POST.get("filter_id")
+            discovery_filter = DiscoveryFilter.objects.filter(id=filter_id, site=site).first()
+            if discovery_filter:
+                discovery_filter.hostname_contains = (request.POST.get("hostname_contains") or "").strip()
+                discovery_filter.hostname_not_contains = (request.POST.get("hostname_not_contains") or "").strip()
+                discovery_filter.description = (request.POST.get("description") or "").strip()
+                discovery_filter.enabled = request.POST.get("enabled") == "on"
+                discovery_filter.save()
+                messages.success(request, "Discovery filter updated.")
+            else:
+                messages.error(request, "Discovery filter not found.")
+            return redirect(f"{reverse('network:discovery_scan')}?site={site.id}")
+
+        if action == "delete_filter":
+            filter_id = request.POST.get("filter_id")
+            DiscoveryFilter.objects.filter(id=filter_id, site=site).delete()
+            messages.success(request, "Discovery filter removed.")
+            return redirect(f"{reverse('network:discovery_scan')}?site={site.id}")
+
+        if action == "scan":
+            scan_kind = request.POST.get("scan_kind") or "all"
+            scan_method = request.POST.get("scan_method") or "tcp"
+            scan_port = int(request.POST.get("scan_port") or 22)
+            service = NetworkDiscoveryService(site=site)
+
+            try:
+                if scan_kind == "all":
+                    stats = service.run()
+                else:
+                    ranges = []
+                    if scan_kind == "single":
+                        ip_value = (request.POST.get("single_ip") or "").strip()
+                        ip_obj = ipaddress.ip_address(ip_value)
+                        prefix = 32 if ip_obj.version == 4 else 128
+                        ranges = [
+                            SimpleNamespace(
+                                cidr=f"{ip_obj}/{prefix}",
+                                scan_method=scan_method,
+                                scan_port=scan_port,
+                            )
+                        ]
+                    elif scan_kind == "cidr":
+                        cidr_value = (request.POST.get("cidr") or "").strip()
+                        network = ipaddress.ip_network(cidr_value, strict=False)
+                        ranges = [
+                            SimpleNamespace(
+                                cidr=str(network),
+                                scan_method=scan_method,
+                                scan_port=scan_port,
+                            )
+                        ]
+                    elif scan_kind == "range":
+                        start_ip = ipaddress.ip_address((request.POST.get("start_ip") or "").strip())
+                        end_ip = ipaddress.ip_address((request.POST.get("end_ip") or "").strip())
+                        if start_ip.version != end_ip.version:
+                            raise ValueError("Start and end IP versions must match.")
+                        if int(start_ip) > int(end_ip):
+                            raise ValueError("Start IP must be before end IP.")
+                        ranges = [
+                            SimpleNamespace(
+                                cidr=str(net),
+                                scan_method=scan_method,
+                                scan_port=scan_port,
+                            )
+                            for net in ipaddress.summarize_address_range(start_ip, end_ip)
+                        ]
+                    else:
+                        raise ValueError("Unsupported scan type.")
+
+                    stats = service.run_for_ranges(ranges)
+
+                messages.success(
+                    request,
+                    (
+                        "Discovery scan finished: "
+                        f"{stats['ranges']} ranges, {stats['alive']} alive, "
+                        f"{stats['exact']} exact, {stats['mismatch']} mismatches, "
+                        f"{stats['new']} new/unclassified."
+                    ),
+                )
+            except Exception as exc:
+                messages.error(request, f"Scan failed: {exc}")
+            return redirect(f"{reverse('network:discovery_scan')}?site={site.id}")
+
+    ranges = DiscoveryRange.objects.filter(site=site).order_by("cidr")
+    filters = DiscoveryFilter.objects.filter(site=site).order_by("id")
+
+    context = {
+        "sites": sites,
+        "site": site,
+        "ranges": ranges,
+        "filters": filters,
+    }
+    return render(request, "network/discovery/scan_network.html", context)

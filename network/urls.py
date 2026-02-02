@@ -1,6 +1,7 @@
 from django.urls import path
 from network.views.discovery import (
     discovery_dashboard,
+    discovery_scan,
     discovery_candidates,
     discovery_candidates_action,
     discovery_candidate_detail,
@@ -14,6 +15,7 @@ app_name = "network"
 
 urlpatterns = [
     path("discovery/", discovery_dashboard, name="discovery_dashboard"),
+    path("discovery/scan/", discovery_scan, name="discovery_scan"),
     path("discovery/candidates/", discovery_candidates, name="discovery_candidates"),
     path("discovery/auto-assign/", auto_assign_jobs, name="auto_assign_jobs"),
     path(

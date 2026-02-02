@@ -1,0 +1,367 @@
+{% extends "core/base.html" %}
+{% block title %}Discovery Scan{% endblock %}
+
+{% block styles %}
+{% include "dcim/_layout_styles.html" %}
+.devices-wrapper { padding: 1.5rem 2rem; font-size: 0.95rem; }
+.list-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; }
+.list-header h1 { margin: 0; font-size: 1.5rem; }
+.list-header .muted { margin-top: 0.35rem; }
+.filters { display: flex; align-items: center; gap: 0.5rem; flex-wrap: nowrap; margin-left: auto; justify-content: flex-end; }
+.section-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 1rem;
+}
+.range-row {
+    display: grid;
+    grid-template-columns: auto minmax(160px, 1.2fr) auto minmax(120px, 0.8fr) auto minmax(80px, 0.5fr) auto minmax(160px, 1fr) auto auto;
+    gap: 0.6rem;
+    align-items: center;
+}
+.filter-row {
+    display: grid;
+    grid-template-columns: auto minmax(220px, 1fr) auto minmax(160px, 1fr) auto auto;
+    gap: 0.6rem;
+    align-items: center;
+}
+.filter-row .stacked-fields {
+    display: grid;
+    gap: 0.4rem;
+}
+.inline-label {
+    font-weight: 600;
+    color: var(--muted);
+    font-size: 0.82rem;
+    white-space: nowrap;
+}
+.row-actions {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: 600;
+    color: var(--text);
+}
+.divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0.9rem 0;
+}
+.scan-grid {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 1rem;
+}
+.scan-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.8rem;
+}
+.scan-options {
+    display: grid;
+    gap: 0.45rem;
+}
+.scan-options label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.scan-fields input:disabled {
+    background: #f0f2f5;
+    color: #8a94a6;
+    border-color: #d6dde8;
+    cursor: not-allowed;
+}
+.scan-status {
+    display: none;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.7rem 0.9rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #f7f9fc;
+    color: var(--text);
+    font-weight: 600;
+}
+.scan-status.is-active { display: flex; }
+.scan-spinner {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #c9d7f5;
+    border-top-color: #2f6fed;
+    animation: spin 0.9s linear infinite;
+}
+.scan-dots::after {
+    content: "…";
+    animation: pulse 1.2s steps(3, end) infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse {
+    0% { content: ""; }
+    33% { content: "."; }
+    66% { content: ".."; }
+    100% { content: "..."; }
+}
+.btn.primary { background: #e0edff; color: #1d4ed8; border-color: #bcd3ff; }
+.btn.primary:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+.btn.ghost { background: #fff; }
+.btn.danger { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+.btn.danger:hover {
+    background: #fee2e2;
+    border-color: #fca5a5;
+}
+.btn:not(.danger):not(.primary):hover {
+    background: #e0edff;
+    border-color: #bcd3ff;
+    color: #1d4ed8;
+}
+@media (max-width: 900px) {
+    .range-row,
+    .filter-row { grid-template-columns: 1fr; }
+    .scan-grid { grid-template-columns: 1fr; }
+}
+{% endblock %}
+
+{% block content %}
+<section class="devices-wrapper">
+    <div class="list-header">
+        <div>
+            <p class="tag">Discovery</p>
+            <h1>Scan network</h1>
+            <p class="muted">Manage discovery ranges and filters per site, or run ad-hoc scans using the same filters.</p>
+        </div>
+        <form method="get" class="filters">
+            <select name="site" onchange="this.form.submit()">
+                {% for s in sites %}
+                    <option value="{{ s.id }}" {% if site and s.id == site.id %}selected{% endif %}>{{ s.name }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <div class="section-grid">
+        <div class="card">
+            <h3 style="margin-top:0;">Discovery ranges</h3>
+            {% for dr in ranges %}
+            <form method="post" class="range-row" style="margin-bottom:0.6rem;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_range">
+                <input type="hidden" name="site_id" value="{{ site.id }}">
+                <input type="hidden" name="range_id" value="{{ dr.id }}">
+                <span class="inline-label">CIDR</span>
+                <input type="text" name="cidr" value="{{ dr.cidr }}" placeholder="CIDR">
+                <span class="inline-label">Description</span>
+                <input type="text" name="description" value="{{ dr.description }}" placeholder="Description">
+                <span class="inline-label">Method</span>
+                <select name="scan_method">
+                    <option value="tcp" {% if dr.scan_method == "tcp" %}selected{% endif %}>TCP</option>
+                    <option value="icmp" {% if dr.scan_method == "icmp" %}selected{% endif %}>ICMP</option>
+                </select>
+                <span class="inline-label">Port</span>
+                <input type="number" name="scan_port" value="{{ dr.scan_port }}">
+                <label class="checkbox-field" style="margin-top:0;">
+                    <input type="checkbox" name="enabled" {% if dr.enabled %}checked{% endif %}> Enabled
+                </label>
+                <div class="row-actions">
+                    <button class="btn primary" type="submit">Save</button>
+                    <button class="btn danger" type="submit" name="action" value="delete_range">Delete</button>
+                </div>
+            </form>
+            {% empty %}
+                <p class="muted">No discovery ranges defined.</p>
+            {% endfor %}
+
+            <div class="divider"></div>
+            <form method="post" class="range-row">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_range">
+                <input type="hidden" name="site_id" value="{{ site.id }}">
+                <span class="inline-label">CIDR</span>
+                <input type="text" name="cidr" placeholder="Add CIDR (e.g. 192.168.1.0/24)">
+                <span class="inline-label">Description</span>
+                <input type="text" name="description" placeholder="Description">
+                <span class="inline-label">Method</span>
+                <select name="scan_method">
+                    <option value="tcp">TCP</option>
+                    <option value="icmp">ICMP</option>
+                </select>
+                <span class="inline-label">Port</span>
+                <input type="number" name="scan_port" value="22">
+                <label class="checkbox-field" style="margin-top:0;">
+                    <input type="checkbox" name="enabled" checked> Enabled
+                </label>
+                <div class="row-actions">
+                    <button class="btn primary" type="submit">Add range</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-top:0;">Discovery filters</h3>
+            {% for df in filters %}
+            <form method="post" class="filter-row" style="margin-bottom:0.6rem;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_filter">
+                <input type="hidden" name="site_id" value="{{ site.id }}">
+                <input type="hidden" name="filter_id" value="{{ df.id }}">
+                <span class="inline-label">Host filter</span>
+                <div class="stacked-fields">
+                    <input type="text" name="hostname_contains" value="{{ df.hostname_contains }}" placeholder="Must contain (comma-separated)">
+                    <input type="text" name="hostname_not_contains" value="{{ df.hostname_not_contains }}" placeholder="Must not contain (comma-separated)">
+                </div>
+                <span class="inline-label">Description</span>
+                <input type="text" name="description" value="{{ df.description }}" placeholder="Description">
+                <label class="checkbox-field" style="margin-top:0;">
+                    <input type="checkbox" name="enabled" {% if df.enabled %}checked{% endif %}> Enabled
+                </label>
+                <div class="row-actions">
+                    <button class="btn primary" type="submit">Save</button>
+                    <button class="btn danger" type="submit" name="action" value="delete_filter">Delete</button>
+                </div>
+            </form>
+            {% empty %}
+                <p class="muted">No discovery filters defined.</p>
+            {% endfor %}
+
+            <div class="divider"></div>
+            <form method="post" class="filter-row">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_filter">
+                <input type="hidden" name="site_id" value="{{ site.id }}">
+                <span class="inline-label">Host filter</span>
+                <div class="stacked-fields">
+                    <input type="text" name="hostname_contains" placeholder="Must contain (comma-separated)">
+                    <input type="text" name="hostname_not_contains" placeholder="Must not contain (comma-separated)">
+                </div>
+                <span class="inline-label">Description</span>
+                <input type="text" name="description" placeholder="Description">
+                <label class="checkbox-field" style="margin-top:0;">
+                    <input type="checkbox" name="enabled" checked> Enabled
+                </label>
+                <div class="row-actions">
+                    <button class="btn primary" type="submit">Add filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-top:0;">Run scan</h3>
+        <form method="post" data-scan-form>
+            {% csrf_token %}
+            <input type="hidden" name="action" value="scan">
+            <input type="hidden" name="site_id" value="{{ site.id }}">
+            <div class="scan-grid">
+                <div class="scan-options">
+                    <label><input type="radio" name="scan_kind" value="all" checked> Scan all configured ranges</label>
+                    <label><input type="radio" name="scan_kind" value="single"> Single IP</label>
+                    <label><input type="radio" name="scan_kind" value="cidr"> CIDR</label>
+                    <label><input type="radio" name="scan_kind" value="range"> Range (start → end)</label>
+                </div>
+                <div class="scan-fields">
+                    <div class="field">
+                        <label>Single IP</label>
+                        <input type="text" name="single_ip" placeholder="192.168.1.10">
+                    </div>
+                    <div class="field">
+                        <label>CIDR</label>
+                        <input type="text" name="cidr" placeholder="192.168.1.0/24">
+                    </div>
+                    <div class="field">
+                        <label>Range start</label>
+                        <input type="text" name="start_ip" placeholder="192.168.1.10">
+                    </div>
+                    <div class="field">
+                        <label>Range end</label>
+                        <input type="text" name="end_ip" placeholder="192.168.1.200">
+                    </div>
+                    <div class="field">
+                        <label>Scan method</label>
+                        <select name="scan_method">
+                            <option value="tcp">TCP</option>
+                            <option value="icmp">ICMP</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>TCP port</label>
+                        <input type="number" name="scan_port" value="22">
+                    </div>
+                </div>
+            </div>
+            <div class="scan-status" data-scan-status style="margin-top:1rem;">
+                <span class="scan-spinner" aria-hidden="true"></span>
+                <span>Scanning<span class="scan-dots"></span></span>
+            </div>
+            <div style="margin-top:1rem;">
+                <button class="btn primary" type="submit" data-scan-submit>Run scan</button>
+                <a class="btn ghost" href="{% url 'network:discovery_dashboard' %}">Back to discovery</a>
+            </div>
+        </form>
+    </div>
+</section>
+<script>
+    (function () {
+        const scanForm = document.querySelector("form[data-scan-form]");
+        if (!scanForm) {
+            return;
+        }
+
+        const modeFields = {
+            all: [],
+            single: ["single_ip"],
+            cidr: ["cidr"],
+            range: ["start_ip", "end_ip"],
+        };
+
+        const radios = scanForm.querySelectorAll('input[name="scan_kind"]');
+        const controlledInputs = [
+            "single_ip",
+            "cidr",
+            "start_ip",
+            "end_ip",
+        ].map((name) => scanForm.querySelector(`input[name="${name}"]`))
+            .filter(Boolean);
+        const status = scanForm.querySelector("[data-scan-status]");
+        const submitBtn = scanForm.querySelector("[data-scan-submit]");
+
+        const setMode = (mode) => {
+            const enabled = new Set(modeFields[mode] || []);
+            controlledInputs.forEach((input) => {
+                input.disabled = !enabled.has(input.name);
+            });
+        };
+
+        radios.forEach((radio) => {
+            radio.addEventListener("change", () => {
+                if (radio.checked) {
+                    setMode(radio.value);
+                }
+            });
+        });
+
+        const active = scanForm.querySelector('input[name="scan_kind"]:checked');
+        setMode(active ? active.value : "all");
+
+        scanForm.addEventListener("submit", () => {
+            if (status) {
+                status.classList.add("is-active");
+            }
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = "Scanning...";
+            }
+        });
+    })();
+</script>
+{% endblock %}

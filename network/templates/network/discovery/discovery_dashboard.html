@@ -172,15 +172,15 @@ main { max-width: 1200px; }
         <span class="value">{{ total }}</span>
         <span class="hint">Across all sites</span>
     </a>
-    <div class="metric-card">
-        <span class="label">SSH reachable</span>
-        <span class="value">{{ ssh_ok }}</span>
-        <span class="hint">Ping reachable: {{ ping_ok }}</span>
-    </div>
     <a class="metric-card sub" href="{% url 'network:auto_assign_jobs' %}">
         <span class="label">Auto-assign jobs</span>
         <span class="value small link">View runs</span>
         <span class="hint">See background assignment reports</span>
+    </a>
+    <a class="metric-card sub" href="{% url 'network:discovery_scan' %}">
+        <span class="label">Scan network</span>
+        <span class="value small link">Open scanner</span>
+        <span class="hint">Edit ranges/filters and run scans</span>
     </a>
 </div>
 

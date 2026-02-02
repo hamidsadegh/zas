@@ -43,8 +43,32 @@ class NetworkDiscoveryService:
         for dr in ranges:
             alive += self._scan_range(dr)
 
-        exact, mismatch, new = self._classify()
+        updated_candidates = DiscoveryCandidate.objects.filter(
+            site=self.site,
+            classified=False,
+            last_seen=self.now,
+        )
+        exact, mismatch, new = self._classify(updated_candidates)
 
+        return {
+            "ranges": len(ranges),
+            "alive": alive,
+            "exact": exact,
+            "mismatch": mismatch,
+            "new": new,
+        }
+
+    def run_for_ranges(self, ranges) -> dict:
+        alive = 0
+        for dr in ranges:
+            alive += self._scan_range(dr)
+
+        updated_candidates = DiscoveryCandidate.objects.filter(
+            site=self.site,
+            classified=False,
+            last_seen=self.now,
+        )
+        exact, mismatch, new = self._classify(updated_candidates)
         return {
             "ranges": len(ranges),
             "alive": alive,
@@ -120,13 +144,14 @@ class NetworkDiscoveryService:
     # -------------------------------------------------
 
     @transaction.atomic
-    def _classify(self) -> tuple[int, int, int]:
+    def _classify(self, candidates=None) -> tuple[int, int, int]:
         exact = mismatch = new = 0
 
-        candidates = DiscoveryCandidate.objects.filter(
-            site=self.site,
-            classified=False,
-        )
+        if candidates is None:
+            candidates = DiscoveryCandidate.objects.filter(
+                site=self.site,
+                classified=False,
+            )
 
         for c in candidates:
             hostname = (c.hostname or "").lower()

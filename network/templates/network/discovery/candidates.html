@@ -299,7 +299,7 @@ main { max-width: 1250px; }
         <div>
             <p class="tag">Discovery</p>
             <h1>Discovery Candidates</h1>
-            <p class="muted">Manual review of discovered endpoints. Exact matches are read-only.</p>
+            <p class="muted">Review of discovered endpoints. Exact matches are read-only.</p>
         </div>
         <div class="list-actions">
             <div class="pill-group">
@@ -316,6 +316,7 @@ main { max-width: 1250px; }
     </div>
 
     <form method="get" class="filters">
+        <div><strong>Filter</strong></div>
         <select name="site" onchange="this.form.submit()">
             {% for key, label in site_choices %}
                 <option value="{{ key }}" {% if site_filter == key %}selected{% endif %}>{{ label }}</option>
@@ -339,6 +340,7 @@ main { max-width: 1250px; }
     <form method="post" action="{% url 'network:discovery_candidates_action' %}" class="auto-assign-bar">
         {% csrf_token %}
         <input type="hidden" name="action" value="auto_assign">
+        <div><strong>Auto assign</strong></div>
         <label>
             Site
             <select name="auto_site_id">
