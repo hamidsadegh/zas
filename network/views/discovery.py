@@ -138,7 +138,10 @@ def discovery_dashboard(request):
         "last_seen": qs.order_by("-last_seen").first(),
         "site_breakdown": qs.values("site__id", "site__name")
         .order_by("site__name")
-        .annotate(count_site=models.Count("id")),
+        .annotate(
+            count_site=models.Count("id"),
+            unclassified_count=models.Count("id", filter=models.Q(classified=False)),
+        ),
     }
     return render(request, "network/discovery/discovery_dashboard.html", context)
 

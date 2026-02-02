@@ -196,6 +196,7 @@ main { max-width: 1200px; }
                 <div>
                     <div class="site-name">{{ site.site__name }}</div>
                     <div class="muted">Candidates: {{ site.count_site }}</div>
+                    <div class="muted">Unclassified: {{ site.unclassified_count }}</div>
                 </div>
                 <a class="link-btn" href="{% url 'network:discovery_candidates' %}?site={{ site.site__id }}">Open</a>
             </li>
@@ -209,10 +210,11 @@ main { max-width: 1200px; }
             <h3>Operator guidance</h3>
         </div>
         <ul class="guidance">
-            <li>Discovery is observational; nothing auto-creates devices.</li>
-            <li>Exact matches only update runtime status; actions stay disabled.</li>
-            <li>Mismatches and new endpoints wait for explicit review.</li>
-            <li>Use bulk actions cautiously to keep an auditable trail.</li>
+            <li>Discovery is observational; it never auto-creates devices.</li>
+            <li>Exact matches only update runtime status; edits are disabled.</li>
+            <li>Unclassified and mismatched devices require explicit review.</li>
+            <li>Scans run in the background; check the results table for outcomes.</li>
+            <li>Use bulk actions carefully to keep an auditable trail.</li>
         </ul>
     </div>
 </div>
