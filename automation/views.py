@@ -8,6 +8,11 @@ from automation.models import AutomationSchedule, AutomationTaskDefinition
 from automation.services.scheduler_sync import sync_schedule
 from zas.celery import app as celery_app
 
+SCHEDULE_OVERRIDE_TASKS = {
+    "automation.tasks.run_scheduled_reachability",
+    "automation.tasks.run_scheduled_config_backup",
+}
+
 
 class TaskListView(LoginRequiredMixin, View):
     template_name = "automation/task_list.html"
@@ -54,6 +59,7 @@ class TaskListView(LoginRequiredMixin, View):
             "manual_count": manual_count,
             "missing_count": missing_count,
             "total_count": len(tasks),
+            "schedule_override_tasks": sorted(SCHEDULE_OVERRIDE_TASKS),
         }
         return render(request, self.template_name, context)
 
@@ -80,7 +86,10 @@ class TaskScheduleView(LoginRequiredMixin, View):
         if not task.supports_schedule:
             messages.info(request, "This task is triggered by workflows and cannot be scheduled here.")
             return redirect("automation:task_list")
-        if task.managed_by != AutomationTaskDefinition.ManagedBy.UI:
+        if (
+            task.managed_by != AutomationTaskDefinition.ManagedBy.UI
+            and task.task_name not in SCHEDULE_OVERRIDE_TASKS
+        ):
             messages.info(request, "This task schedule is managed elsewhere.")
             return redirect("automation:task_list")
 
@@ -106,7 +115,10 @@ class TaskScheduleView(LoginRequiredMixin, View):
         if not task.supports_schedule:
             messages.info(request, "This task is triggered by workflows and cannot be scheduled here.")
             return redirect("automation:task_list")
-        if task.managed_by != AutomationTaskDefinition.ManagedBy.UI:
+        if (
+            task.managed_by != AutomationTaskDefinition.ManagedBy.UI
+            and task.task_name not in SCHEDULE_OVERRIDE_TASKS
+        ):
             messages.info(request, "This task schedule is managed elsewhere.")
             return redirect("automation:task_list")
 

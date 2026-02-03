@@ -220,10 +220,10 @@ main { max-width: 1200px; }
                     <div class="chip">{{ task.get_managed_by_display }}</div>
                 </td>
                 <td>
-                    {% if task.managed_by == "system" %}
-                        <a class="action-link" href="{% url 'system_settings' %}">System settings</a>
-                    {% elif not task.supports_schedule %}
+                    {% if not task.supports_schedule %}
                         <span class="muted">Workflow driven</span>
+                    {% elif task.managed_by == "system" and task.task_name not in schedule_override_tasks %}
+                        <a class="action-link" href="{% url 'system_settings' %}">System settings</a>
                     {% else %}
                         <a class="action-link primary" href="{% url 'automation:task_schedule' task.id %}">
                             {% if schedule %}Edit schedule{% else %}Create schedule{% endif %}

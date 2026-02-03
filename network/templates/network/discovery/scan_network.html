@@ -282,7 +282,7 @@
     </div>
 
     <div class="card">
-        <h3 style="margin-top:0;">Run scan</h3>
+        <h3 style="margin-top:0;">Run manual scan</h3>
         <form method="post" data-scan-form data-scan-job-id="{{ scan_job.id|default_if_none:'' }}" data-scan-status-url="{{ scan_status_url|default_if_none:'' }}" data-scan-results-url="{{ scan_results_url|default_if_none:'' }}">
             {% csrf_token %}
             <input type="hidden" name="action" value="scan">
