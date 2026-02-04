@@ -142,6 +142,7 @@ class DevicePlatformChoices(ChoiceSet):
     IOS = 'ios'
     IOS_XE = 'iosxe'
     NX_OS = 'nxos'
+    APIC = 'apic'
     FIREWALL = 'firewall'
     ROUTER = 'router'
     EOS = 'eos'
@@ -153,6 +154,7 @@ class DevicePlatformChoices(ChoiceSet):
         (IOS, _('Cisco IOS Switch')),
         (IOS_XE, _('Cisco IOS-XE Switch')),
         (NX_OS, _('Cisco NX-OS Switch')),
+        (APIC, _('Cisco APIC Controller')),
         (FIREWALL, _('Firewall')),
         (ROUTER, _('Router')),
         (EOS, _('Arista EOS Switche')),
