@@ -69,53 +69,82 @@ def _resolve_local_interface(device: Device, raw_name: str):
     return None
 
 
+def _is_invalid_output(raw: str) -> bool:
+    if not raw:
+        return True
+    raw_lower = raw.lower()
+    return "% invalid" in raw_lower or "invalid input" in raw_lower
+
+
 def collect_neighbors_for_device(device: Device) -> bool:
     try:
         with NetmikoAdapter(device) as adapter:
-            cdp_raw = adapter.run_command_raw("show cdp neighbors detail")["raw"]
-            if not cdp_raw or "% Invalid" in cdp_raw or "Invalid input" in cdp_raw:
-                cdp_raw = adapter.run_command_raw("show cdp neighbors")["raw"]
-            lldp_raw = adapter.run_command_raw("show lldp neighbors detail")["raw"]
-            if not lldp_raw or "% Invalid" in lldp_raw or "Invalid input" in lldp_raw:
-                lldp_raw = adapter.run_command_raw("show lldp neighbors")["raw"]
+            cdp_raw = adapter.run_command_raw("show cdp neighbors detail")["raw"] or ""
+            if _is_invalid_output(cdp_raw):
+                cdp_raw = adapter.run_command_raw("show cdp neighbors")["raw"] or ""
+            lldp_raw = adapter.run_command_raw("show lldp neighbors detail")["raw"] or ""
+            if _is_invalid_output(lldp_raw):
+                lldp_raw = adapter.run_command_raw("show lldp neighbors")["raw"] or ""
 
-        for entry in parse_cdp_neighbors(cdp_raw):
-            local_interface = _resolve_local_interface(device, entry["local_interface"])
-            if not local_interface:
-                logger.info(
-                    "Topology skip: %s missing local interface %s",
-                    device.name,
-                    entry["local_interface"],
-                )
-                continue
-            TopologyService.upsert_neighbor(
-                device=device,
-                local_interface=local_interface,
-                neighbor_name=entry["neighbor_name"],
-                neighbor_interface=entry["neighbor_interface"],
-                protocol=entry["protocol"],
-                platform=entry["platform"],
-                capabilities=entry["capabilities"],
-            )
+        cdp_available = not _is_invalid_output(cdp_raw)
+        lldp_available = not _is_invalid_output(lldp_raw)
+        seen_neighbor_ids = set()
 
-        for entry in parse_lldp_neighbors(lldp_raw):
-            local_interface = _resolve_local_interface(device, entry["local_interface"])
-            if not local_interface:
-                logger.info(
-                    "Topology skip: %s missing local interface %s",
-                    device.name,
-                    entry["local_interface"],
+        if cdp_available:
+            for entry in parse_cdp_neighbors(cdp_raw):
+                local_interface = _resolve_local_interface(device, entry["local_interface"])
+                if not local_interface:
+                    logger.info(
+                        "Topology skip: %s missing local interface %s",
+                        device.name,
+                        entry["local_interface"],
+                    )
+                    continue
+                neighbor = TopologyService.upsert_neighbor(
+                    device=device,
+                    local_interface=local_interface,
+                    neighbor_name=entry["neighbor_name"],
+                    neighbor_interface=entry["neighbor_interface"],
+                    protocol=entry["protocol"],
+                    platform=entry["platform"],
+                    capabilities=entry["capabilities"],
                 )
-                continue
-            TopologyService.upsert_neighbor(
+                seen_neighbor_ids.add(neighbor.id)
+
+        if lldp_available:
+            for entry in parse_lldp_neighbors(lldp_raw):
+                local_interface = _resolve_local_interface(device, entry["local_interface"])
+                if not local_interface:
+                    logger.info(
+                        "Topology skip: %s missing local interface %s",
+                        device.name,
+                        entry["local_interface"],
+                    )
+                    continue
+                neighbor = TopologyService.upsert_neighbor(
+                    device=device,
+                    local_interface=local_interface,
+                    neighbor_name=entry["neighbor_name"],
+                    neighbor_interface=entry["neighbor_interface"],
+                    protocol=entry["protocol"],
+                    platform=entry["platform"],
+                    capabilities=entry["capabilities"],
+                )
+                seen_neighbor_ids.add(neighbor.id)
+
+        protocols_to_cleanup = set()
+        if cdp_available:
+            protocols_to_cleanup.add("cdp")
+        if lldp_available:
+            protocols_to_cleanup.add("lldp")
+        if protocols_to_cleanup:
+            stale_qs = TopologyNeighbor.objects.filter(
                 device=device,
-                local_interface=local_interface,
-                neighbor_name=entry["neighbor_name"],
-                neighbor_interface=entry["neighbor_interface"],
-                protocol=entry["protocol"],
-                platform=entry["platform"],
-                capabilities=entry["capabilities"],
+                protocol__in=protocols_to_cleanup,
             )
+            if seen_neighbor_ids:
+                stale_qs = stale_qs.exclude(id__in=seen_neighbor_ids)
+            stale_qs.delete()
         return True
     except Exception as exc:
         logger.warning("Topology collection failed for %s: %s", device.name, exc)

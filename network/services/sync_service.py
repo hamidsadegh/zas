@@ -856,6 +856,7 @@ class SyncService:
         desc_map = {}
         ip_map = {}
         ip_seen = {}
+        ip_names = set()
         lag_map = {}
 
         # ---- descriptions ----
@@ -891,6 +892,7 @@ class SyncService:
             name = self._normalize_iface(e.get("intf") or e.get("interface"))
             if not name:
                 continue
+            ip_names.add(name)
             ip = e.get("ipaddr") or e.get("ip_address")
             status = (e.get("status") or "").lower()
             proto = (e.get("proto") or "").lower()
@@ -944,8 +946,18 @@ class SyncService:
                     lag_map[member] = po
 
                 
+        seen_names = (
+            set(status_map)
+            | set(desc_map)
+            | set(ip_names)
+            | set(lag_map)
+            | set(lag_map.values())
+        )
+        if seen_names:
+            Interface.objects.filter(device=device).exclude(name__in=seen_names).delete()
+
         # ---- create all interfaces ----
-        all_names = set(status_map) | set(ip_seen) | set(lag_map.values())
+        all_names = seen_names
         iface_objs = {
             name: Interface.objects.get_or_create(device=device, name=name)[0]
             for name in all_names
