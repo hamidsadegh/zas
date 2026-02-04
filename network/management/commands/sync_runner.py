@@ -53,7 +53,9 @@ class Command(BaseCommand):
             self.stdout.write(self.style.NOTICE(f"Starting sync for device: {device.name} ({device.site})"))
             include_config = options.get("with_config", False)
             result = service.sync_device(device, include_config=include_config)
-            if result.get("success"):
+            if result.get("skipped"):
+                self.stdout.write(self.style.WARNING(f"[SKIP] {device.name}: {result.get('error')}"))
+            elif result.get("success"):
                 self.stdout.write(self.style.SUCCESS(f"[OK] {device.name}"))
             else:
                 self.stdout.write(self.style.ERROR(f"[FAIL] {device.name}: {result.get('error')}"))
@@ -72,6 +74,7 @@ class Command(BaseCommand):
 
         success = 0
         failed = 0
+        skipped = 0
         include_config = options.get("with_config", False)
         devices = list(qs)
         threads = options.get("threads") or 1
@@ -82,7 +85,10 @@ class Command(BaseCommand):
             service = SyncService(site=site)
             for device in devices:
                 result = service.sync_device(device, include_config=include_config)
-                if result.get("success"):
+                if result.get("skipped"):
+                    skipped += 1
+                    self.stdout.write(self.style.WARNING(f"[SKIP] {device.name}: {result.get('error')}"))
+                elif result.get("success"):
                     success += 1
                     self.stdout.write(self.style.SUCCESS(f"[OK] {device.name}"))
                 else:
@@ -109,7 +115,10 @@ class Command(BaseCommand):
                         failed += 1
                         self.stdout.write(self.style.ERROR(f"[FAIL] {device.name}: {exc}"))
                         continue
-                    if result.get("success"):
+                    if result.get("skipped"):
+                        skipped += 1
+                        self.stdout.write(self.style.WARNING(f"[SKIP] {device.name}: {result.get('error')}"))
+                    elif result.get("success"):
                         success += 1
                         self.stdout.write(self.style.SUCCESS(f"[OK] {device.name}"))
                     else:
@@ -118,7 +127,9 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"Sync finished at {timezone.now():%Y-%m-%d %H:%M}. Success: {success}, Failed: {failed}"
+                "Sync finished at "
+                f"{timezone.now():%Y-%m-%d %H:%M}. "
+                f"Success: {success}, Failed: {failed}, Skipped: {skipped}"
             )
         )
 

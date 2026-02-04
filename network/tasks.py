@@ -16,12 +16,9 @@ from network.models.discovery import (
 )
 from network.services.auto_assignment_service import AutoAssignmentService
 from network.services.discover_network import NetworkDiscoveryService
-from network.services.sync_service import SyncService
+from network.services.sync_service import SYNC_EXCLUDE_TAG, SyncService
 
 logger = logging.getLogger(__name__)
-SYNC_EXCLUDE_TAG = "no_sync"
-
-
 @shared_task(bind=True)
 def run_auto_assign_job(self, job_id: str, candidate_ids: list[str]) -> None:
     try:
@@ -219,12 +216,15 @@ def run_scheduled_sync_job(include_config: bool = False):
 
     success = 0
     failed = 0
+    skipped = 0
 
     for device in devices:
         try:
             service = SyncService(site=device.site)
             result = service.sync_device(device, include_config=include_config)
-            if result.get("success"):
+            if result.get("skipped"):
+                skipped += 1
+            elif result.get("success"):
                 success += 1
             else:
                 failed += 1
@@ -233,7 +233,7 @@ def run_scheduled_sync_job(include_config: bool = False):
             failed += 1
             logger.exception("Scheduled sync crashed for %s: %s", device.name, exc)
 
-    return {"success": success, "failed": failed, "skipped": 0}
+    return {"success": success, "failed": failed, "skipped": skipped}
 
 
 @shared_task

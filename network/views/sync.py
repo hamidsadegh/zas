@@ -15,7 +15,9 @@ def sync_device(request, pk):
     include_config = False # request.POST.get("no_config") != "1"
     service = SyncService(site=device.site)
     result = service.sync_device(device, include_config=include_config)
-    if result.get("success"):
+    if result.get("skipped"):
+        messages.warning(request, f"Sync skipped for {device.name}: {result.get('error')}")
+    elif result.get("success"):
         messages.success(request, f"Sync triggered for {device.name}.")
     else:
         messages.error(request, f"Sync failed for {device.name}: {result.get('error')}")

@@ -124,28 +124,69 @@
         }
 
         .flash {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
             padding: 0.9rem 1.2rem;
-            border-radius: 12px;
+            border-radius: 14px;
             margin-bottom: 0.75rem;
-            font-weight: 500;
+            font-weight: 600;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+            border: 1px solid transparent;
+        }
+
+        .flash-text {
+            flex: 1;
+        }
+
+        .flash-close {
+            border: none;
+            background: transparent;
+            color: inherit;
+            font-size: 1.2rem;
+            line-height: 1;
+            cursor: pointer;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.75;
+        }
+
+        .flash-close:hover {
+            background: rgba(15, 23, 42, 0.08);
+            opacity: 1;
         }
 
         .flash-success {
-            background: #ecfdf5;
+            background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
             color: #065f46;
             border: 1px solid #34d399;
+            border-left: 6px solid #10b981;
         }
 
         .flash-error {
-            background: #fef2f2;
+            background: linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%);
             color: #991b1b;
             border: 1px solid #f87171;
+            border-left: 6px solid #ef4444;
         }
 
         .flash-info {
-            background: #eff6ff;
+            background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%);
             color: #1e3a8a;
             border: 1px solid #60a5fa;
+            border-left: 6px solid #3b82f6;
+        }
+
+        .flash-warning {
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            color: #92400e;
+            border: 1px solid #f59e0b;
+            border-left: 6px solid #f59e0b;
         }
 
         @media (max-width: 768px) {
@@ -194,8 +235,11 @@
 {% if messages %}
 <div class="flash-container">
     {% for message in messages %}
-        <div class="flash flash-{{ message.tags|default:'info' }}">
-            {{ message }}
+        <div class="flash flash-{{ message.tags|default:'info' }}" role="alert">
+            <span class="flash-text">{{ message }}</span>
+            <button class="flash-close" type="button" aria-label="Close message" onclick="this.closest('.flash').remove()">
+                &times;
+            </button>
         </div>
     {% endfor %}
 </div>

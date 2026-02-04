@@ -34,6 +34,7 @@ from network.choices import CliCommandsChoices as cli
 
 
 logger = logging.getLogger(__name__)
+SYNC_EXCLUDE_TAG = "no_sync"
 
 
 class SyncService:
@@ -59,6 +60,13 @@ class SyncService:
         include_config: bool = False,
         return_results: bool = False,
     ) -> dict:
+        if self._is_sync_excluded(device):
+            return {
+                "device": device,
+                "success": False,
+                "skipped": True,
+                "error": f"Device has tag '{SYNC_EXCLUDE_TAG}'.",
+            }
         with transaction.atomic():
             runtime, _ = DeviceRuntimeStatus.objects.get_or_create(device=device)
             runtime.last_check = self.now
@@ -138,6 +146,10 @@ class SyncService:
             if return_results:
                 payload["results"] = results
             return payload
+
+    @staticmethod
+    def _is_sync_excluded(device: Device) -> bool:
+        return device.tags.filter(name__iexact=SYNC_EXCLUDE_TAG).exists()
 
     def _collect_results_with_retry(
         self,

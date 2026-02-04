@@ -64,6 +64,7 @@ class Command(BaseCommand):
         include_config = options.get("with_config", False)
         success = 0
         failed = 0
+        skipped = 0
 
         self.stdout.write(
             self.style.NOTICE(
@@ -81,6 +82,10 @@ class Command(BaseCommand):
                 include_config=include_config,
                 return_results=bool(show_raw or show_parsed),
             )
+            if result.get("skipped"):
+                skipped += 1
+                self.stdout.write(self.style.WARNING(f"[SKIP] {device.name}: {result.get('error')}"))
+                continue
             if not result.get("success"):
                 failed += 1
                 self.stdout.write(self.style.ERROR(f"[FAIL] {device.name}: {result.get('error')}"))
@@ -103,7 +108,9 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"Sync verify finished at {timezone.now():%Y-%m-%d %H:%M}. Success: {success}, Failed: {failed}"
+                "Sync verify finished at "
+                f"{timezone.now():%Y-%m-%d %H:%M}. "
+                f"Success: {success}, Failed: {failed}, Skipped: {skipped}"
             )
         )
 
