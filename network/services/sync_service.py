@@ -602,13 +602,21 @@ class SyncService:
                 elif "transceiver is not present" in lower:
                     current["present"] = False
                 if "type is" in lower:
-                    current["type"] = normalized.split("type is", 1)[1].strip()
+                    match = re.search(r"type is\s*(.+)$", normalized, re.IGNORECASE)
+                    if match:
+                        current["type"] = match.group(1).strip()
                 elif "serial number is" in lower:
-                    current["serial"] = normalized.split("serial number is", 1)[1].strip()
+                    match = re.search(r"serial number is\s*(.+)$", normalized, re.IGNORECASE)
+                    if match:
+                        current["serial"] = match.group(1).strip()
                 elif "name is" in lower:
-                    current["vendor"] = normalized.split("name is", 1)[1].strip()
+                    match = re.search(r"name is\s*(.+)$", normalized, re.IGNORECASE)
+                    if match:
+                        current["vendor"] = match.group(1).strip()
                 elif "part number is" in lower:
-                    current["part"] = normalized.split("part number is", 1)[1].strip()
+                    match = re.search(r"part number is\s*(.+)$", normalized, re.IGNORECASE)
+                    if match:
+                        current["part"] = match.group(1).strip()
                 continue
 
             if self._looks_like_interface(line.strip()):
