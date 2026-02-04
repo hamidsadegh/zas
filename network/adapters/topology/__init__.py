@@ -1,17 +1,24 @@
 import re
 
 
+def _normalize_neighbor_name(value: str) -> str:
+    name = (value or "").strip()
+    if not name:
+        return ""
+    return re.sub(r"\s*\([^)]*\)\s*$", "", name).strip()
+
+
 def _finalize_neighbor(current, neighbors, protocol):
     if not current:
         return
-    neighbor_name = current.get("neighbor_name", "").strip()
+    neighbor_name = _normalize_neighbor_name(current.get("neighbor_name", ""))
     local_interface = current.get("local_interface", "").strip()
     if not neighbor_name or not local_interface:
         return
     neighbors.append(
         {
             "local_interface": local_interface,
-            "neighbor_name": neighbor_name,
+                "neighbor_name": neighbor_name,
             "neighbor_interface": current.get("neighbor_interface", "").strip(),
             "platform": current.get("platform", "").strip(),
             "capabilities": current.get("capabilities", "").strip(),
@@ -51,7 +58,7 @@ def _parse_cdp_summary(raw_output: str) -> list[dict]:
         neighbors.append(
             {
                 "local_interface": local.strip(),
-                "neighbor_name": device_id.strip(),
+                "neighbor_name": _normalize_neighbor_name(device_id),
                 "neighbor_interface": port_id.strip(),
                 "platform": platform.strip(),
                 "capabilities": caps.strip(),
@@ -134,7 +141,7 @@ def parse_lldp_neighbors(raw_output: str) -> list[dict]:
             neighbors.append(
                 {
                     "local_interface": local_intf.strip(),
-                    "neighbor_name": device_id.strip(),
+                    "neighbor_name": _normalize_neighbor_name(device_id),
                     "neighbor_interface": port_id.strip(),
                     "platform": "",
                     "capabilities": caps.strip(),
