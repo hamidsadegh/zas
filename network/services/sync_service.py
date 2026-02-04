@@ -279,6 +279,7 @@ class SyncService:
 
         seen_keys = set()
         no_serial_names = set()
+        serial_entries = {}
         for entry in parsed:
             name = (entry.get("name") or entry.get("descr") or "Module").strip()
             serial = entry.get("sn") or entry.get("serial") or ""
@@ -289,6 +290,13 @@ class SyncService:
                 no_serial_names.add(name)
                 continue
 
+            existing = serial_entries.get(serial_value)
+            if not existing or len(name) > len(existing["name"]):
+                serial_entries[serial_value] = {"name": name, "descr": descr}
+
+        for serial_value, entry in serial_entries.items():
+            name = entry["name"]
+            descr = entry["descr"]
             DeviceModule.objects.update_or_create(
                 device=device,
                 name=name,
