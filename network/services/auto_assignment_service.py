@@ -63,7 +63,7 @@ class AutoAssignmentService:
                 include_config = False
             with transaction.atomic():
                 conn, device_type, version_raw = self._detect_device_type_via_version(credential)
-                location_raw, parsed_version, stack_raw = self._collect_details(
+                location_raw, parsed_version, parsed_inventory, stack_raw = self._collect_details(
                     conn, device_type, version_raw
                 )
                 conn.disconnect()
@@ -78,7 +78,9 @@ class AutoAssignmentService:
                 required_units = max(1, stack_count)
                 position = self._select_position(rack, requested_unit, required_units)
 
-                model_name = self._extract_model_from_version(parsed_version)
+                model_name = self._model_from_inventory(parsed_inventory)
+                if not model_name:
+                    model_name = self._extract_model_from_version(parsed_version)
                 device_type_obj = self._resolve_device_type_obj(device_type, model_name)
                 role = self._resolve_role()
                 tags = self._resolve_tags()
@@ -89,6 +91,7 @@ class AutoAssignmentService:
                     "version_raw": version_raw,
                     "parsed_version": parsed_version,
                     "location_raw": location_raw,
+                    "parsed_inventory": parsed_inventory,
                     "area_name": area_name,
                     "rack_name": rack_name,
                     "requested_unit": requested_unit,
@@ -184,7 +187,7 @@ class AutoAssignmentService:
                 include_config = False
 
             conn, device_type, version_raw = self._detect_device_type_via_version(credential)
-            location_raw, parsed_version, stack_raw = self._collect_details(
+            location_raw, parsed_version, parsed_inventory, stack_raw = self._collect_details(
                 conn, device_type, version_raw
             )
             conn.disconnect()
@@ -196,10 +199,12 @@ class AutoAssignmentService:
             details = {
                 "device_type": device_type,
                 "include_config": include_config,
-                "model_name": self._extract_model_from_version(parsed_version),
+                "model_name": self._model_from_inventory(parsed_inventory)
+                or self._extract_model_from_version(parsed_version),
                 "version_raw": version_raw,
                 "parsed_version": parsed_version,
                 "location_raw": location_raw,
+                "parsed_inventory": parsed_inventory,
                 "area_name": area_name,
                 "rack_name": rack_name,
                 "requested_unit": requested_unit,
@@ -276,6 +281,37 @@ class AutoAssignmentService:
         headers = [header.lower() for header in fsm.header]
         return [dict(zip(headers, row)) for row in results]
 
+    def _parse_show_inventory(self, raw: str, device_type: str) -> list[dict] | None:
+        if not raw:
+            return None
+        if device_type == "cisco_nxos":
+            template_name = "cisco_nxos_show_inventory.textfsm"
+        else:
+            template_name = "cisco_ios_show_inventory.textfsm"
+        template_path = (
+            Path(settings.BASE_DIR)
+            / "network"
+            / "parsers"
+            / "textfsm"
+            / template_name
+        )
+        try:
+            with open(template_path, "r", encoding="utf-8") as handle:
+                fsm = textfsm.TextFSM(handle)
+                results = fsm.ParseText(raw)
+        except Exception as exc:
+            logger.warning(
+                "Could not parse show inventory for %s: %s",
+                self.candidate,
+                exc,
+            )
+            return None
+
+        if not results:
+            return None
+        headers = [header.lower() for header in fsm.header]
+        return [dict(zip(headers, row)) for row in results]
+
     def _resolve_username(self, credential: SSHCredential) -> str:
         username = credential.ssh_username
         hostname = (self.candidate.hostname or "").lower()
@@ -321,13 +357,14 @@ class AutoAssignmentService:
         
 
     def _collect_details(self, conn: ConnectHandler, device_type: str, version_raw: str
-    ) -> tuple[str, dict | list | None, str | None]:
+    ) -> tuple[str, dict | list | None, list[dict] | None, str | None]:
         """
-        Collect SNMP location, parsed show version, and raw stack data using the correct driver.
+        Collect SNMP location, parsed show version, parsed inventory, and raw stack data.
         """
 
         location_raw = ""
         parsed_version = None
+        parsed_inventory = None
         stack_raw = None
        
         try:
@@ -342,6 +379,12 @@ class AutoAssignmentService:
         except Exception as exc:
             logger.warning("Could not collect parsed show version for %s: %s", self.candidate, exc)
             parsed_version = None
+        try:
+            inventory_raw = conn.send_command("show inventory", use_textfsm=False)
+            parsed_inventory = self._parse_show_inventory(inventory_raw, device_type)
+        except Exception as exc:
+            logger.warning("Could not collect inventory for %s: %s", self.candidate, exc)
+            parsed_inventory = None
 
         if device_type == 'cisco_ios':
             try:
@@ -349,7 +392,7 @@ class AutoAssignmentService:
             except Exception:
                 stack_raw = None
 
-        return location_raw, parsed_version, stack_raw
+        return location_raw, parsed_version, parsed_inventory, stack_raw
 
     def _parse_snmp_location(self, raw: str) -> tuple[str, str, Decimal | None]:
         if self._is_aci:
@@ -372,6 +415,9 @@ class AutoAssignmentService:
         rack = m.group("rack")
         unit_raw = m.group("unit")
         unit = Decimal(unit_raw) if unit_raw else None
+        hostname_lower = (self.candidate.hostname or "").lower()
+        if "-vm-" in hostname_lower:
+            area = "VCenter"
         return area, rack, unit
 
     def _parse_aci_location_from_hostname(
@@ -412,9 +458,21 @@ class AutoAssignmentService:
         return existing
 
     def _resolve_role(self) -> DeviceRole:
+        hostname = (self.candidate.hostname or "").lower()
+        if "apic" in hostname:
+            role_name = "Controller"
+        elif "core" in hostname:
+            role_name = "Core"
+        elif "leaf" in hostname:
+            role_name = "Leaf"
+        elif "spine" in hostname:
+            role_name = "Spine"
+        else:
+            role_name = "Access Switch"
+
         role, _ = DeviceRole.objects.get_or_create(
-            name="Access Switch",
-            defaults={"description": "Auto-assigned default role"},
+            name=role_name,
+            defaults={"description": "Auto-assigned role"},
         )
         return role
 
@@ -500,6 +558,37 @@ class AutoAssignmentService:
                 return str(value[0])
             if isinstance(value, str) and value.strip():
                 return value.strip()
+        return None
+
+    @staticmethod
+    def _model_from_inventory(parsed_inventory) -> str | None:
+        if not parsed_inventory:
+            return None
+        entries = [entry for entry in parsed_inventory if isinstance(entry, dict)]
+        if not entries:
+            return None
+
+        for entry in entries:
+            name = str(entry.get("name") or "").strip().lower()
+            if "chassis" in name or name.startswith("switch"):
+                pid = str(entry.get("pid") or entry.get("PID") or "").strip()
+                if pid:
+                    return pid
+
+        skip_tokens = ("STACK", "SFP", "QSFP", "FAN", "PWR", "PSU", "NM-", "TRANSCEIVER")
+        for entry in entries:
+            pid = str(entry.get("pid") or entry.get("PID") or "").strip()
+            if not pid:
+                continue
+            upper = pid.upper()
+            if any(token in upper for token in skip_tokens):
+                continue
+            return pid
+
+        for entry in entries:
+            pid = str(entry.get("pid") or entry.get("PID") or "").strip()
+            if pid:
+                return pid
         return None
 
     def _parse_stack_members(self, raw: str | None) -> list[dict]:
