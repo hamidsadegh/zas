@@ -78,10 +78,14 @@ class AutoAssignmentService:
                 required_units = max(1, stack_count)
                 position = self._select_position(rack, requested_unit, required_units)
 
-                model_name = self._model_from_inventory(parsed_inventory)
+                vendor = Vendor.objects.filter(name__iexact="Cisco").first()
+                if not vendor:
+                    raise RuntimeError("Vendor 'Cisco' not found; create it before auto-assignment.")
+
+                model_name = self._select_model_from_inventory(parsed_inventory, vendor=vendor)
                 if not model_name:
                     model_name = self._extract_model_from_version(parsed_version)
-                device_type_obj = self._resolve_device_type_obj(device_type, model_name)
+                device_type_obj = self._resolve_device_type_obj(device_type, model_name, vendor=vendor)
                 role = self._resolve_role()
                 tags = self._resolve_tags()
                 details = {
@@ -199,7 +203,7 @@ class AutoAssignmentService:
             details = {
                 "device_type": device_type,
                 "include_config": include_config,
-                "model_name": self._model_from_inventory(parsed_inventory)
+                "model_name": self._select_model_from_inventory(parsed_inventory)
                 or self._extract_model_from_version(parsed_version),
                 "version_raw": version_raw,
                 "parsed_version": parsed_version,
@@ -444,10 +448,13 @@ class AutoAssignmentService:
             return DevicePlatformChoices.IOS
         return DevicePlatformChoices.UNKNOWN
 
-    def _resolve_device_type_obj(self, platform: str, model_name: str | None) -> DeviceType:
-        vendor = Vendor.objects.filter(name__iexact="Cisco").first()
-        if not vendor:
-            raise RuntimeError("Vendor 'Cisco' not found; create it before auto-assignment.")
+    def _resolve_device_type_obj(
+        self,
+        platform: str,
+        model_name: str | None,
+        *,
+        vendor: Vendor,
+    ) -> DeviceType:
         model_value = model_name or "Unknown (auto)"
         existing = DeviceType.objects.filter(vendor=vendor, model__iexact=model_value).first()
         if not existing:
@@ -561,19 +568,25 @@ class AutoAssignmentService:
         return None
 
     @staticmethod
-    def _model_from_inventory(parsed_inventory) -> str | None:
+    def _select_model_from_inventory(
+        parsed_inventory,
+        *,
+        vendor: Vendor | None = None,
+    ) -> str | None:
         if not parsed_inventory:
             return None
         entries = [entry for entry in parsed_inventory if isinstance(entry, dict)]
         if not entries:
             return None
 
+        candidates: list[str] = []
+
         for entry in entries:
             name = str(entry.get("name") or "").strip().lower()
             if "chassis" in name or name.startswith("switch"):
                 pid = str(entry.get("pid") or entry.get("PID") or "").strip()
                 if pid:
-                    return pid
+                    candidates.append(pid)
 
         skip_tokens = ("STACK", "SFP", "QSFP", "FAN", "PWR", "PSU", "NM-", "TRANSCEIVER")
         for entry in entries:
@@ -583,11 +596,18 @@ class AutoAssignmentService:
             upper = pid.upper()
             if any(token in upper for token in skip_tokens):
                 continue
-            return pid
+            candidates.append(pid)
 
         for entry in entries:
             pid = str(entry.get("pid") or entry.get("PID") or "").strip()
             if pid:
+                candidates.append(pid)
+                break
+
+        for pid in candidates:
+            if not vendor:
+                return pid
+            if DeviceType.objects.filter(vendor=vendor, model__iexact=pid).exists():
                 return pid
         return None
 
