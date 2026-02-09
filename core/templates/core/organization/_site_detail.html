@@ -3,6 +3,9 @@
     <div>
         <h3>{{ site.name }}</h3>
         <div class="muted">{{ site.description|default:"No description provided." }}</div>
+        {% if site.domain %}
+            <div class="muted">{{ site.domain }}</div>
+        {% endif %}
     </div>
     <span class="chip subtle">Site</span>
 </div>

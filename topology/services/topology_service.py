@@ -1,6 +1,7 @@
 from django.utils import timezone
 
 from dcim.models import Device, Interface
+from dcim.services.hostname_utils import normalize_hostname
 from topology.models import TopologyNeighbor
 
 
@@ -20,6 +21,7 @@ class TopologyService:
         platform: str = "",
         capabilities: str = "",
     ) -> TopologyNeighbor:
+        neighbor_name = normalize_hostname(neighbor_name, site=device.site)
         if not neighbor_name or not local_interface:
             raise ValueError("neighbor_name and local_interface are required")
 

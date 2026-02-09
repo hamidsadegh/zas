@@ -8,6 +8,7 @@
     >
         {% csrf_token %}
         <input type="text" name="name" class="input" value="{{ form.name.value|default:site.name }}" required>
+        <input type="text" name="domain" class="input" value="{{ form.domain.value|default:site.domain }}" placeholder="Domain (optional, e.g. dwelle.de)">
         <textarea name="description" class="textarea" placeholder="Description (optional)">{{ form.description.value|default:site.description }}</textarea>
         <div class="form-actions end">
             <button type="submit" class="btn btn-primary">Save</button>

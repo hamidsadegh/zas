@@ -277,6 +277,16 @@ class SyncService:
         if not parsed:
             return
 
+        def _inventory_name_priority(name: str, descr: str) -> tuple[int, int]:
+            name_lower = name.lower()
+            descr_lower = (descr or "").lower()
+            score = 0
+            if name_lower.startswith("switch "):
+                score += 3
+            if "stack" in name_lower or "stack" in descr_lower:
+                score -= 2
+            return score, len(name)
+
         seen_keys = set()
         no_serial_names = set()
         serial_entries = {}
@@ -291,8 +301,13 @@ class SyncService:
                 continue
 
             existing = serial_entries.get(serial_value)
-            if not existing or len(name) > len(existing["name"]):
-                serial_entries[serial_value] = {"name": name, "descr": descr}
+            priority = _inventory_name_priority(name, descr)
+            if not existing or priority > existing["priority"]:
+                serial_entries[serial_value] = {
+                    "name": name,
+                    "descr": descr,
+                    "priority": priority,
+                }
 
         for serial_value, entry in serial_entries.items():
             name = entry["name"]

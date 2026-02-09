@@ -35,6 +35,7 @@ class SiteSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
+            "domain",
             "description",
             "organization",
             "organization_name",

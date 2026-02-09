@@ -36,8 +36,8 @@ class SiteViewSet(viewsets.ModelViewSet):
     serializer_class = SiteSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ["name", "organization__name"]
-    ordering_fields = ["name", "organization__name"]
+    search_fields = ["name", "domain", "organization__name"]
+    ordering_fields = ["name", "domain", "organization__name"]
 
 
 class DeviceViewSet(viewsets.ModelViewSet):

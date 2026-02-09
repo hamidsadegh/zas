@@ -25,6 +25,9 @@
             >
                 {{ site.name }}
             </button>
+            {% if site.domain %}
+                <div class="muted small-text">{{ site.domain }}</div>
+            {% endif %}
             <div class="muted small-text">{{ site.description|default:"No description yet." }}</div>
         </div>
         <div class="site-actions">
@@ -63,6 +66,7 @@
         {% csrf_token %}
         <label class="muted" for="id_site_name">Add Site</label>
         <input id="id_site_name" type="text" name="name" class="input" placeholder="Site name" required>
+        <input type="text" name="domain" class="input" placeholder="Domain (optional, e.g. dwelle.de)">
         <textarea name="description" class="textarea" placeholder="Description (optional)"></textarea>
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Create Site</button>

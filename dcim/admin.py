@@ -37,9 +37,9 @@ class OrganizationAdmin(admin.ModelAdmin):
 # -----------------------
 @admin.register(Site)
 class SiteAdmin(admin.ModelAdmin):
-    list_display = ("name", "organization", "description", "created_at")
+    list_display = ("name", "organization", "domain", "description", "created_at")
     list_filter = ("organization",)
-    search_fields = ("name", "organization__name")
+    search_fields = ("name", "domain", "organization__name")
     ordering = ("organization__name", "name")
 
 

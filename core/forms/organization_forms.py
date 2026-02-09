@@ -12,7 +12,7 @@ class OrganizationForm(forms.ModelForm):
 class SiteForm(forms.ModelForm):
     class Meta:
         model = Site
-        fields = ["name", "description"]
+        fields = ["name", "domain", "description"]
 
 
 class AreaForm(forms.ModelForm):

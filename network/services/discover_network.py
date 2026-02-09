@@ -12,6 +12,7 @@ from network.models.discovery import (
 )
 from network.services.discovery_scanner import DiscoveryScanner
 from network.services.discovery_filtering import hostname_passes_filters
+from dcim.services.hostname_utils import normalize_hostname
 
 
 class NetworkDiscoveryService:
@@ -120,7 +121,12 @@ class NetworkDiscoveryService:
             if not r.alive:
                 continue
 
-            if not hostname_passes_filters(r.hostname, self.filters):
+            raw_hostname = r.hostname or ""
+            normalized_hostname = normalize_hostname(raw_hostname, site=self.site)
+            if not (
+                hostname_passes_filters(raw_hostname, self.filters)
+                or hostname_passes_filters(normalized_hostname, self.filters)
+            ):
                 continue
 
             alive += 1
@@ -129,7 +135,7 @@ class NetworkDiscoveryService:
                 site=self.site,
                 ip_address=r.ip,
                 defaults={
-                    "hostname": (r.hostname or "").lower(),
+                    "hostname": normalized_hostname,
                     "alive": True,
                     "reachable_ping": r.method == "icmp",
                     "reachable_ssh": r.method == "tcp",
