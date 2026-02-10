@@ -7,11 +7,53 @@
 .devices-wrapper { padding: 1.5rem 2rem; font-size: 0.95rem; }
 .list-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; }
 .list-header h1 { margin: 0; font-size: 1.5rem; }
-.filters { display: flex; align-items: center; gap: 0.5rem; flex-wrap: nowrap; margin-left: auto; justify-content: flex-end; }
+.list-controls { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; }
+.filters { display: flex; align-items: center; gap: 0.5rem; flex-wrap: nowrap; justify-content: flex-end; }
 .filters select { min-width: 120px; flex: 0 0 auto; }
 .filters input[type="text"] { min-width: 260px; flex: 1 1 260px; }
+.quick-filter-toggle {
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+.quick-filter-toggle:hover { color: var(--text); border-color: #cbd5e1; }
+.quick-filter-toggle.is-active { color: #fff; background: var(--primary); border-color: var(--primary); }
+.quick-filter-toggle svg { width: 1rem; height: 1rem; }
+.hidden-submit {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
 .device-table { font-size: 0.9rem; }
 .device-table thead th { padding: 0.6rem 0.8rem; }
+.quick-filter-row th { padding-top: 0.2rem; padding-bottom: 0.35rem; }
+.quick-filter-input {
+    width: 100%;
+    max-width: 180px;
+    min-width: 0;
+    padding: 0.08rem 0.28rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: #fff;
+    color: var(--text);
+    font-size: 0.68rem;
+    line-height: 1.05;
+    height: 1.25rem;
+}
+.quick-filter-input::placeholder { color: var(--muted); }
 .device-table tr { border-bottom: 1px solid var(--border); }
 .device-table td { padding: 0.75rem 0.8rem; border-bottom: none; }
 .device-table tbody tr:last-child { border-bottom: none; }
@@ -43,35 +85,55 @@
             <p class="tag">Inventory</p>
             <h1>Devices</h1>
         </div>
-        <form method="get" class="filters">
-            <select name="site" onchange="this.form.submit()">
-                {% for key, label in site_choices %}
-                    <option value="{{ key }}" {% if site_filter == key %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-            {% if tag_choices %}
-            <select name="tag" onchange="this.form.submit()">
-                <option value="">All tags</option>
-                {% for tag in tag_choices %}
-                    <option value="{{ tag.id }}" {% if tag_filter|stringformat:"s" == tag.id|stringformat:"s" %}selected{% endif %}>{{ tag.name }}</option>
-                {% endfor %}
-            </select>
-            {% endif %}
-            <input type="text" name="search" value="{{ search_query }}" placeholder="Search devices…">
-            <select name="paginate_by" onchange="this.form.submit()">
-                {% for option in per_page_options %}
-                    <option value="{{ option }}" {% if paginate_by == option %}selected{% endif %}>Show {{ option }}</option>
-                {% endfor %}
-            </select>
-            <input type="hidden" name="sort" value="{{ sort_field }}">
-            {% if interface_status_filter %}
-                <input type="hidden" name="interface_status" value="{{ interface_status_filter }}">
-            {% endif %}
-        </form>
+        <div class="list-controls">
+            <form method="get" class="filters" id="device-list-filters">
+                <select name="site" onchange="this.form.submit()">
+                    {% for key, label in site_choices %}
+                        <option value="{{ key }}" {% if site_filter == key %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                {% if tag_choices %}
+                <select name="tag" onchange="this.form.submit()">
+                    <option value="">All tags</option>
+                    {% for tag in tag_choices %}
+                        <option value="{{ tag.id }}" {% if tag_filter|stringformat:"s" == tag.id|stringformat:"s" %}selected{% endif %}>{{ tag.name }}</option>
+                    {% endfor %}
+                </select>
+                {% endif %}
+                <input type="text" name="search" value="{{ search_query }}" placeholder="Search devices…">
+                <select name="paginate_by" onchange="this.form.submit()">
+                    {% for option in per_page_options %}
+                        <option value="{{ option }}" {% if paginate_by == option %}selected{% endif %}>Show {{ option }}</option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" name="sort" value="{{ sort_field }}">
+                {% if interface_status_filter %}
+                    <input type="hidden" name="interface_status" value="{{ interface_status_filter }}">
+                {% endif %}
+                <button type="submit" class="hidden-submit" aria-hidden="true" tabindex="-1">Apply</button>
+            </form>
+            <button
+                id="device-quick-filter-toggle"
+                class="quick-filter-toggle"
+                type="button"
+                aria-label="Show or hide quick filters"
+                aria-expanded="false"
+                title="Show quick filters">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M3 5h18l-7 8v5l-4 2v-7L3 5z"></path>
+                </svg>
+            </button>
+        </div>
     </div>
 
     <div class="table-scroll">
-        <table class="device-table">
+        <table
+            class="device-table"
+            data-quick-filter-table
+            data-quick-filter-mode="server"
+            data-quick-filter-debounce="500"
+            data-quick-filter-toggle-id="device-quick-filter-toggle"
+            data-quick-filter-visible="0">
             <thead>
                 <tr>
                 <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&{% if interface_status_filter %}interface_status={{ interface_status_filter|urlencode }}&{% endif %}paginate_by={{ paginate_by }}&sort={% if sort_field == 'name' %}-name{% elif sort_field == '-name' %}name{% else %}name{% endif %}">Device</a></th>
@@ -84,6 +146,19 @@
                 <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&{% if interface_status_filter %}interface_status={{ interface_status_filter|urlencode }}&{% endif %}paginate_by={{ paginate_by }}&sort={% if sort_field == 'rack__name' %}-rack__name{% elif sort_field == '-rack__name' %}rack__name{% else %}rack__name{% endif %}">Rack</a></th>
                 <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&{% if interface_status_filter %}interface_status={{ interface_status_filter|urlencode }}&{% endif %}paginate_by={{ paginate_by }}&sort={% if sort_field == 'site__name' %}-site__name{% elif sort_field == '-site__name' %}site__name{% else %}site__name{% endif %}">Site</a></th>
                 <th class="nowrap"><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&{% if interface_status_filter %}interface_status={{ interface_status_filter|urlencode }}&{% endif %}paginate_by={{ paginate_by }}&sort={% if sort_field == 'image_version' %}-image_version{% elif sort_field == '-image_version' %}image_version{% else %}image_version{% endif %}">Image</a></th>
+                <th></th>
+            </tr>
+            <tr class="quick-filter-row">
+                <th><input class="quick-filter-input" type="text" name="qf_device" form="device-list-filters" value="{{ quick_filter_values.qf_device }}" data-quick-filter-col="0" placeholder="Filter device"></th>
+                <th><input class="quick-filter-input" type="text" name="qf_ip" form="device-list-filters" value="{{ quick_filter_values.qf_ip }}" data-quick-filter-col="1" placeholder="Filter IP"></th>
+                <th></th>
+                <th></th>
+                <th><input class="quick-filter-input" type="text" name="qf_type" form="device-list-filters" value="{{ quick_filter_values.qf_type }}" data-quick-filter-col="4" placeholder="Filter type"></th>
+                <th><input class="quick-filter-input" type="text" name="qf_serial" form="device-list-filters" value="{{ quick_filter_values.qf_serial }}" data-quick-filter-col="5" placeholder="Filter serial"></th>
+                <th><input class="quick-filter-input" type="text" name="qf_location" form="device-list-filters" value="{{ quick_filter_values.qf_location }}" data-quick-filter-col="6" placeholder="Filter location"></th>
+                <th><input class="quick-filter-input" type="text" name="qf_rack" form="device-list-filters" value="{{ quick_filter_values.qf_rack }}" data-quick-filter-col="7" placeholder="Filter rack"></th>
+                <th></th>
+                <th><input class="quick-filter-input" type="text" name="qf_image" form="device-list-filters" value="{{ quick_filter_values.qf_image }}" data-quick-filter-col="9" placeholder="Filter image"></th>
                 <th></th>
             </tr>
         </thead>
@@ -183,4 +258,5 @@
         {% endif %}
     </div>
 </section>
+{% include "dcim/_table_quick_filters_script.html" %}
 {% endblock %}

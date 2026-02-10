@@ -1,0 +1,273 @@
+<script>
+(function () {
+    "use strict";
+
+    function toNumber(value, fallbackValue) {
+        var parsed = Number(value);
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : fallbackValue;
+    }
+
+    function normalize(value) {
+        return (value || "").toString().toLowerCase().replace(/\s+/g, " ").trim();
+    }
+
+    function getCellFilterValue(cell) {
+        if (!cell) {
+            return "";
+        }
+        const customValue = cell.getAttribute("data-quick-filter-value");
+        if (customValue !== null) {
+            return normalize(customValue);
+        }
+        return normalize(cell.textContent);
+    }
+
+    function buildRowCache(rows) {
+        return rows.map(function (row) {
+            return {
+                element: row,
+                values: Array.from(row.cells).map(getCellFilterValue)
+            };
+        });
+    }
+
+    function collectActiveFilters(inputs) {
+        return inputs
+            .map(function (input) {
+                return {
+                    index: Number(input.dataset.quickFilterCol),
+                    query: normalize(input.value)
+                };
+            })
+            .filter(function (filter) {
+                return Number.isInteger(filter.index) && filter.index >= 0 && filter.query.length > 0;
+            });
+    }
+
+    function quickFilterParams(inputs) {
+        return inputs
+            .filter(function (input) {
+                return !!input.name;
+            })
+            .map(function (input) {
+                return {
+                    key: input.name,
+                    value: input.value || ""
+                };
+            });
+    }
+
+    function hasActiveQuickFilters(inputs) {
+        return inputs.some(function (input) {
+            return normalize(input.value).length > 0;
+        });
+    }
+
+    function setQuickFilterVisibility(table, isVisible) {
+        var rows = Array.from(table.querySelectorAll("thead tr.quick-filter-row"));
+        rows.forEach(function (row) {
+            row.style.display = isVisible ? "" : "none";
+        });
+
+        var toggleId = table.dataset.quickFilterToggleId;
+        if (!toggleId) {
+            table.dataset.quickFilterVisible = isVisible ? "1" : "0";
+            return;
+        }
+
+        var toggle = document.getElementById(toggleId);
+        if (!toggle) {
+            table.dataset.quickFilterVisible = isVisible ? "1" : "0";
+            return;
+        }
+
+        toggle.setAttribute("aria-expanded", isVisible ? "true" : "false");
+        toggle.setAttribute("title", isVisible ? "Hide quick filters" : "Show quick filters");
+        toggle.classList.toggle("is-active", isVisible);
+        table.dataset.quickFilterVisible = isVisible ? "1" : "0";
+    }
+
+    function initQuickFilterToggle(table, inputs, resetOnDisable) {
+        var toggleId = table.dataset.quickFilterToggleId;
+        if (!toggleId) {
+            return;
+        }
+        var toggle = document.getElementById(toggleId);
+        if (!toggle) {
+            return;
+        }
+
+        var visibleByDefault = table.dataset.quickFilterVisible !== "0";
+        var shouldShow = visibleByDefault || hasActiveQuickFilters(inputs);
+        setQuickFilterVisibility(table, shouldShow);
+
+        toggle.addEventListener("click", function () {
+            var currentlyVisible = table.dataset.quickFilterVisible === "1";
+            if (currentlyVisible) {
+                setQuickFilterVisibility(table, false);
+                if (typeof resetOnDisable === "function") {
+                    resetOnDisable();
+                }
+                return;
+            }
+            setQuickFilterVisibility(table, true);
+        });
+    }
+
+    function updateLinksWithQuickFilters(table, inputs) {
+        var params = quickFilterParams(inputs);
+        var links = Array.from(table.querySelectorAll("thead tr:first-child a"));
+        var pagination = table.closest(".devices-wrapper");
+        if (pagination) {
+            Array.from(pagination.querySelectorAll(".pagination-wrapper a")).forEach(function (link) {
+                links.push(link);
+            });
+        }
+        links.forEach(function (link) {
+            var url = new URL(link.getAttribute("href"), window.location.origin);
+            params.forEach(function (param) {
+                url.searchParams.delete(param.key);
+            });
+            params.forEach(function (param) {
+                if (param.value) {
+                    url.searchParams.set(param.key, param.value);
+                }
+            });
+            var search = url.searchParams.toString();
+            link.setAttribute("href", url.pathname + (search ? "?" + search : "") + (url.hash || ""));
+        });
+    }
+
+    function applyFilters(rowCache, activeFilters) {
+        rowCache.forEach(function (rowEntry) {
+            const isVisible = activeFilters.every(function (filter) {
+                const value = rowEntry.values[filter.index] || "";
+                return value.indexOf(filter.query) !== -1;
+            });
+            rowEntry.element.style.display = isVisible ? "" : "none";
+        });
+    }
+
+    function tableInputs(table) {
+        return Array.from(table.querySelectorAll("thead input[data-quick-filter-col]"));
+    }
+
+    function initClientQuickFilterTable(table) {
+        const tbody = table.tBodies[0];
+        if (!tbody) {
+            return;
+        }
+
+        const filterInputs = tableInputs(table);
+        if (!filterInputs.length) {
+            return;
+        }
+        const rowCache = buildRowCache(Array.from(tbody.rows));
+        let animationFrameId = null;
+
+        function scheduleFilter() {
+            if (animationFrameId !== null) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            animationFrameId = requestAnimationFrame(function () {
+                animationFrameId = null;
+                const activeFilters = collectActiveFilters(filterInputs);
+                applyFilters(rowCache, activeFilters);
+            });
+        }
+
+        filterInputs.forEach(function (input) {
+            input.addEventListener("input", scheduleFilter);
+        });
+
+        function resetClientQuickFilters() {
+            filterInputs.forEach(function (input) {
+                input.value = "";
+            });
+            scheduleFilter();
+        }
+
+        initQuickFilterToggle(table, filterInputs, resetClientQuickFilters);
+        table.dataset.quickFilterReady = "1";
+        scheduleFilter();
+    }
+
+    function initServerQuickFilterTable(table) {
+        const filterInputs = tableInputs(table);
+        if (!filterInputs.length) {
+            return;
+        }
+        const form = filterInputs[0].form;
+        if (!form) {
+            return;
+        }
+
+        const debounceMs = toNumber(table.dataset.quickFilterDebounce, 250);
+        let timeoutId = null;
+
+        function scheduleSubmit() {
+            if (timeoutId !== null) {
+                clearTimeout(timeoutId);
+            }
+            timeoutId = setTimeout(function () {
+                timeoutId = null;
+                if (typeof form.requestSubmit === "function") {
+                    form.requestSubmit();
+                } else {
+                    form.submit();
+                }
+            }, debounceMs);
+        }
+
+        function resetServerQuickFilters() {
+            filterInputs.forEach(function (input) {
+                input.value = "";
+            });
+            updateLinksWithQuickFilters(table, filterInputs);
+            if (typeof form.requestSubmit === "function") {
+                form.requestSubmit();
+            } else {
+                form.submit();
+            }
+        }
+
+        initQuickFilterToggle(table, filterInputs, resetServerQuickFilters);
+        updateLinksWithQuickFilters(table, filterInputs);
+        filterInputs.forEach(function (input) {
+            input.addEventListener("input", function () {
+                updateLinksWithQuickFilters(table, filterInputs);
+                scheduleSubmit();
+            });
+        });
+
+        table.dataset.quickFilterReady = "1";
+    }
+
+    function initQuickFilterTable(table) {
+        if (!table || table.dataset.quickFilterReady === "1") {
+            return;
+        }
+        const mode = (table.dataset.quickFilterMode || "client").toLowerCase();
+        if (mode === "server") {
+            initServerQuickFilterTable(table);
+            return;
+        }
+        initClientQuickFilterTable(table);
+    }
+
+    function initAllQuickFilterTables() {
+        document.querySelectorAll("table[data-quick-filter-table]").forEach(initQuickFilterTable);
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initAllQuickFilterTables);
+    } else {
+        initAllQuickFilterTables();
+    }
+
+    window.ZASTableQuickFilters = {
+        init: initQuickFilterTable,
+        initAll: initAllQuickFilterTables
+    };
+})();
+</script>

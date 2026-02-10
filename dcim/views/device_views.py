@@ -177,6 +177,15 @@ class DeviceListView(LoginRequiredMixin, ListView):
     context_object_name = "devices"
     paginate_by = 50
     per_page_options = (10, 25, 50, 100)
+    quick_filter_params = (
+        "qf_device",
+        "qf_ip",
+        "qf_type",
+        "qf_serial",
+        "qf_location",
+        "qf_rack",
+        "qf_image",
+    )
 
     def get_paginate_by(self, queryset):
         per_page = self.request.GET.get("paginate_by")
@@ -198,6 +207,9 @@ class DeviceListView(LoginRequiredMixin, ListView):
             "site",
             "site__organization",
         ).order_by("name")
+
+        settings_obj = get_system_settings()
+        self.reachability_checks = get_reachability_checks(settings_obj)
 
         self.site_filter_choices = self._site_filter_options()
         site = self.request.GET.get("site", "all")
@@ -239,6 +251,9 @@ class DeviceListView(LoginRequiredMixin, ListView):
                 | Q(site__name__icontains=search)
                 | Q(site__organization__name__icontains=search)
             ).distinct()
+
+        self.quick_filter_values = self._collect_quick_filters()
+        queryset = self._apply_quick_filters(queryset)
 
         sort = self.request.GET.get("sort", "name").strip()
         sort_field = sort.lstrip("-")
@@ -285,8 +300,8 @@ class DeviceListView(LoginRequiredMixin, ListView):
         context['tag_filter'] = getattr(self, "current_tag_filter", "")
         context['per_page_options'] = self.per_page_options
         context['interface_status_filter'] = getattr(self, "current_interface_status", "")
-        settings_obj = get_system_settings()
-        context['reachability_checks'] = get_reachability_checks(settings_obj)
+        context['reachability_checks'] = getattr(self, "reachability_checks", {})
+        context["quick_filter_values"] = getattr(self, "quick_filter_values", self._collect_quick_filters())
         return context
 
     def _site_filter_options(self):
@@ -295,6 +310,33 @@ class DeviceListView(LoginRequiredMixin, ListView):
             label = f"{site.name} ({site.organization.name})"
             choices.append((str(site.id), label))
         return choices
+
+    def _collect_quick_filters(self):
+        return {
+            key: self.request.GET.get(key, "").strip()
+            for key in self.quick_filter_params
+        }
+
+    def _apply_quick_filters(self, queryset):
+        values = self.quick_filter_values
+        if values["qf_device"]:
+            queryset = queryset.filter(name__icontains=values["qf_device"])
+        if values["qf_ip"]:
+            queryset = queryset.filter(management_ip__icontains=values["qf_ip"])
+        if values["qf_type"]:
+            queryset = queryset.filter(
+                Q(device_type__model__icontains=values["qf_type"])
+                | Q(device_type__vendor__name__icontains=values["qf_type"])
+            )
+        if values["qf_serial"]:
+            queryset = queryset.filter(serial_number__icontains=values["qf_serial"])
+        if values["qf_location"]:
+            queryset = queryset.filter(area__name__icontains=values["qf_location"])
+        if values["qf_rack"]:
+            queryset = queryset.filter(rack__name__icontains=values["qf_rack"])
+        if values["qf_image"]:
+            queryset = queryset.filter(image_version__icontains=values["qf_image"])
+        return queryset
 
 class DeviceDetailView(LoginRequiredMixin, DetailView):
     model = Device
