@@ -72,51 +72,50 @@
 
 {% block content %}
 <section class="device-detail-wrapper">
-    <div class="detail-actions" style="margin-bottom: 1.2rem;">
-        <h3 style="margin: 0;">Inventory</h3>
-        <div class="filter-actions">
-            <form method="get" id="inventory-filters" class="filter-form">
-                <select name="site" onchange="this.form.submit()">
-                    {% for key, label in site_choices %}
-                        <option value="{{ key }}" {% if site_filter == key %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-                {% if tag_choices %}
-                <select name="tag" onchange="this.form.submit()">
-                    <option value="">All tags</option>
-                    {% for tag in tag_choices %}
-                        <option value="{{ tag.id }}" {% if tag_filter|stringformat:"s" == tag.id|stringformat:"s" %}selected{% endif %}>{{ tag.name }}</option>
-                    {% endfor %}
-                </select>
-                {% endif %}
-                <input class="filter-search-wide" type="text" name="search" placeholder="Search devices, serials, locations..." value="{{ search_query }}">
-                <select name="paginate_by" onchange="this.form.submit()">
-                    {% for option in per_page_options %}
-                        <option value="{{ option }}" {% if paginate_by|stringformat:"s" == option|stringformat:"s" %}selected{% endif %}>Show {{ option }}</option>
-                    {% endfor %}
-                </select>
-                <a
-                    class="export-link"
-                    data-quick-filter-sync
-                    href="{% url 'inventory_export' %}?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if sort_field %}sort={{ sort_field|urlencode }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}{% endif %}{% if site_filter %}&site={{ site_filter }}{% endif %}{% if tag_filter %}&tag={{ tag_filter|urlencode }}{% endif %}{% if quick_filter_values.qf_device %}&qf_device={{ quick_filter_values.qf_device|urlencode }}{% endif %}{% if quick_filter_values.qf_device_serial %}&qf_device_serial={{ quick_filter_values.qf_device_serial|urlencode }}{% endif %}{% if quick_filter_values.qf_location %}&qf_location={{ quick_filter_values.qf_location|urlencode }}{% endif %}{% if quick_filter_values.qf_module %}&qf_module={{ quick_filter_values.qf_module|urlencode }}{% endif %}{% if quick_filter_values.qf_module_serial %}&qf_module_serial={{ quick_filter_values.qf_module_serial|urlencode }}{% endif %}{% if quick_filter_values.qf_description %}&qf_description={{ quick_filter_values.qf_description|urlencode }}{% endif %}">Export</a>
-                <button
-                    id="inventory-quick-filter-toggle"
-                    class="quick-filter-toggle"
-                    type="button"
-                    aria-label="Show or hide quick filters"
-                    aria-expanded="false"
-                    title="Show quick filters">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <path d="M3 5h18l-7 8v5l-4 2v-7L3 5z"></path>
-                    </svg>
-                </button>
-                <input type="hidden" name="sort" value="{{ sort_field }}">
-                <button type="submit" class="hidden-submit" aria-hidden="true" tabindex="-1">Apply</button>
-            </form>
-        </div>
-    </div>
-
     <div class="detail-card interfaces-card">
+        <div class="detail-actions" style="margin-bottom: 1.2rem;">
+            <h3 style="margin: 0;">Inventory</h3>
+            <div class="filter-actions">
+                <form method="get" id="inventory-filters" class="filter-form">
+                    <select name="site" onchange="this.form.submit()">
+                        {% for key, label in site_choices %}
+                            <option value="{{ key }}" {% if site_filter == key %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if tag_choices %}
+                    <select name="tag" onchange="this.form.submit()">
+                        <option value="">All tags</option>
+                        {% for tag in tag_choices %}
+                            <option value="{{ tag.id }}" {% if tag_filter|stringformat:"s" == tag.id|stringformat:"s" %}selected{% endif %}>{{ tag.name }}</option>
+                        {% endfor %}
+                    </select>
+                    {% endif %}
+                    <input class="filter-search-wide" type="text" name="search" placeholder="Search devices, serials, locations..." value="{{ search_query }}">
+                    <select name="paginate_by" onchange="this.form.submit()">
+                        {% for option in per_page_options %}
+                            <option value="{{ option }}" {% if paginate_by|stringformat:"s" == option|stringformat:"s" %}selected{% endif %}>Show {{ option }}</option>
+                        {% endfor %}
+                    </select>
+                    <a
+                        class="export-link"
+                        data-quick-filter-sync
+                        href="{% url 'inventory_export' %}?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if sort_field %}sort={{ sort_field|urlencode }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}{% endif %}{% if site_filter %}&site={{ site_filter }}{% endif %}{% if tag_filter %}&tag={{ tag_filter|urlencode }}{% endif %}{% if quick_filter_values.qf_device %}&qf_device={{ quick_filter_values.qf_device|urlencode }}{% endif %}{% if quick_filter_values.qf_device_serial %}&qf_device_serial={{ quick_filter_values.qf_device_serial|urlencode }}{% endif %}{% if quick_filter_values.qf_location %}&qf_location={{ quick_filter_values.qf_location|urlencode }}{% endif %}{% if quick_filter_values.qf_module %}&qf_module={{ quick_filter_values.qf_module|urlencode }}{% endif %}{% if quick_filter_values.qf_module_serial %}&qf_module_serial={{ quick_filter_values.qf_module_serial|urlencode }}{% endif %}{% if quick_filter_values.qf_description %}&qf_description={{ quick_filter_values.qf_description|urlencode }}{% endif %}">Export</a>
+                    <button
+                        id="inventory-quick-filter-toggle"
+                        class="quick-filter-toggle"
+                        type="button"
+                        aria-label="Show or hide quick filters"
+                        aria-expanded="false"
+                        title="Show quick filters">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M3 5h18l-7 8v5l-4 2v-7L3 5z"></path>
+                        </svg>
+                    </button>
+                    <input type="hidden" name="sort" value="{{ sort_field }}">
+                    <button type="submit" class="hidden-submit" aria-hidden="true" tabindex="-1">Apply</button>
+                </form>
+            </div>
+        </div>
         {% if rows %}
         <div class="pagination-wrapper">
             <div class="range-info">

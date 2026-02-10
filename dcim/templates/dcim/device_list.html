@@ -82,7 +82,6 @@
 <section class="devices-wrapper">
     <div class="list-header">
         <div>
-            <p class="tag">Inventory</p>
             <h1>Devices</h1>
         </div>
         <div class="list-controls">
@@ -124,6 +123,45 @@
                 </svg>
             </button>
         </div>
+    </div>
+
+    <div class="pagination-wrapper">
+        <div class="range-info">
+            {% if page_obj %}
+                Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} devices
+            {% else %}
+                Showing {{ devices|length }} devices
+            {% endif %}
+        </div>
+        {% if page_obj %}
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+                <li>
+                    <a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if sort_field %}sort={{ sort_field }}&{% endif %}{% if interface_status_filter %}interface_status={{ interface_status_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&page={{ page_obj.previous_page_number }}">Previous</a>
+                </li>
+            {% else %}
+                <li><span>Previous</span></li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="active"><span>{{ num }}</span></li>
+                {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+                    <li>
+                        <a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if sort_field %}sort={{ sort_field }}&{% endif %}{% if interface_status_filter %}interface_status={{ interface_status_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&page={{ num }}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <li>
+                    <a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if sort_field %}sort={{ sort_field }}&{% endif %}{% if interface_status_filter %}interface_status={{ interface_status_filter|urlencode }}&{% endif %}site={{ site_filter|urlencode }}&paginate_by={{ paginate_by }}&page={{ page_obj.next_page_number }}">Next</a>
+                </li>
+            {% else %}
+                <li><span>Next</span></li>
+            {% endif %}
+        </ul>
+        {% endif %}
     </div>
 
     <div class="table-scroll">

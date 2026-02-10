@@ -13,17 +13,10 @@
 
 {% block content %}
 <section class="device-detail-wrapper">
-    <div class="detail-actions" style="margin-bottom: 1.2rem;">
-        <div>
-            <p class="tag">Interfaces</p>
-            <h3 style="margin: 0;">Err-Disabled Interfaces</h3>
-        </div>
-        <a class="back-link" href="{% url 'dashboard' %}">← Back to dashboard</a>
-    </div>
-
     <div class="detail-card interfaces-card">
         <div class="detail-actions" style="margin-bottom: 1.2rem;">
             <h3 style="margin: 0;">All Err-Disabled</h3>
+            <a class="back-link" href="{% url 'dashboard' %}">← Back to dashboard</a>
             <form method="get" class="filter-form" style="flex-wrap: nowrap; gap: 0.5rem; margin-left: auto;">
                 <select name="site" onchange="this.form.submit()">
                     {% for key, label in site_choices %}

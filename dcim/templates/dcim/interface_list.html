@@ -71,14 +71,10 @@
 
 {% block content %}
 <section class="device-detail-wrapper">
-    <div class="detail-actions" style="margin-bottom: 1.2rem;">
-        <h3 style="margin: 0;">Interfaces - {{ device.name }}</h3>
-        <a class="back-link" href="{% url 'device_detail' device.id %}">Back to device</a>
-    </div>
-
     <div class="detail-card interfaces-card">
         <div class="detail-actions" style="margin-bottom: 1.2rem;">
-            <h3 style="margin: 0;">All Interfaces</h3>
+            <h3 style="margin: 0;">All Interfaces - {{ device.name }}</h3>
+            <a class="back-link" href="{% url 'device_detail' device.id %}">Back to device</a>
             <form method="get" id="device-interfaces-filters" class="filter-form" style="flex-wrap: nowrap; gap: 0.5rem; margin-left: auto;">
                 <input class="filter-search-wide" type="text" name="search" placeholder="Search interfaces..." value="{{ search_query }}">
                 <select name="paginate_by" onchange="this.form.submit()">
@@ -103,6 +99,33 @@
         </div>
 
         {% if interfaces %}
+        <div class="pagination-wrapper">
+            <div class="range-info">
+                Showing {{ interfaces.start_index }}–{{ interfaces.end_index }} of {{ interfaces.paginator.count }} interfaces
+            </div>
+            <ul class="pagination">
+                {% if interfaces.has_previous %}
+                    <li><a href="?page={{ interfaces.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Previous</a></li>
+                {% else %}
+                    <li><span>Previous</span></li>
+                {% endif %}
+
+                {% for num in interfaces.paginator.page_range %}
+                    {% if interfaces.number == num %}
+                        <li class="active"><span>{{ num }}</span></li>
+                    {% elif num > interfaces.number|add:-3 and num < interfaces.number|add:3 %}
+                        <li><a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if interfaces.has_next %}
+                    <li><a href="?page={{ interfaces.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}">Next</a></li>
+                {% else %}
+                    <li><span>Next</span></li>
+                {% endif %}
+            </ul>
+        </div>
+
         <div class="table-scroll">
             <table
                 class="data-table"

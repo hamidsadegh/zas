@@ -87,7 +87,6 @@ form.filter-bar { flex: 1 1 auto; }
 <section class="vlan-wrapper">
     <div class="vlan-header">
         <div>
-            <p class="tag">Inventory</p>
             <h1 style="margin: 0;">VLANs</h1>
         </div>
         <div class="filter-bar">
@@ -125,6 +124,43 @@ form.filter-bar { flex: 1 1 auto; }
                 </svg>
             </button>
         </div>
+    </div>
+
+    <div class="pagination-wrapper">
+        <div>
+            {% if is_paginated and page_obj %}
+                {% if page_obj.paginator.count %}
+                    Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} VLANs
+                {% else %}
+                    Showing 0 VLANs
+                {% endif %}
+            {% else %}
+                Showing {{ vlans|length }} VLAN{{ vlans|length|pluralize }}
+            {% endif %}
+        </div>
+        {% if is_paginated and page_obj %}
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+                <li><a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}site={{ site_filter }}{% if usage_area_filter %}&usage_area={{ usage_area_filter }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}&paginate_by={{ paginate_by_value }}&page={{ page_obj.previous_page_number }}">Previous</a></li>
+            {% else %}
+                <li><span>Previous</span></li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="active"><span>{{ num }}</span></li>
+                {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+                    <li><a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}site={{ site_filter }}{% if usage_area_filter %}&usage_area={{ usage_area_filter }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}&paginate_by={{ paginate_by_value }}&page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <li><a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}site={{ site_filter }}{% if usage_area_filter %}&usage_area={{ usage_area_filter }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}&paginate_by={{ paginate_by_value }}&page={{ page_obj.next_page_number }}">Next</a></li>
+            {% else %}
+                <li><span>Next</span></li>
+            {% endif %}
+        </ul>
+        {% endif %}
     </div>
 
     <div class="table-scroll">
