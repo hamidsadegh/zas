@@ -117,14 +117,17 @@
     function updateLinksWithQuickFilters(table, inputs) {
         var params = quickFilterParams(inputs);
         var links = Array.from(table.querySelectorAll("thead tr:first-child a"));
-        var pagination = table.closest(".devices-wrapper");
-        if (pagination) {
-            Array.from(pagination.querySelectorAll(".pagination-wrapper a")).forEach(function (link) {
+        var scope = table.closest("section") || table.closest(".detail-card") || document;
+        if (scope) {
+            Array.from(scope.querySelectorAll(".pagination-wrapper a")).forEach(function (link) {
+                links.push(link);
+            });
+            Array.from(scope.querySelectorAll("a[data-quick-filter-sync]")).forEach(function (link) {
                 links.push(link);
             });
         }
         links.forEach(function (link) {
-            var url = new URL(link.getAttribute("href"), window.location.origin);
+            var url = new URL(link.getAttribute("href"), window.location.href);
             params.forEach(function (param) {
                 url.searchParams.delete(param.key);
             });

@@ -10,6 +10,65 @@
 .detail-card .detail-actions { flex-wrap: wrap; }
 .detail-card .filter-form { flex: 1 1 100%; justify-content: flex-end; }
 .detail-card .filter-form .filter-search-wide { min-width: 260px; }
+.quick-filter-toggle {
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+.quick-filter-toggle:hover { color: var(--text); border-color: #cbd5e1; }
+.quick-filter-toggle.is-active { color: #fff; background: var(--primary); border-color: var(--primary); }
+.quick-filter-toggle svg { width: 1rem; height: 1rem; }
+.filter-form .quick-filter-toggle {
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    max-width: 2rem;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--muted);
+    box-shadow: none;
+    flex: 0 0 auto;
+}
+.filter-form .quick-filter-toggle.is-active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+.quick-filter-row th { padding-top: 0.2rem; padding-bottom: 0.35rem; }
+.quick-filter-input {
+    width: 100%;
+    max-width: 180px;
+    min-width: 0;
+    padding: 0.08rem 0.28rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: #fff;
+    color: var(--text);
+    font-size: 0.68rem;
+    line-height: 1.05;
+    height: 1.25rem;
+}
+.quick-filter-input::placeholder { color: var(--muted); }
+.hidden-submit {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
 {% endblock %}
 
 {% block content %}
@@ -25,7 +84,7 @@
     <div class="detail-card interfaces-card">
         <div class="detail-actions" style="margin-bottom: 1.2rem;">
             <h3 style="margin: 0;">All Interfaces</h3>
-            <form method="get" class="filter-form" style="flex-wrap: nowrap; gap: 0.5rem; margin-left: auto;">
+            <form method="get" id="all-interfaces-filters" class="filter-form" style="flex-wrap: nowrap; gap: 0.5rem; margin-left: auto;">
                 <select name="site" onchange="this.form.submit()">
                     {% for key, label in site_choices %}
                         <option value="{{ key }}" {% if site_filter == key %}selected{% endif %}>{{ label }}</option>
@@ -42,15 +101,34 @@
                 <input class="filter-search-wide" type="text" name="search" placeholder="Search device or interface..." value="{{ search_query }}" style="flex: 1 1 520px;">
                 <select name="paginate_by" onchange="this.form.submit()">
                     {% for option in per_page_options %}
-                        <option value="{{ option }}" {% if paginate_by|stringformat:"s" == option|stringformat:"s" %}selected{% endif %}>{{ option }}</option>
+                        <option value="{{ option }}" {% if paginate_by|stringformat:"s" == option|stringformat:"s" %}selected{% endif %}>Show {{ option }}</option>
                     {% endfor %}
                 </select>
+                <button
+                    id="all-interfaces-quick-filter-toggle"
+                    class="quick-filter-toggle"
+                    type="button"
+                    aria-label="Show or hide quick filters"
+                    aria-expanded="false"
+                    title="Show quick filters">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M3 5h18l-7 8v5l-4 2v-7L3 5z"></path>
+                    </svg>
+                </button>
+                <input type="hidden" name="sort" value="{{ sort_field }}">
+                <button type="submit" class="hidden-submit" aria-hidden="true" tabindex="-1">Apply</button>
             </form>
         </div>
 
         {% if interfaces %}
         <div class="table-scroll">
-            <table class="data-table">
+            <table
+                class="data-table"
+                data-quick-filter-table
+                data-quick-filter-mode="server"
+                data-quick-filter-debounce="500"
+                data-quick-filter-toggle-id="all-interfaces-quick-filter-toggle"
+                data-quick-filter-visible="0">
                 <thead>
                     <tr>
                         <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'device__name' %}-device__name{% elif sort_field == '-device__name' %}device__name{% else %}device__name{% endif %}">Device</a></th>
@@ -61,6 +139,16 @@
                         <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'speed' %}-speed{% elif sort_field == '-speed' %}speed{% else %}speed{% endif %}">Speed</a></th>
                         <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'status' %}-status{% elif sort_field == '-status' %}status{% else %}status{% endif %}">Status</a></th>
                         <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'device__site__name' %}-device__site__name{% elif sort_field == '-device__site__name' %}device__site__name{% else %}device__site__name{% endif %}">Site</a></th>
+                    </tr>
+                    <tr class="quick-filter-row">
+                        <th><input class="quick-filter-input" type="text" name="qf_device" form="all-interfaces-filters" value="{{ quick_filter_values.qf_device }}" data-quick-filter-col="0" placeholder="Filter device"></th>
+                        <th><input class="quick-filter-input" type="text" name="qf_mgmt_ip" form="all-interfaces-filters" value="{{ quick_filter_values.qf_mgmt_ip }}" data-quick-filter-col="1" placeholder="Filter mgmt IP"></th>
+                        <th><input class="quick-filter-input" type="text" name="qf_interface" form="all-interfaces-filters" value="{{ quick_filter_values.qf_interface }}" data-quick-filter-col="2" placeholder="Filter interface"></th>
+                        <th><input class="quick-filter-input" type="text" name="qf_description" form="all-interfaces-filters" value="{{ quick_filter_values.qf_description }}" data-quick-filter-col="3" placeholder="Filter description"></th>
+                        <th><input class="quick-filter-input" type="text" name="qf_ip_vlan" form="all-interfaces-filters" value="{{ quick_filter_values.qf_ip_vlan }}" data-quick-filter-col="4" placeholder="Filter IP/VLAN"></th>
+                        <th><input class="quick-filter-input" type="text" name="qf_speed" form="all-interfaces-filters" value="{{ quick_filter_values.qf_speed }}" data-quick-filter-col="5" placeholder="Filter speed"></th>
+                        <th><input class="quick-filter-input" type="text" name="qf_status" form="all-interfaces-filters" value="{{ quick_filter_values.qf_status }}" data-quick-filter-col="6" placeholder="Filter status"></th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -133,4 +221,5 @@
         {% endif %}
     </div>
 </section>
+{% include "dcim/_table_quick_filters_script.html" %}
 {% endblock %}

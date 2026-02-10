@@ -20,6 +20,14 @@ class VLANListView(LoginRequiredMixin, ListView):
     context_object_name = "vlans"
     paginate_by = 50
     per_page_options = (10, 25, 50, 100)
+    quick_filter_params = (
+        "qf_vlan_id",
+        "qf_name",
+        "qf_subnet",
+        "qf_gateway",
+        "qf_usage_area",
+        "qf_description",
+    )
 
     def get_paginate_by(self, queryset):
         per_page = self.request.GET.get("paginate_by")
@@ -60,6 +68,12 @@ class VLANListView(LoginRequiredMixin, ListView):
                 q_objects |= Q(site__name__icontains=search)
             queryset = queryset.filter(q_objects)
 
+        self._quick_filter_values = {
+            key: self.request.GET.get(key, "").strip()
+            for key in self.quick_filter_params
+        }
+        queryset = self._apply_quick_filters(queryset)
+
         sort = self.request.GET.get("sort", "vlan_id")
         allowed = {
             "vlan_id",
@@ -86,6 +100,11 @@ class VLANListView(LoginRequiredMixin, ListView):
         context["sort_field"] = getattr(self, "_current_sort", "vlan_id")
         context["per_page_options"] = self.per_page_options
         context["paginate_by_value"] = getattr(self, "_current_paginate_by", self.paginate_by)
+        context["quick_filter_values"] = getattr(
+            self,
+            "_quick_filter_values",
+            {key: "" for key in self.quick_filter_params},
+        )
         return context
 
     def _site_choices(self):
@@ -97,6 +116,25 @@ class VLANListView(LoginRequiredMixin, ListView):
             choices.append((str(site.id), label))
         self._site_cache = choices
         return choices
+
+    def _apply_quick_filters(self, queryset):
+        values = self._quick_filter_values
+        if values["qf_vlan_id"]:
+            if values["qf_vlan_id"].isdigit():
+                queryset = queryset.filter(vlan_id=int(values["qf_vlan_id"]))
+            else:
+                return queryset.none()
+        if values["qf_name"]:
+            queryset = queryset.filter(name__icontains=values["qf_name"])
+        if values["qf_subnet"]:
+            queryset = queryset.filter(subnet__icontains=values["qf_subnet"])
+        if values["qf_gateway"]:
+            queryset = queryset.filter(gateway__icontains=values["qf_gateway"])
+        if values["qf_usage_area"]:
+            queryset = queryset.filter(usage_area__icontains=values["qf_usage_area"])
+        if values["qf_description"]:
+            queryset = queryset.filter(description__icontains=values["qf_description"])
+        return queryset
 
 
 

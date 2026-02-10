@@ -11,6 +11,65 @@ form.filter-bar { flex: 1 1 auto; }
 .filter-bar select,
 .filter-bar input { min-width: 150px; }
 .filter-bar input[type="text"] { min-width: 260px; flex: 1 1 260px; }
+.quick-filter-toggle {
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+.quick-filter-toggle:hover { color: var(--text); border-color: #cbd5e1; }
+.quick-filter-toggle.is-active { color: #fff; background: var(--primary); border-color: var(--primary); }
+.quick-filter-toggle svg { width: 1rem; height: 1rem; }
+.filter-bar .quick-filter-toggle {
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    max-width: 2rem;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--muted);
+    box-shadow: none;
+    flex: 0 0 auto;
+}
+.filter-bar .quick-filter-toggle.is-active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+.quick-filter-row th { padding-top: 0.2rem; padding-bottom: 0.35rem; }
+.quick-filter-input {
+    width: 100%;
+    max-width: 180px;
+    min-width: 0;
+    padding: 0.08rem 0.28rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: #fff;
+    color: var(--text);
+    font-size: 0.68rem;
+    line-height: 1.05;
+    height: 1.25rem;
+}
+.quick-filter-input::placeholder { color: var(--muted); }
+.hidden-submit {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
 .vlan-table { font-size: 0.92rem; }
 .vlan-table .table-actions .btn-ghost {
     background: #f8fafc;
@@ -32,7 +91,7 @@ form.filter-bar { flex: 1 1 auto; }
             <h1 style="margin: 0;">VLANs</h1>
         </div>
         <div class="filter-bar">
-            <form method="get" class="filter-bar" style="margin:0;">
+            <form method="get" id="vlan-filters" class="filter-bar" style="margin:0;">
                 <select name="site" onchange="this.form.submit()">
                     {% for key, label in site_choices %}
                         <option value="{{ key }}" {% if site_filter == key %}selected{% endif %}>{{ label }}</option>
@@ -49,14 +108,33 @@ form.filter-bar { flex: 1 1 auto; }
                         <option value="{{ option }}" {% if paginate_by_value == option %}selected{% endif %}>Show {{ option }}</option>
                     {% endfor %}
                 </select>
+                <input type="hidden" name="sort" value="{{ sort_field }}">
+                <button type="submit" class="hidden-submit" aria-hidden="true" tabindex="-1">Apply</button>
             </form>
             <a href="{% url 'vlan_form' %}" class="action-btn">Add VLAN</a>
             <a href="{% url 'vlan_export' %}?site={{ site_filter }}{% if usage_area_filter %}&usage_area={{ usage_area_filter }}{% endif %}" class="action-btn secondary">Export</a>
+            <button
+                id="vlan-quick-filter-toggle"
+                class="quick-filter-toggle"
+                type="button"
+                aria-label="Show or hide quick filters"
+                aria-expanded="false"
+                title="Show quick filters">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M3 5h18l-7 8v5l-4 2v-7L3 5z"></path>
+                </svg>
+            </button>
         </div>
     </div>
 
     <div class="table-scroll">
-        <table class="vlan-table">
+        <table
+            class="vlan-table"
+            data-quick-filter-table
+            data-quick-filter-mode="server"
+            data-quick-filter-debounce="500"
+            data-quick-filter-toggle-id="vlan-quick-filter-toggle"
+            data-quick-filter-visible="0">
             <thead>
                 <tr>
                     <th><a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}site={{ site_filter }}{% if usage_area_filter %}&usage_area={{ usage_area_filter }}{% endif %}&paginate_by={{ paginate_by_value }}&sort={% if sort_field == 'vlan_id' %}-vlan_id{% elif sort_field == '-vlan_id' %}vlan_id{% else %}vlan_id{% endif %}">VLAN ID</a></th>
@@ -66,6 +144,16 @@ form.filter-bar { flex: 1 1 auto; }
                     <th><a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}site={{ site_filter }}{% if usage_area_filter %}&usage_area={{ usage_area_filter }}{% endif %}&paginate_by={{ paginate_by_value }}&sort={% if sort_field == 'usage_area' %}-usage_area{% elif sort_field == '-usage_area' %}usage_area{% else %}usage_area{% endif %}">Usage Area</a></th>
                     <th><a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}site={{ site_filter }}{% if usage_area_filter %}&usage_area={{ usage_area_filter }}{% endif %}&paginate_by={{ paginate_by_value }}&sort={% if sort_field == 'description' %}-description{% elif sort_field == '-description' %}description{% else %}description{% endif %}">Description</a></th>
                     <th><a href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}site={{ site_filter }}{% if usage_area_filter %}&usage_area={{ usage_area_filter }}{% endif %}&paginate_by={{ paginate_by_value }}&sort={% if sort_field == 'site__name' %}-site__name{% elif sort_field == '-site__name' %}site__name{% else %}site__name{% endif %}">Site</a></th>
+                    <th></th>
+                </tr>
+                <tr class="quick-filter-row">
+                    <th><input class="quick-filter-input" type="text" name="qf_vlan_id" form="vlan-filters" value="{{ quick_filter_values.qf_vlan_id }}" data-quick-filter-col="0" placeholder="Filter VLAN ID"></th>
+                    <th><input class="quick-filter-input" type="text" name="qf_name" form="vlan-filters" value="{{ quick_filter_values.qf_name }}" data-quick-filter-col="1" placeholder="Filter name"></th>
+                    <th><input class="quick-filter-input" type="text" name="qf_subnet" form="vlan-filters" value="{{ quick_filter_values.qf_subnet }}" data-quick-filter-col="2" placeholder="Filter subnet"></th>
+                    <th><input class="quick-filter-input" type="text" name="qf_gateway" form="vlan-filters" value="{{ quick_filter_values.qf_gateway }}" data-quick-filter-col="3" placeholder="Filter gateway"></th>
+                    <th><input class="quick-filter-input" type="text" name="qf_usage_area" form="vlan-filters" value="{{ quick_filter_values.qf_usage_area }}" data-quick-filter-col="4" placeholder="Filter usage"></th>
+                    <th><input class="quick-filter-input" type="text" name="qf_description" form="vlan-filters" value="{{ quick_filter_values.qf_description }}" data-quick-filter-col="5" placeholder="Filter description"></th>
+                    <th></th>
                     <th></th>
                 </tr>
             </thead>
@@ -131,4 +219,5 @@ form.filter-bar { flex: 1 1 auto; }
         {% endif %}
     </div>
 </section>
+{% include "dcim/_table_quick_filters_script.html" %}
 {% endblock %}

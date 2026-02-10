@@ -459,6 +459,15 @@ def device_interfaces(request, device_id):
     device = get_object_or_404(Device, id=device_id)
     search_query = request.GET.get("search", "").strip()
     sort_field = request.GET.get("sort", "name")
+    quick_filter_values = {
+        "qf_name": request.GET.get("qf_name", "").strip(),
+        "qf_description": request.GET.get("qf_description", "").strip(),
+        "qf_ip_vlan": request.GET.get("qf_ip_vlan", "").strip(),
+        "qf_status": request.GET.get("qf_status", "").strip(),
+        "qf_duplex": request.GET.get("qf_duplex", "").strip(),
+        "qf_speed_mode": request.GET.get("qf_speed_mode", "").strip(),
+        "qf_speed": request.GET.get("qf_speed", "").strip(),
+    }
 
     interfaces = device.interfaces.all()
     if search_query:
@@ -471,6 +480,31 @@ def device_interfaces(request, device_id):
             | Q(duplex__icontains=search_query)
             | Q(speed_mode__icontains=search_query)
         )
+
+    if quick_filter_values["qf_name"]:
+        interfaces = interfaces.filter(name__icontains=quick_filter_values["qf_name"])
+    if quick_filter_values["qf_description"]:
+        interfaces = interfaces.filter(description__icontains=quick_filter_values["qf_description"])
+    if quick_filter_values["qf_ip_vlan"]:
+        ip_vlan_filter = quick_filter_values["qf_ip_vlan"]
+        ip_vlan_query = (
+            Q(ip_address__icontains=ip_vlan_filter)
+            | Q(vlan_raw__icontains=ip_vlan_filter)
+        )
+        if ip_vlan_filter.isdigit():
+            ip_vlan_query |= Q(access_vlan__vlan_id=int(ip_vlan_filter))
+        interfaces = interfaces.filter(ip_vlan_query)
+    if quick_filter_values["qf_status"]:
+        interfaces = interfaces.filter(status__icontains=quick_filter_values["qf_status"])
+    if quick_filter_values["qf_duplex"]:
+        interfaces = interfaces.filter(duplex__icontains=quick_filter_values["qf_duplex"])
+    if quick_filter_values["qf_speed_mode"]:
+        interfaces = interfaces.filter(speed_mode__icontains=quick_filter_values["qf_speed_mode"])
+    if quick_filter_values["qf_speed"]:
+        if quick_filter_values["qf_speed"].isdigit():
+            interfaces = interfaces.filter(speed=int(quick_filter_values["qf_speed"]))
+        else:
+            interfaces = interfaces.none()
 
     allowed_sort_fields = {
         "name",
@@ -504,6 +538,7 @@ def device_interfaces(request, device_id):
         "sort_field": sort_field,
         "paginate_by": paginate_by,
         "per_page_options": PER_PAGE_OPTIONS,
+        "quick_filter_values": quick_filter_values,
     }
     return render(request, "dcim/interface_list.html", context)
 
@@ -586,6 +621,15 @@ def err_disabled_interfaces(request):
 def all_interfaces(request):
     search_query = request.GET.get("search", "").strip()
     sort_field = request.GET.get("sort", "device__name").strip()
+    quick_filter_values = {
+        "qf_device": request.GET.get("qf_device", "").strip(),
+        "qf_mgmt_ip": request.GET.get("qf_mgmt_ip", "").strip(),
+        "qf_interface": request.GET.get("qf_interface", "").strip(),
+        "qf_description": request.GET.get("qf_description", "").strip(),
+        "qf_ip_vlan": request.GET.get("qf_ip_vlan", "").strip(),
+        "qf_speed": request.GET.get("qf_speed", "").strip(),
+        "qf_status": request.GET.get("qf_status", "").strip(),
+    }
 
     site_choices = [("all", "All Sites")]
     for site in Site.objects.order_by("name"):
@@ -623,12 +667,38 @@ def all_interfaces(request):
             | Q(device__site__name__icontains=search_query)
         )
 
+    if quick_filter_values["qf_device"]:
+        interfaces = interfaces.filter(device__name__icontains=quick_filter_values["qf_device"])
+    if quick_filter_values["qf_mgmt_ip"]:
+        interfaces = interfaces.filter(device__management_ip__icontains=quick_filter_values["qf_mgmt_ip"])
+    if quick_filter_values["qf_interface"]:
+        interfaces = interfaces.filter(name__icontains=quick_filter_values["qf_interface"])
+    if quick_filter_values["qf_description"]:
+        interfaces = interfaces.filter(description__icontains=quick_filter_values["qf_description"])
+    if quick_filter_values["qf_ip_vlan"]:
+        ip_vlan_filter = quick_filter_values["qf_ip_vlan"]
+        ip_vlan_query = (
+            Q(ip_address__icontains=ip_vlan_filter)
+            | Q(vlan_raw__icontains=ip_vlan_filter)
+        )
+        if ip_vlan_filter.isdigit():
+            ip_vlan_query |= Q(access_vlan__vlan_id=int(ip_vlan_filter))
+        interfaces = interfaces.filter(ip_vlan_query)
+    if quick_filter_values["qf_speed"]:
+        if quick_filter_values["qf_speed"].isdigit():
+            interfaces = interfaces.filter(speed=int(quick_filter_values["qf_speed"]))
+        else:
+            interfaces = interfaces.none()
+    if quick_filter_values["qf_status"]:
+        interfaces = interfaces.filter(status__icontains=quick_filter_values["qf_status"])
+
     allowed_sort_fields = {
         "device__name",
         "device__management_ip",
         "name",
         "description",
         "ip_address",
+        "speed",
         "status",
         "device__site__name",
     }
@@ -652,6 +722,7 @@ def all_interfaces(request):
         "site_filter": site_filter,
         "tag_choices": tag_choices,
         "tag_filter": tag_filter,
+        "quick_filter_values": quick_filter_values,
     }
     return render(request, "dcim/all_interfaces.html", context)
 
@@ -660,6 +731,14 @@ def all_interfaces(request):
 def inventory_list(request):
     search_query = request.GET.get("search", "").strip()
     sort_field = request.GET.get("sort", "device_name")
+    quick_filter_values = {
+        "qf_device": request.GET.get("qf_device", "").strip(),
+        "qf_device_serial": request.GET.get("qf_device_serial", "").strip(),
+        "qf_location": request.GET.get("qf_location", "").strip(),
+        "qf_module": request.GET.get("qf_module", "").strip(),
+        "qf_module_serial": request.GET.get("qf_module_serial", "").strip(),
+        "qf_description": request.GET.get("qf_description", "").strip(),
+    }
 
     site_choices = [("all", "All Sites")]
     for site in Site.objects.order_by("name"):
@@ -683,6 +762,23 @@ def inventory_list(request):
         ]
     else:
         tag_filter = ""
+
+    def _contains(value, query):
+        return query.lower() in (value or "").lower()
+
+    if quick_filter_values["qf_device"]:
+        rows = [row for row in rows if _contains(row.get("device_name"), quick_filter_values["qf_device"])]
+    if quick_filter_values["qf_device_serial"]:
+        rows = [row for row in rows if _contains(row.get("device_serial"), quick_filter_values["qf_device_serial"])]
+    if quick_filter_values["qf_location"]:
+        rows = [row for row in rows if _contains(row.get("device_location"), quick_filter_values["qf_location"])]
+    if quick_filter_values["qf_module"]:
+        rows = [row for row in rows if _contains(row.get("module_name"), quick_filter_values["qf_module"])]
+    if quick_filter_values["qf_module_serial"]:
+        rows = [row for row in rows if _contains(row.get("module_serial"), quick_filter_values["qf_module_serial"])]
+    if quick_filter_values["qf_description"]:
+        rows = [row for row in rows if _contains(row.get("module_description"), quick_filter_values["qf_description"])]
+
     rows = _sort_inventory_rows(rows, sort_field)
 
     paginate_by = _get_paginate_by(request, default=50)
@@ -700,6 +796,7 @@ def inventory_list(request):
         "site_filter": site_filter,
         "tag_choices": tag_choices,
         "tag_filter": tag_filter,
+        "quick_filter_values": quick_filter_values,
     }
     return render(request, "dcim/inventory.html", context)
 
@@ -710,9 +807,24 @@ def inventory_export(request):
     sort_field = request.GET.get("sort", "device_name")
     site_filter = request.GET.get("site", "all")
     tag_filter = request.GET.get("tag", "").strip()
-    tag_ids = set(
-        Tag.objects.filter(id=tag_filter).values_list("id", flat=True)
-    )
+    quick_filter_values = {
+        "qf_device": request.GET.get("qf_device", "").strip(),
+        "qf_device_serial": request.GET.get("qf_device_serial", "").strip(),
+        "qf_location": request.GET.get("qf_location", "").strip(),
+        "qf_module": request.GET.get("qf_module", "").strip(),
+        "qf_module_serial": request.GET.get("qf_module_serial", "").strip(),
+        "qf_description": request.GET.get("qf_description", "").strip(),
+    }
+    tag_ids = set()
+    if tag_filter:
+        try:
+            uuid.UUID(str(tag_filter))
+        except (ValueError, TypeError):
+            tag_filter = ""
+        else:
+            tag_ids = set(
+                Tag.objects.filter(id=tag_filter).values_list("id", flat=True)
+            )
 
     rows = _build_inventory_rows(search_query)
     if site_filter != "all":
@@ -723,6 +835,23 @@ def inventory_export(request):
             for row in rows
             if any(str(tag.id) == tag_filter for tag in row["device"].tags.all())
         ]
+
+    def _contains(value, query):
+        return query.lower() in (value or "").lower()
+
+    if quick_filter_values["qf_device"]:
+        rows = [row for row in rows if _contains(row.get("device_name"), quick_filter_values["qf_device"])]
+    if quick_filter_values["qf_device_serial"]:
+        rows = [row for row in rows if _contains(row.get("device_serial"), quick_filter_values["qf_device_serial"])]
+    if quick_filter_values["qf_location"]:
+        rows = [row for row in rows if _contains(row.get("device_location"), quick_filter_values["qf_location"])]
+    if quick_filter_values["qf_module"]:
+        rows = [row for row in rows if _contains(row.get("module_name"), quick_filter_values["qf_module"])]
+    if quick_filter_values["qf_module_serial"]:
+        rows = [row for row in rows if _contains(row.get("module_serial"), quick_filter_values["qf_module_serial"])]
+    if quick_filter_values["qf_description"]:
+        rows = [row for row in rows if _contains(row.get("module_description"), quick_filter_values["qf_description"])]
+
     rows = _sort_inventory_rows(rows, sort_field)
 
     wb = Workbook()
