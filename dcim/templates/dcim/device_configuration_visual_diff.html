@@ -15,6 +15,9 @@
 .diff-removed { background: #ffd4d4; }
 .diff-changed { background: #fff4d4; }
 .diff-context { background: #ffffff; }
+.diff-row.is-hidden { display: none; }
+.visual-diff-actions { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+.diff-empty-note { margin: 0.6rem 0 0; color: var(--muted); }
 {% endblock %}
 
 {% block content %}
@@ -28,8 +31,9 @@
                     {{ secondary_config.collected_at|date:"Y-m-d H:i" }} → {{ primary_config.collected_at|date:"Y-m-d H:i" }}
                 </p>
             </div>
-            <div>
+            <div class="visual-diff-actions">
                 <a class="config-link" href="{% url 'device_configuration_diff' device.id primary_config.id secondary_config.id %}">Show raw unified diff</a>
+                <a class="config-link" href="#" id="toggle-diff-only" aria-pressed="false">Show diff only</a>
                 <a class="back-link" href="{% url 'device_configuration_history' device.id %}">← History</a>
             </div>
         </div>
@@ -43,7 +47,7 @@
             </div>
             <div class="diff-grid">
                 {% for left_line, left_class, right_line, right_class in diff_rows %}
-                <div class="diff-row">
+                <div class="diff-row{% if left_class == 'diff-context' and right_class == 'diff-context' %} is-context{% endif %}">
                     <span class="line-number">{{ forloop.counter }}</span>
                     <code class="diff-cell {{ left_class }}">{{ left_line|default:""|escape }}</code>
                     <span class="line-number">{{ forloop.counter }}</span>
@@ -52,6 +56,40 @@
                 {% endfor %}
             </div>
         </div>
+        <p id="diff-empty-note" class="diff-empty-note" hidden>No changed lines in this comparison.</p>
     </div>
 </section>
+<script>
+    (function () {
+        const toggle = document.getElementById("toggle-diff-only");
+        if (!toggle) return;
+
+        const allRows = Array.from(document.querySelectorAll(".diff-grid .diff-row"));
+        const contextRows = allRows.filter((row) => row.classList.contains("is-context"));
+        const diffRows = allRows.filter((row) => !row.classList.contains("is-context"));
+        const emptyNote = document.getElementById("diff-empty-note");
+        let diffOnly = false;
+
+        function applyView() {
+            contextRows.forEach((row) => {
+                row.classList.toggle("is-hidden", diffOnly);
+            });
+
+            toggle.textContent = diffOnly ? "Show all lines" : "Show diff only";
+            toggle.setAttribute("aria-pressed", diffOnly ? "true" : "false");
+
+            if (emptyNote) {
+                emptyNote.hidden = !(diffOnly && diffRows.length === 0);
+            }
+        }
+
+        toggle.addEventListener("click", function (event) {
+            event.preventDefault();
+            diffOnly = !diffOnly;
+            applyView();
+        });
+
+        applyView();
+    })();
+</script>
 {% endblock %}

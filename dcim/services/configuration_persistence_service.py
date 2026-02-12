@@ -16,6 +16,8 @@ class ConfigurationPersistenceService:
         for line in config_text.splitlines():
             if line.startswith("! Last configuration change"):
                 continue
+            if line.startswith("!Time"):
+                continue
             lines.append(line.rstrip())
         return "\n".join(lines).strip()
 
