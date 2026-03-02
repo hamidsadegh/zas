@@ -28,16 +28,16 @@ env.read_env(os.path.join(BASE_DIR, '.env'))
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-axas6dz8ha_v$3(xxk3h4&6736=(%yb_bws(9+!ad!64$0ltf&'
+SECRET_KEY = env("DJANGO_SECRET_KEY")
 
 # Encryption key for django-encrypted-model-fields
 FIELD_ENCRYPTION_KEY = env('FIELD_ENCRYPTION_KEY')
 
 # Allowed Hosts
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env.bool("DJANGO_DEBUG", default=False)
 
 LOGGING = {
     'version': 1,
