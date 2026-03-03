@@ -407,7 +407,8 @@ class AutoAssignmentService:
             raise RuntimeError("SNMP location empty.")
         target = lines[0]
         for line in lines:
-            if "sys location" in line.lower():
+            normalized = line.lower()
+            if "sys location" in normalized or "system location" in normalized:
                 _, _, value = line.partition(":")
                 if value.strip():
                     target = value.strip()

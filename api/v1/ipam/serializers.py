@@ -34,7 +34,7 @@ class PrefixSerializer(serializers.ModelSerializer):
 
     def validate_cidr(self, value):
         try:
-            net = ipaddress.ip_network(value, strict=True)
+            net = ipaddress.ip_network(value, strict=False)
         except ValueError as exc:
             raise serializers.ValidationError(str(exc))
         return str(net)
