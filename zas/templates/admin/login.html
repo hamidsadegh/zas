@@ -51,6 +51,9 @@
                     {% endblocktrans %}
                 </p>
             {% endif %}
+            {% if request.GET.timeout %}
+                <p class="feedback warning">{% trans "You were logged out due to inactivity." %}</p>
+            {% endif %}
 
             <form method="post" novalidate>
                 {% csrf_token %}

@@ -12,7 +12,7 @@ def get_section_fields(section: str):
     mapping = {
         "tacacs": SystemSettings.TACACS_FIELDS,
         "reachability": SystemSettings.REACHABILITY_FIELDS,
-        "superusers": SystemSettings.ALLOW_LOCAL_SUPERUSERS,
+        "superusers": SystemSettings.ACCESS_CONTROL_FIELDS,
     }
     return mapping.get(section, ())
 
@@ -24,6 +24,11 @@ def get_reachability_checks(settings: SystemSettings) -> Dict[str, bool]:
         "ssh": settings.reachability_ssh_enabled,
         "netconf": settings.reachability_netconf_enabled,
     }
+
+
+def get_auto_logout_timeout_seconds(settings: SystemSettings) -> int:
+    return int(settings.auto_logout_idle_minutes) * 60
+
 
 def update_reachability_last_run(settings: SystemSettings, timestamp):
     settings.reachability_last_run = timestamp

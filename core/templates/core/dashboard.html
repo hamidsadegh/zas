@@ -194,7 +194,9 @@ main {
             <span>Total devices tracked: {{ device_stats.total|default:0 }}</span>
         </div>
         <div class="hero-actions">
+            {% if user.is_staff or user.is_superuser %}
             <a class="primary-btn" href="{% url 'system_settings' %}">System Settings</a>
+            {% endif %}
         </div>
     </div>
 
@@ -255,11 +257,13 @@ main {
             <p>Review newly discovered devices and promote them into DCIM.</p>
             <a class="link-btn" href="{% url 'network:discovery_dashboard' %}">Open discovery</a>
         </div>
+        {% if user.is_staff or user.is_superuser %}
         <div class="card">
             <h4>System Settings</h4>
             <p>Configure TACACS+ and global authentication policies.</p>
             <a class="link-btn" href="{% url 'system_settings' %}">Open settings</a>
         </div>
+        {% endif %}
     </div>
 </section>
 

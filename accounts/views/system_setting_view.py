@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.shortcuts import render, redirect
 from django.views import View
 from accounts.services.settings_service import get_system_settings
@@ -13,8 +13,11 @@ from accounts.forms.settings_form import (
 )
 
 
-class SystemSettingsView(LoginRequiredMixin, View):
+class SystemSettingsView(LoginRequiredMixin, UserPassesTestMixin, View):
     template_name = "settings/system_settings.html"
+
+    def test_func(self):
+        return bool(self.request.user.is_staff or self.request.user.is_superuser)
 
     def get_settings(self):
         return get_system_settings()
@@ -67,7 +70,7 @@ class SystemSettingsView(LoginRequiredMixin, View):
             superusers_form = AllowLocalSuperusersForm(request.POST, instance=settings_obj)
             if superusers_form.is_valid():
                 superusers_form.save()
-                messages.success(request, "Superusers settings saved.")
+                messages.success(request, "Access settings saved.")
                 return redirect("system_settings")
         else:
             messages.error(request, "Unknown settings section.")

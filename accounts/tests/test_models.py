@@ -50,3 +50,13 @@ def test_reachability_settings_persist():
     }
     assert refreshed.reachability_interval_minutes == 60
 
+
+@pytest.mark.django_db
+def test_auto_logout_setting_persists():
+    settings = SystemSettings.get()
+    settings.auto_logout_idle_minutes = 45
+    settings.save(update_fields=["auto_logout_idle_minutes"])
+
+    refreshed = SystemSettings.get()
+
+    assert refreshed.auto_logout_idle_minutes == 45

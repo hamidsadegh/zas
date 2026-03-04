@@ -221,7 +221,9 @@
             <a href="{% url 'ipam:index' %}" {% if request.path|slice:":6" == '/ipam/' %}class="active"{% endif %}>IPAM</a>
             <a href="{% url 'automation:task_list' %}" {% if request.path|slice:":12" == '/automation/' %}class="active"{% endif %}>Automation</a>
             <a href="{% url 'organization_home' %}" {% if request.path|slice:":13" == '/organization' %}class="active"{% endif %}>Organization</a>
+            {% if user.is_staff or user.is_superuser %}
             <a href="{% url 'system_settings' %}" {% if request.path|slice:":18" == '/system-settings/' %}class="active"{% endif %}>Settings</a>
+            {% endif %}
             <a href="/admin/" {% if request.path|slice:":7" == '/admin/' %}class="active"{% endif %}>Admin</a>
         </nav>
         {% if user.is_authenticated %}
@@ -247,5 +249,39 @@
 <main>
     {% block content %}{% endblock %}
 </main>
+{% if user.is_authenticated and request.auto_logout_timeout_seconds %}
+<script>
+(() => {
+    const timeoutMs = Number("{{ request.auto_logout_timeout_seconds|default:0 }}") * 1000;
+    const logoutForm = document.querySelector(".logout-form");
+    if (!timeoutMs || !logoutForm) {
+        return;
+    }
+
+    let timerId = null;
+
+    const scheduleLogout = () => {
+        window.clearTimeout(timerId);
+        timerId = window.setTimeout(() => {
+            let nextField = logoutForm.querySelector('input[name="next"]');
+            if (!nextField) {
+                nextField = document.createElement("input");
+                nextField.type = "hidden";
+                nextField.name = "next";
+                logoutForm.appendChild(nextField);
+            }
+            nextField.value = "{% url 'admin:login' %}?timeout=1";
+            logoutForm.submit();
+        }, timeoutMs);
+    };
+
+    ["click", "keydown", "mousemove", "scroll", "touchstart"].forEach((eventName) => {
+        window.addEventListener(eventName, scheduleLogout, { passive: true });
+    });
+
+    scheduleLogout();
+})();
+</script>
+{% endif %}
 </body>
 </html>

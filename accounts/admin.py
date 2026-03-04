@@ -12,6 +12,7 @@ class SystemSettingsAdmin(admin.ModelAdmin):
         "tacacs_server_ip",
         "tacacs_port",
         "allow_local_superusers",
+        "auto_logout_idle_minutes",
         "reachability_interval_minutes",
         "reachability_ping_enabled",
         "updated_at",
@@ -36,7 +37,7 @@ class SystemSettingsAdmin(admin.ModelAdmin):
         (
             "Other Settings",
             {
-                "fields": SystemSettings.ALLOW_LOCAL_SUPERUSERS + ("updated_at",),
+                "fields": SystemSettings.ACCESS_CONTROL_FIELDS + ("updated_at",),
                 "description": "Miscellaneous and future settings.",
             },
         ),
@@ -45,4 +46,3 @@ class SystemSettingsAdmin(admin.ModelAdmin):
     # Prevent addition of multiple instances
     def has_add_permission(self, request):
         return False
-

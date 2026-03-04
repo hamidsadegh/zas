@@ -56,9 +56,16 @@ class ReachabilitySettingsForm(BaseSystemSettingsForm):
 
 
 class AllowLocalSuperusersForm(BaseSystemSettingsForm):
+    def clean_auto_logout_idle_minutes(self):
+        value = self.cleaned_data["auto_logout_idle_minutes"]
+        if value < 5 or value > 60:
+            raise forms.ValidationError("Auto logout must be between 5 and 60 minutes.")
+        return value
+
     class Meta:
         model = SystemSettings
-        fields = SystemSettings.ALLOW_LOCAL_SUPERUSERS
+        fields = SystemSettings.ACCESS_CONTROL_FIELDS
         widgets = {
             "allow_local_superusers": forms.CheckboxInput(),
+            "auto_logout_idle_minutes": forms.NumberInput(attrs={"min": 5, "max": 60}),
         }

@@ -1,3 +1,4 @@
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from encrypted_model_fields.fields import EncryptedCharField
 
@@ -38,7 +39,10 @@ class SystemSettings(models.Model):
         "reachability_interval_minutes",
     )
 
-    ALLOW_LOCAL_SUPERUSERS = ("allow_local_superusers",)
+    ACCESS_CONTROL_FIELDS = (
+        "allow_local_superusers",
+        "auto_logout_idle_minutes",
+    )
 
     # ---------------- TACACS ----------------
     tacacs_enabled = models.BooleanField(default=False)
@@ -52,6 +56,11 @@ class SystemSettings(models.Model):
     tacacs_superuser_group = models.CharField(max_length=100, blank=True, null=True)
 
     allow_local_superusers = models.BooleanField(default=True)
+    auto_logout_idle_minutes = models.PositiveSmallIntegerField(
+        default=15,
+        validators=[MinValueValidator(5), MaxValueValidator(60)],
+        help_text="Automatically log out inactive users after 5 to 60 minutes.",
+    )
 
     # ---------------- Reachability ----------------
     reachability_ping_enabled = models.BooleanField(default=True)
