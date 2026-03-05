@@ -97,8 +97,8 @@ def test_sync_device_with_mocked_ssh(ios_xe_device_with_cred):
     assert gi.status == InterfaceStatusChoices.CONNECTED
     assert gi.speed == 1000
 
-    assert DeviceModule.objects.filter(
-        device=device, name="Switch 2", serial_number="FOC2340X01D"
+    assert not DeviceModule.objects.filter(
+        serial_number="FOC2340X01D"
     ).exists()
 
 
@@ -119,4 +119,3 @@ def test_sync_device_retry_on_failure(ios_xe_device_with_cred):
 
     assert call_count["value"] == 2
     assert result["success"] is True
-

@@ -1,4 +1,5 @@
 from rest_framework import serializers  # type: ignore
+from django.core.exceptions import ValidationError as DjangoValidationError
 from dcim.models import (
     Area,
     Device,
@@ -12,6 +13,10 @@ from dcim.models import (
     Site,
     VLAN,
     Vendor,
+)
+from services.validation_service import (
+    validate_device_module_serial_uniqueness,
+    validate_device_serial_uniqueness,
 )
 
 
@@ -133,6 +138,22 @@ class DeviceModuleSerializer(serializers.ModelSerializer):
     class Meta:
         model = DeviceModule
         fields = ["id", "name", "description", "vendor", "vendor_name", "device", "device_name", "serial_number"]
+
+    def validate(self, attrs):
+        module = self.instance or DeviceModule()
+        module.device = attrs.get("device") or getattr(module, "device", None)
+        module.serial_number = attrs.get(
+            "serial_number", getattr(module, "serial_number", None)
+        )
+
+        try:
+            validate_device_module_serial_uniqueness(module)
+        except DjangoValidationError as exc:
+            if hasattr(exc, "message_dict"):
+                raise serializers.ValidationError(exc.message_dict)
+            raise serializers.ValidationError({"serial_number": exc.messages})
+
+        return attrs
 
 
 # -----------------------
@@ -319,6 +340,17 @@ class DeviceSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 "rack": f"Rack '{rack.name}' does not belong to site '{site.name}'."
             })
+
+        device = self.instance or Device()
+        device.serial_number = data.get(
+            "serial_number", getattr(device, "serial_number", None)
+        )
+        try:
+            validate_device_serial_uniqueness(device)
+        except DjangoValidationError as exc:
+            if hasattr(exc, "message_dict"):
+                raise serializers.ValidationError(exc.message_dict)
+            raise serializers.ValidationError({"serial_number": exc.messages})
 
         return data
 

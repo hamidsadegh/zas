@@ -1,7 +1,11 @@
 import pytest
 from django.core.exceptions import ValidationError
 
-from services.validation_service import validate_device, validate_device_rack_area
+from services.validation_service import (
+    normalize_serial_number,
+    validate_device,
+    validate_device_rack_area,
+)
 from utilities.string import enum_key, remove_linebreaks, title, trailing_slash
 
 
@@ -45,3 +49,10 @@ def test_string_helpers_cover_common_normalization_cases():
     assert title("core SWITCH uplink") == "Core SWITCH Uplink"
     assert trailing_slash("/api/v1") == "api/v1/"
     assert trailing_slash("") == ""
+
+
+def test_normalize_serial_number_handles_empty_and_placeholders():
+    assert normalize_serial_number("  SN-001  ") == "SN-001"
+    assert normalize_serial_number("") is None
+    assert normalize_serial_number("n/a") is None
+    assert normalize_serial_number("UNKNOWN:123") is None

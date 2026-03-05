@@ -12,6 +12,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
+from asset.models import InventoryItem
 from dcim.models import (
     Device,
     DeviceConfiguration,
@@ -31,6 +32,7 @@ from dcim.choices import (
 )
 from network.adapters.netmiko import NetmikoAdapter
 from network.choices import CliCommandsChoices as cli
+from services.validation_service import normalize_serial_number
 
 
 logger = logging.getLogger(__name__)
@@ -224,6 +226,37 @@ class SyncService:
     # =================================================
     # VERSION / INVENTORY / CONFIG
     # =================================================
+    def _remove_storage_duplicates(self, serial_value: str) -> None:
+        deleted, _ = InventoryItem.objects.filter(serial_number__iexact=serial_value).delete()
+        if deleted:
+            logger.info(
+                "Removed %s duplicate storage inventory record(s) for serial %s",
+                deleted,
+                serial_value,
+            )
+
+    def _reconcile_device_serial(self, device: Device, serial_value: str) -> None:
+        self._remove_storage_duplicates(serial_value)
+        DeviceModule.objects.filter(serial_number__iexact=serial_value).delete()
+        Device.objects.filter(serial_number__iexact=serial_value).exclude(pk=device.pk).update(
+            serial_number=None
+        )
+
+    def _reconcile_module_serial(self, device: Device, name: str, serial_value: str) -> bool:
+        self._remove_storage_duplicates(serial_value)
+        current_device_serial = normalize_serial_number(device.serial_number)
+        if current_device_serial and current_device_serial.upper() == serial_value.upper():
+            DeviceModule.objects.filter(serial_number__iexact=serial_value).delete()
+            return False
+
+        Device.objects.filter(serial_number__iexact=serial_value).exclude(pk=device.pk).update(
+            serial_number=None
+        )
+        DeviceModule.objects.filter(serial_number__iexact=serial_value).exclude(
+            Q(device=device) & Q(name=name)
+        ).delete()
+        return True
+
     def _apply_version(self, device: Device, runtime: DeviceRuntimeStatus, result: dict):
         parsed = result.get("parsed")
         raw = result.get("raw", "") or ""
@@ -248,12 +281,14 @@ class SyncService:
             serial = self._parse_serial_from_text(raw)
         if not image:
             image = self._parse_image_from_text(raw)
+        serial = normalize_serial_number(serial)
 
         now = self.now
         update_fields = ["last_seen"]
         device.last_seen = now
 
         if serial:
+            self._reconcile_device_serial(device, serial)
             device.serial_number = serial
             update_fields.append("serial_number")
 
@@ -292,26 +327,30 @@ class SyncService:
         serial_entries = {}
         for entry in parsed:
             name = (entry.get("name") or entry.get("descr") or "Module").strip()
-            serial = entry.get("sn") or entry.get("serial") or ""
-            serial_value = str(serial or "").strip()
-            serial_upper = serial_value.upper()
+            serial = entry.get("sn") or entry.get("serial") or None
+            serial_value = normalize_serial_number(serial)
             descr = entry.get("descr") or ""
-            if not serial_value or serial_upper in ("N/A", "UNKNOWN", "N") or serial_upper.startswith("UNKNOWN:"):
+            if not serial_value:
                 no_serial_names.add(name)
                 continue
 
-            existing = serial_entries.get(serial_value)
+            serial_key = serial_value.upper()
+            existing = serial_entries.get(serial_key)
             priority = _inventory_name_priority(name, descr)
             if not existing or priority > existing["priority"]:
-                serial_entries[serial_value] = {
+                serial_entries[serial_key] = {
                     "name": name,
                     "descr": descr,
+                    "serial": serial_value,
                     "priority": priority,
                 }
 
-        for serial_value, entry in serial_entries.items():
+        for _, entry in serial_entries.items():
             name = entry["name"]
             descr = entry["descr"]
+            serial_value = entry["serial"]
+            if not self._reconcile_module_serial(device, name, serial_value):
+                continue
             DeviceModule.objects.update_or_create(
                 device=device,
                 name=name,
@@ -426,13 +465,16 @@ class SyncService:
             name = entry.get("name")
             if not name:
                 continue
+            serial_value = normalize_serial_number(entry.get("serial"))
+            if serial_value and not self._reconcile_module_serial(device, name, serial_value):
+                continue
             seen_names.add(name)
             DeviceModule.objects.update_or_create(
                 device=device,
                 name=name,
                 defaults={
                     "description": entry.get("description"),
-                    "serial_number": entry.get("serial"),
+                    "serial_number": serial_value,
                     "vendor": None,
                 },
             )

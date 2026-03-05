@@ -7,6 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from dcim.models.area import Area
 from dcim.models.site import Site
 from dcim.models.vendor import Vendor
+from services.validation_service import validate_inventory_item_serial_uniqueness
 
 
 class InventoryItem(models.Model):
@@ -97,6 +98,14 @@ class InventoryItem(models.Model):
             errors["comment"] = _(
                 "Comment is required when an inventory item is marked as installed."
             )
+
+        try:
+            validate_inventory_item_serial_uniqueness(self)
+        except ValidationError as exc:
+            if hasattr(exc, "message_dict"):
+                errors.update(exc.message_dict)
+            else:
+                errors["serial_number"] = exc.messages
 
         if errors:
             raise ValidationError(errors)

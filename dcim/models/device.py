@@ -14,6 +14,11 @@ from dcim.models.rack import Rack
 from dcim.models.vendor import Vendor
 from dcim.models.site import Site
 from dcim.models.tag import Tag
+from services.validation_service import (
+    normalize_serial_number,
+    validate_device_module_serial_uniqueness,
+    validate_device_serial_uniqueness,
+)
 import uuid
 from typing import Optional, Iterable
 
@@ -350,6 +355,7 @@ class Device(models.Model):
 
     def clean(self):
         super().clean()
+        self.serial_number = normalize_serial_number(self.serial_number)
         if self.area and self.area.site_id != self.site_id:
             raise ValidationError(
                 {"area": "Area must belong to the same site as the device."}
@@ -370,6 +376,7 @@ class Device(models.Model):
             raise ValidationError(
                 {"device_type": "Device type must define a platform for automation."}
             )
+        validate_device_serial_uniqueness(self)
     
     def save(self, *args, **kwargs):
         previous_rack_id = None
@@ -417,6 +424,11 @@ class DeviceModule(models.Model):
     class Meta:
         verbose_name = "Device Module"
         verbose_name_plural = "Device Modules"
+
+    def clean(self):
+        super().clean()
+        self.serial_number = normalize_serial_number(self.serial_number)
+        validate_device_module_serial_uniqueness(self)
 
     @property
     def serial_number_display(self):
