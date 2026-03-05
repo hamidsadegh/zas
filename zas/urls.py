@@ -19,6 +19,7 @@ html_patterns = [
     path("inventory/storage/<uuid:pk>/edit/", asset_views.InventoryItemUpdateView.as_view(), name="inventory_storage_edit"),
     path("inventory/storage/<uuid:pk>/delete/", asset_views.InventoryItemDeleteView.as_view(), name="inventory_storage_delete"),
     path("inventory/storage/export/", asset_views.storage_inventory_export, name="inventory_storage_export"),
+    path("inventory/storage/import/", asset_views.storage_inventory_import, name="inventory_storage_import"),
     path("inventory/export/", device_views.inventory_export, name="inventory_export"),
     path("areas/", device_views.AreaListView.as_view(), name="area_list"),
     path("areas/<uuid:pk>/", device_views.AreaDetailView.as_view(), name="area_detail"),

@@ -54,7 +54,7 @@ class InventoryItem(models.Model):
         max_length=100,
         null=True,
         blank=True,
-        db_index=True,
+        unique=True,
         help_text=_("Serial number assigned by the vendor."),
     )
     site = models.ForeignKey(

@@ -74,6 +74,12 @@
     flex-wrap: wrap;
     align-items: center;
 }
+.import-form {
+    margin: 0;
+}
+.import-form input[type="file"] {
+    display: none;
+}
 .status-badge,
 .type-badge {
     display: inline-flex;
@@ -119,6 +125,10 @@
                 <div class="inventory-nav">
                     <a class="back-link" href="{% url 'inventory' %}">Overview</a>
                 </div>
+                <form id="storage-import-form" method="post" action="{% url 'inventory_storage_import' %}" enctype="multipart/form-data" class="import-form">
+                    {% csrf_token %}
+                    <input id="storage-import-file" type="file" name="excel_file" accept=".xlsx,.xlsm">
+                </form>
                 <form method="get" id="storage-inventory-filters" class="filter-form">
                     <select name="site" onchange="this.form.submit()">
                         {% for key, label in site_choices %}
@@ -135,6 +145,12 @@
                         class="export-link"
                         data-quick-filter-sync
                         href="{% url 'inventory_storage_export' %}?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if sort_field %}sort={{ sort_field|urlencode }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}{% endif %}{% if site_filter %}&site={{ site_filter }}{% endif %}{% if quick_filter_values.qf_designation %}&qf_designation={{ quick_filter_values.qf_designation|urlencode }}{% endif %}{% if quick_filter_values.qf_inventory_number %}&qf_inventory_number={{ quick_filter_values.qf_inventory_number|urlencode }}{% endif %}{% if quick_filter_values.qf_serial_number %}&qf_serial_number={{ quick_filter_values.qf_serial_number|urlencode }}{% endif %}{% if quick_filter_values.qf_location %}&qf_location={{ quick_filter_values.qf_location|urlencode }}{% endif %}{% if quick_filter_values.qf_vendor %}&qf_vendor={{ quick_filter_values.qf_vendor|urlencode }}{% endif %}{% if quick_filter_values.qf_model %}&qf_model={{ quick_filter_values.qf_model|urlencode }}{% endif %}{% if quick_filter_values.qf_item_type %}&qf_item_type={{ quick_filter_values.qf_item_type|urlencode }}{% endif %}{% if quick_filter_values.qf_status %}&qf_status={{ quick_filter_values.qf_status|urlencode }}{% endif %}{% if quick_filter_values.qf_comment %}&qf_comment={{ quick_filter_values.qf_comment|urlencode }}{% endif %}">Export</a>
+                    <button
+                        type="button"
+                        class="action-btn secondary"
+                        onclick="document.getElementById('storage-import-file').click();">
+                        Import
+                    </button>
                     <a class="btn btn-primary" href="{% url 'inventory_storage_add' %}">Add</a>
                     <button
                         id="storage-inventory-quick-filter-toggle"
@@ -266,4 +282,17 @@
     </div>
 </section>
 {% include "dcim/_table_quick_filters_script.html" %}
+<script>
+(() => {
+    const fileInput = document.getElementById("storage-import-file");
+    if (!fileInput) {
+        return;
+    }
+    fileInput.addEventListener("change", () => {
+        if (fileInput.files && fileInput.files.length > 0) {
+            fileInput.form.submit();
+        }
+    });
+})();
+</script>
 {% endblock %}
