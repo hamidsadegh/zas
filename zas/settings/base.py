@@ -141,6 +141,7 @@ INSTALLED_APPS = [
     'core',
     'ipam',
     'dcim',
+    'asset',
     'network',
     'accounts',
     'automation',

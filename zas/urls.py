@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
+from asset import views as asset_views
 from dcim.views import device_views
 from accounts.views.system_setting_view import SystemSettingsView
 
@@ -11,8 +12,14 @@ from accounts.views.system_setting_view import SystemSettingsView
 html_patterns = [
     path("devices/", device_views.DeviceListView.as_view(), name="device_list"),
     path("devices/<uuid:pk>/", device_views.DeviceDetailView.as_view(), name="device_detail"),
+    path("inventory/", device_views.inventory_hub, name="inventory"),
+    path("inventory/production/", device_views.inventory_list, name="inventory_production"),
+    path("inventory/storage/", asset_views.storage_inventory_list, name="inventory_storage"),
+    path("inventory/storage/add/", asset_views.InventoryItemAddView.as_view(), name="inventory_storage_add"),
+    path("inventory/storage/<uuid:pk>/edit/", asset_views.InventoryItemUpdateView.as_view(), name="inventory_storage_edit"),
+    path("inventory/storage/<uuid:pk>/delete/", asset_views.InventoryItemDeleteView.as_view(), name="inventory_storage_delete"),
+    path("inventory/storage/export/", asset_views.storage_inventory_export, name="inventory_storage_export"),
     path("inventory/export/", device_views.inventory_export, name="inventory_export"),
-    path("inventory/", device_views.inventory_list, name="inventory"),
     path("areas/", device_views.AreaListView.as_view(), name="area_list"),
     path("areas/<uuid:pk>/", device_views.AreaDetailView.as_view(), name="area_detail"),
     path("racks/", device_views.RackListView.as_view(), name="rack_list"),

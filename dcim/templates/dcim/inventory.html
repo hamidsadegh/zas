@@ -1,6 +1,6 @@
 {% extends "core/base.html" %}
 
-{% block title %}Inventory{% endblock %}
+{% block title %}Production Inventory{% endblock %}
 
 {% block styles %}
 {% include "dcim/_layout_styles.html" %}
@@ -68,14 +68,27 @@
     white-space: nowrap;
     border: 0;
 }
+.inventory-nav {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
 {% endblock %}
 
 {% block content %}
 <section class="device-detail-wrapper">
     <div class="detail-card interfaces-card">
         <div class="detail-actions" style="margin-bottom: 1.2rem;">
-            <h3 style="margin: 0;">Inventory</h3>
+            <div>
+                <div class="chip" style="margin-bottom: 0.55rem;">Inventory</div>
+                <h3 style="margin: 0;">Production Inventory</h3>
+            </div>
             <div class="filter-actions">
+                <div class="inventory-nav">
+                    <a class="back-link" href="{% url 'inventory' %}">Overview</a>
+                    <a class="export-link" href="{% url 'inventory_storage' %}">Storage</a>
+                </div>
                 <form method="get" id="inventory-filters" class="filter-form">
                     <select name="site" onchange="this.form.submit()">
                         {% for key, label in site_choices %}
@@ -219,7 +232,7 @@
             </ul>
         </div>
         {% else %}
-            <p>No inventory records found.</p>
+            <p>No production inventory records found.</p>
         {% endif %}
     </div>
 </section>

@@ -14,6 +14,7 @@ from dcim.models import (
     Area,
     Device,
     DeviceConfiguration,
+    DeviceModule,
     Interface,
     Rack,
     Tag,
@@ -725,6 +726,24 @@ def all_interfaces(request):
         "quick_filter_values": quick_filter_values,
     }
     return render(request, "dcim/all_interfaces.html", context)
+
+
+@login_required
+def inventory_hub(request):
+    from asset.models import InventoryItem
+
+    context = {
+        "production_device_count": Device.objects.count(),
+        "production_module_count": DeviceModule.objects.count(),
+        "storage_item_count": InventoryItem.objects.count(),
+        "storage_device_count": InventoryItem.objects.filter(
+            item_type=InventoryItem.ItemType.DEVICE
+        ).count(),
+        "storage_module_count": InventoryItem.objects.filter(
+            item_type=InventoryItem.ItemType.MODULE
+        ).count(),
+    }
+    return render(request, "dcim/inventory_hub.html", context)
 
 
 @login_required

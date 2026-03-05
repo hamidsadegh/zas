@@ -1,0 +1,269 @@
+{% extends "core/base.html" %}
+
+{% block title %}Storage Inventory{% endblock %}
+
+{% block styles %}
+{% include "dcim/_layout_styles.html" %}
+.device-detail-wrapper { gap: 1.5rem; font-size: 0.95rem; }
+.filter-actions { display: flex; gap: 0.6rem; flex-wrap: nowrap; align-items: center; justify-content: flex-end; width: 100%; }
+.filter-actions .filter-form { display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: 0.5rem; margin: 0 0 0 auto; width: auto; }
+.filter-actions .filter-search-wide { min-width: 260px; }
+.filter-actions .export-link { white-space: nowrap; }
+.quick-filter-toggle {
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+.quick-filter-toggle:hover { color: var(--text); border-color: #cbd5e1; }
+.quick-filter-toggle.is-active { color: #fff; background: var(--primary); border-color: var(--primary); }
+.quick-filter-toggle svg { width: 1rem; height: 1rem; }
+.filter-form .quick-filter-toggle {
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    max-width: 2rem;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--muted);
+    box-shadow: none;
+    flex: 0 0 auto;
+}
+.filter-form .quick-filter-toggle.is-active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+.quick-filter-row th { padding-top: 0.2rem; padding-bottom: 0.35rem; }
+.quick-filter-input {
+    width: 100%;
+    max-width: 180px;
+    min-width: 0;
+    padding: 0.08rem 0.28rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: #fff;
+    color: var(--text);
+    font-size: 0.68rem;
+    line-height: 1.05;
+    height: 1.25rem;
+}
+.quick-filter-input::placeholder { color: var(--muted); }
+.hidden-submit {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+.inventory-nav {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.status-badge,
+.type-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.78rem;
+    font-weight: 650;
+    white-space: nowrap;
+}
+.status-badge {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+.type-badge {
+    background: #fff7ed;
+    color: #b45309;
+    border: 1px solid #fed7aa;
+}
+.table-actions .btn-ghost {
+    background: #f8fafc;
+    border-color: #d8e0ee;
+    color: var(--text);
+}
+.table-actions .btn-ghost:hover {
+    background: #eef2ff;
+    border-color: #cbd5f5;
+    color: var(--text);
+}
+{% endblock %}
+
+{% block content %}
+<section class="device-detail-wrapper">
+    <div class="detail-card interfaces-card">
+        <div class="detail-actions" style="margin-bottom: 1.2rem;">
+            <div>
+                <div class="chip" style="margin-bottom: 0.55rem;">Inventory</div>
+                <h3 style="margin: 0;">Storage Inventory</h3>
+            </div>
+            <div class="filter-actions">
+                <div class="inventory-nav">
+                    <a class="back-link" href="{% url 'inventory' %}">Overview</a>
+                </div>
+                <form method="get" id="storage-inventory-filters" class="filter-form">
+                    <select name="site" onchange="this.form.submit()">
+                        {% for key, label in site_choices %}
+                            <option value="{{ key }}" {% if site_filter == key %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <input class="filter-search-wide" type="text" name="search" placeholder="Search designation, serials, locations..." value="{{ search_query }}">
+                    <select name="paginate_by" onchange="this.form.submit()">
+                        {% for option in per_page_options %}
+                            <option value="{{ option }}" {% if paginate_by|stringformat:"s" == option|stringformat:"s" %}selected{% endif %}>Show {{ option }}</option>
+                        {% endfor %}
+                    </select>
+                    <a
+                        class="export-link"
+                        data-quick-filter-sync
+                        href="{% url 'inventory_storage_export' %}?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if sort_field %}sort={{ sort_field|urlencode }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}{% endif %}{% if site_filter %}&site={{ site_filter }}{% endif %}{% if quick_filter_values.qf_designation %}&qf_designation={{ quick_filter_values.qf_designation|urlencode }}{% endif %}{% if quick_filter_values.qf_inventory_number %}&qf_inventory_number={{ quick_filter_values.qf_inventory_number|urlencode }}{% endif %}{% if quick_filter_values.qf_serial_number %}&qf_serial_number={{ quick_filter_values.qf_serial_number|urlencode }}{% endif %}{% if quick_filter_values.qf_location %}&qf_location={{ quick_filter_values.qf_location|urlencode }}{% endif %}{% if quick_filter_values.qf_vendor %}&qf_vendor={{ quick_filter_values.qf_vendor|urlencode }}{% endif %}{% if quick_filter_values.qf_model %}&qf_model={{ quick_filter_values.qf_model|urlencode }}{% endif %}{% if quick_filter_values.qf_item_type %}&qf_item_type={{ quick_filter_values.qf_item_type|urlencode }}{% endif %}{% if quick_filter_values.qf_status %}&qf_status={{ quick_filter_values.qf_status|urlencode }}{% endif %}{% if quick_filter_values.qf_comment %}&qf_comment={{ quick_filter_values.qf_comment|urlencode }}{% endif %}">Export</a>
+                    <a class="btn btn-primary" href="{% url 'inventory_storage_add' %}">Add</a>
+                    <button
+                        id="storage-inventory-quick-filter-toggle"
+                        class="quick-filter-toggle"
+                        type="button"
+                        aria-label="Show or hide quick filters"
+                        aria-expanded="false"
+                        title="Show quick filters">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M3 5h18l-7 8v5l-4 2v-7L3 5z"></path>
+                        </svg>
+                    </button>
+                    <input type="hidden" name="sort" value="{{ sort_field }}">
+                    <button type="submit" class="hidden-submit" aria-hidden="true" tabindex="-1">Apply</button>
+                </form>
+            </div>
+        </div>
+        {% if rows %}
+        <div class="pagination-wrapper">
+            <div class="range-info">
+                Showing {{ rows.start_index }}–{{ rows.end_index }} of {{ rows.paginator.count }} records
+            </div>
+            <ul class="pagination">
+                {% if rows.has_previous %}
+                    <li><a href="?page={{ rows.previous_page_number }}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}{% if site_filter %}&site={{ site_filter }}{% endif %}">Previous</a></li>
+                {% else %}
+                    <li><span>Previous</span></li>
+                {% endif %}
+
+                {% for num in rows.paginator.page_range %}
+                    {% if rows.number == num %}
+                        <li class="active"><span>{{ num }}</span></li>
+                    {% elif num > rows.number|add:-3 and num < rows.number|add:3 %}
+                        <li><a href="?page={{ num }}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}{% if site_filter %}&site={{ site_filter }}{% endif %}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if rows.has_next %}
+                    <li><a href="?page={{ rows.next_page_number }}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}{% if site_filter %}&site={{ site_filter }}{% endif %}">Next</a></li>
+                {% else %}
+                    <li><span>Next</span></li>
+                {% endif %}
+            </ul>
+        </div>
+        <div class="table-scroll">
+            <table
+                class="data-table"
+                data-quick-filter-table
+                data-quick-filter-mode="server"
+                data-quick-filter-debounce="500"
+                data-quick-filter-toggle-id="storage-inventory-quick-filter-toggle"
+                data-quick-filter-visible="0">
+                <thead>
+                    <tr>
+                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'designation' %}-designation{% elif sort_field == '-designation' %}designation{% else %}designation{% endif %}">Designation</a></th>
+                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'inventory_number' %}-inventory_number{% elif sort_field == '-inventory_number' %}inventory_number{% else %}inventory_number{% endif %}">Inventory #</a></th>
+                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'serial_number' %}-serial_number{% elif sort_field == '-serial_number' %}serial_number{% else %}serial_number{% endif %}">Serial</a></th>
+                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'location' %}-location{% elif sort_field == '-location' %}location{% else %}location{% endif %}">Location</a></th>
+                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'vendor_name' %}-vendor_name{% elif sort_field == '-vendor_name' %}vendor_name{% else %}vendor_name{% endif %}">Vendor</a></th>
+                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'model' %}-model{% elif sort_field == '-model' %}model{% else %}model{% endif %}">Model</a></th>
+                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'item_type' %}-item_type{% elif sort_field == '-item_type' %}item_type{% else %}item_type{% endif %}">Type</a></th>
+                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'status' %}-status{% elif sort_field == '-status' %}status{% else %}status{% endif %}">Status</a></th>
+                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'comment' %}-comment{% elif sort_field == '-comment' %}comment{% else %}comment{% endif %}">Comment</a></th>
+                        <th></th>
+                    </tr>
+                    <tr class="quick-filter-row">
+                        <th><input class="quick-filter-input" type="text" name="qf_designation" form="storage-inventory-filters" value="{{ quick_filter_values.qf_designation }}" data-quick-filter-col="0" placeholder="Filter designation"></th>
+                        <th><input class="quick-filter-input" type="text" name="qf_inventory_number" form="storage-inventory-filters" value="{{ quick_filter_values.qf_inventory_number }}" data-quick-filter-col="1" placeholder="Filter inventory #"></th>
+                        <th><input class="quick-filter-input" type="text" name="qf_serial_number" form="storage-inventory-filters" value="{{ quick_filter_values.qf_serial_number }}" data-quick-filter-col="2" placeholder="Filter serial"></th>
+                        <th><input class="quick-filter-input" type="text" name="qf_location" form="storage-inventory-filters" value="{{ quick_filter_values.qf_location }}" data-quick-filter-col="3" placeholder="Filter location"></th>
+                        <th><input class="quick-filter-input" type="text" name="qf_vendor" form="storage-inventory-filters" value="{{ quick_filter_values.qf_vendor }}" data-quick-filter-col="4" placeholder="Filter vendor"></th>
+                        <th><input class="quick-filter-input" type="text" name="qf_model" form="storage-inventory-filters" value="{{ quick_filter_values.qf_model }}" data-quick-filter-col="5" placeholder="Filter model"></th>
+                        <th><input class="quick-filter-input" type="text" name="qf_item_type" form="storage-inventory-filters" value="{{ quick_filter_values.qf_item_type }}" data-quick-filter-col="6" placeholder="Filter type"></th>
+                        <th><input class="quick-filter-input" type="text" name="qf_status" form="storage-inventory-filters" value="{{ quick_filter_values.qf_status }}" data-quick-filter-col="7" placeholder="Filter status"></th>
+                        <th><input class="quick-filter-input" type="text" name="qf_comment" form="storage-inventory-filters" value="{{ quick_filter_values.qf_comment }}" data-quick-filter-col="8" placeholder="Filter comment"></th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr>
+                        <td>{{ row.designation }}</td>
+                        <td>{{ row.inventory_number|default:"-" }}</td>
+                        <td>{{ row.serial_number|default:"-" }}</td>
+                        <td>{{ row.location|default:"-" }}</td>
+                        <td>{{ row.vendor_name|default:"-" }}</td>
+                        <td>{{ row.model|default:"-" }}</td>
+                        <td><span class="type-badge">{{ row.item_type }}</span></td>
+                        <td><span class="status-badge">{{ row.status }}</span></td>
+                        <td>{{ row.comment|default:"-"|truncatechars:80 }}</td>
+                        <td class="table-actions">
+                            <a class="btn btn-ghost small" href="{% url 'inventory_storage_edit' row.item.pk %}">Edit</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination-wrapper">
+            <div class="range-info">
+                Showing {{ rows.start_index }}–{{ rows.end_index }} of {{ rows.paginator.count }} records
+            </div>
+            <ul class="pagination">
+                {% if rows.has_previous %}
+                    <li><a href="?page={{ rows.previous_page_number }}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}{% if site_filter %}&site={{ site_filter }}{% endif %}">Previous</a></li>
+                {% else %}
+                    <li><span>Previous</span></li>
+                {% endif %}
+
+                {% for num in rows.paginator.page_range %}
+                    {% if rows.number == num %}
+                        <li class="active"><span>{{ num }}</span></li>
+                    {% elif num > rows.number|add:-3 and num < rows.number|add:3 %}
+                        <li><a href="?page={{ num }}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}{% if site_filter %}&site={{ site_filter }}{% endif %}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if rows.has_next %}
+                    <li><a href="?page={{ rows.next_page_number }}{% if search_query %}&search={{ search_query|urlencode }}{% endif %}{% if sort_field %}&sort={{ sort_field }}{% endif %}{% if paginate_by %}&paginate_by={{ paginate_by }}{% endif %}{% if site_filter %}&site={{ site_filter }}{% endif %}">Next</a></li>
+                {% else %}
+                    <li><span>Next</span></li>
+                {% endif %}
+            </ul>
+        </div>
+        {% else %}
+            <p>No storage inventory records found.</p>
+        {% endif %}
+    </div>
+</section>
+{% include "dcim/_table_quick_filters_script.html" %}
+{% endblock %}

@@ -1,0 +1,135 @@
+{% extends "core/base.html" %}
+
+{% block title %}{% if form.instance.pk %}Edit Storage Component{% else %}Add Storage Component{% endif %}{% endblock %}
+
+{% block styles %}
+{% include "dcim/_layout_styles.html" %}
+.form-shell { width: 60%; max-width: 960px; margin: 0 auto; background: var(--surface); border-radius: 18px; padding: 2rem; box-shadow: 0 14px 34px rgba(15, 29, 64, 0.08); border: 1px solid #dde6f4; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+.form-field { display: flex; flex-direction: column; }
+.form-field.full-width { grid-column: 1 / -1; }
+.form-field label { font-weight: 600; color: var(--muted); margin-bottom: 0.25rem; }
+.form-field small { margin-top: 0.2rem; color: var(--muted); }
+.form-actions { margin-top: 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.field-disabled {
+    opacity: 0.65;
+}
+{% endblock %}
+
+{% block content %}
+<section class="form-shell">
+    <div class="chip" style="margin-bottom: 0.7rem;">Storage Inventory</div>
+    <h1 style="margin-top:0;">{% if form.instance.pk %}Edit Storage Component{% else %}Add Storage Component{% endif %}</h1>
+    <p class="muted" style="margin-top:0;">
+        {% if form.instance.pk %}
+        Update the inventory record for a stored device or module.
+        {% else %}
+        Create a new inventory record for a device or module that is not currently in live production.
+        {% endif %}
+    </p>
+    <form id="storage-item-form" method="post" class="form-grid">
+        {% csrf_token %}
+        {% for field in form %}
+            <div class="form-field {% if field.name == 'comment' %}full-width{% endif %}">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}
+                    <small>{{ field.help_text }}</small>
+                {% endif %}
+                {% if field.errors %}
+                    <small style="color:#c53030;">{{ field.errors|striptags }}</small>
+                {% endif %}
+            </div>
+        {% endfor %}
+        {% if form.non_field_errors %}
+            <div class="form-field full-width">
+                <small style="color:#c53030;">{{ form.non_field_errors|striptags }}</small>
+            </div>
+        {% endif %}
+    </form>
+    <div class="form-actions">
+        <a href="{% url 'inventory_storage' %}" class="btn btn-secondary">Cancel</a>
+        {% if form.instance.pk %}
+        <a href="{% url 'inventory_storage_delete' form.instance.pk %}" class="btn btn-danger">Delete</a>
+        {% endif %}
+        <button type="submit" class="btn btn-primary" form="storage-item-form">Save</button>
+    </div>
+</section>
+<script>
+(() => {
+    const siteSelect = document.getElementById("id_site");
+    const areaSelect = document.getElementById("id_area");
+    if (!siteSelect || !areaSelect) {
+        return;
+    }
+
+    const areaField = areaSelect.closest(".form-field");
+    const initialAreaValue = areaSelect.value;
+
+    function setAreaDisabled(isDisabled) {
+        areaSelect.disabled = isDisabled;
+        if (areaField) {
+            areaField.classList.toggle("field-disabled", isDisabled);
+        }
+    }
+
+    function replaceOptions(results, selectedValue) {
+        areaSelect.innerHTML = "";
+
+        const emptyOption = document.createElement("option");
+        emptyOption.value = "";
+        emptyOption.textContent = "---------";
+        areaSelect.appendChild(emptyOption);
+
+        results.forEach((area) => {
+            const option = document.createElement("option");
+            option.value = area.id;
+            option.textContent = area.name;
+            if (selectedValue && selectedValue === String(area.id)) {
+                option.selected = true;
+            }
+            areaSelect.appendChild(option);
+        });
+    }
+
+    async function syncAreas(selectedAreaValue = "") {
+        const siteId = siteSelect.value;
+        if (!siteId) {
+            replaceOptions([], "");
+            setAreaDisabled(true);
+            return;
+        }
+
+        setAreaDisabled(true);
+
+        try {
+            const response = await fetch(`{% url 'areas_for_site' %}?site=${encodeURIComponent(siteId)}`, {
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+            });
+            if (!response.ok) {
+                throw new Error(`Request failed with status ${response.status}`);
+            }
+
+            const payload = await response.json();
+            const results = Array.isArray(payload.results) ? payload.results : [];
+            replaceOptions(results, selectedAreaValue);
+        } catch (error) {
+            replaceOptions([], "");
+            console.error("Failed to load areas for site", error);
+        } finally {
+            setAreaDisabled(false);
+        }
+    }
+
+    siteSelect.addEventListener("change", () => {
+        syncAreas("");
+    });
+
+    if (siteSelect.value) {
+        syncAreas(initialAreaValue);
+    } else {
+        setAreaDisabled(true);
+    }
+})();
+</script>
+{% endblock %}
