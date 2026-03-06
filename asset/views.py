@@ -496,7 +496,7 @@ def storage_inventory_import(request):
                 if not any(_clean_cell(value) for value in row):
                     continue
 
-                designation = _row_cell(row, idx["designation"])
+                designation_raw = _row_cell(row, idx["designation"])
                 model = _row_cell(row, idx["model"])
                 inventory_number = _row_cell(row, idx["inventory_number"]) or None
                 serial_number = _row_cell(row, idx["serial_number"]) or None
@@ -509,7 +509,7 @@ def storage_inventory_import(request):
                 status_raw = _row_cell(row, idx["status"])
                 comment = _row_cell(row, idx["comment"])
 
-                if not designation:
+                if not designation_raw:
                     errors.append(f"Row {row_number}: Designation is required.")
                     continue
                 if not model:
@@ -537,6 +537,14 @@ def storage_inventory_import(request):
                     seen_serial_numbers[serial_number] = row_number
 
                 try:
+                    designation = _resolve_choice(
+                        designation_raw,
+                        InventoryItem.Designation.choices,
+                        None,
+                        "designation",
+                    )
+                    if not designation:
+                        raise ValueError("Designation is required.")
                     site = _resolve_site(site_name, site_id, area_name)
                     area = _resolve_area(site, area_name, area_id)
                     vendor = _resolve_vendor(vendor_name)

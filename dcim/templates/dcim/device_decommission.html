@@ -1,0 +1,350 @@
+{% extends "core/base.html" %}
+
+{% block title %}Decommission {{ device.name }}{% endblock %}
+
+{% block styles %}
+{% include "dcim/_layout_styles.html" %}
+.decommission-wrapper { gap: 1.25rem; font-size: 0.95rem; }
+.summary-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.summary-item {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #f8fafc;
+    padding: 0.75rem 0.9rem;
+}
+.summary-item .label { color: var(--muted); font-size: 0.82rem; display: block; }
+.summary-item .value { font-weight: 650; }
+.choice-actions {
+    display: flex;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+.decommission-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+}
+.decommission-table th,
+.decommission-table td {
+    padding: 0.45rem 0.5rem;
+    vertical-align: top;
+    border-bottom: 1px solid var(--border);
+}
+.decommission-table thead th {
+    background: #f8fafc;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+.decommission-table input[type="text"],
+.decommission-table select,
+.decommission-table textarea {
+    min-width: 120px;
+    max-width: 220px;
+    font-size: 0.82rem;
+    padding: 0.28rem 0.4rem;
+}
+.decommission-table textarea { min-height: 48px; }
+.field-errors {
+    margin-top: 0.2rem;
+    color: #b91c1c;
+    font-size: 0.74rem;
+}
+.row-source {
+    font-weight: 650;
+    display: block;
+    margin-bottom: 0.18rem;
+}
+{% endblock %}
+
+{% block content %}
+<section class="device-detail-wrapper decommission-wrapper">
+    <div class="detail-card">
+        <div class="detail-actions">
+            <div>
+                <div class="chip" style="margin-bottom: 0.55rem;">Device Decommission</div>
+                <h1 style="margin: 0;">{{ device.name }}</h1>
+                <p style="margin: 0.25rem 0 0; color: var(--muted);">
+                    Decide what goes to storage and what should be discarded.
+                </p>
+            </div>
+            <a href="{% url 'device_detail' device.id %}" class="back-link">← Back to device</a>
+        </div>
+    </div>
+
+    <div class="detail-card">
+        <div class="summary-grid">
+            <div class="summary-item">
+                <span class="label">Device</span>
+                <span class="value">{{ device.name }}</span>
+            </div>
+            <div class="summary-item">
+                <span class="label">Site</span>
+                <span class="value">{{ device.site.name }}</span>
+            </div>
+            <div class="summary-item">
+                <span class="label">Modules Found</span>
+                <span class="value">{{ module_count }}</span>
+            </div>
+            <div class="summary-item">
+                <span class="label">Rows in Process</span>
+                <span class="value">{{ source_items_count }}</span>
+            </div>
+        </div>
+    </div>
+
+    {% if stage == "confirm" %}
+    <div class="detail-card">
+        <h3 style="margin-top: 0;">Start Decommission Process</h3>
+        <p class="notice" style="margin: 0 0 1rem;">
+            Choose whether to permanently delete this device now, or open storage transfer for device/modules.
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="stage" value="confirm">
+            <div class="choice-actions">
+                <button type="submit" name="decision" value="storage" class="btn btn-primary">
+                    Move Items to Storage
+                </button>
+                <button type="submit" name="decision" value="replace" class="btn btn-secondary">
+                    Replace Device
+                </button>
+                <button type="submit" name="decision" value="delete" class="btn btn-danger">
+                    Delete Permanently
+                </button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    {% if stage == "replace" %}
+    <div class="detail-card">
+        <h3 style="margin-top: 0;">Replace Device</h3>
+        <p class="notice" style="margin: 0 0 1rem;">
+            Enter replacement device details. Old configuration will be pushed to the new device, then sync runs.
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="stage" value="replace">
+            <div class="form-grid" style="display:grid; gap:0.75rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+                <div>
+                    <label for="{{ replacement_form.name.id_for_label }}">Name</label>
+                    {{ replacement_form.name }}
+                    {% if replacement_form.name.errors %}
+                        <div class="field-errors">{{ replacement_form.name.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+                <div>
+                    <label for="{{ replacement_form.management_ip.id_for_label }}">IP</label>
+                    {{ replacement_form.management_ip }}
+                    {% if replacement_form.management_ip.errors %}
+                        <div class="field-errors">{{ replacement_form.management_ip.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+                <div>
+                    <label for="{{ replacement_form.area.id_for_label }}">Area</label>
+                    {{ replacement_form.area }}
+                    {% if replacement_form.area.errors %}
+                        <div class="field-errors">{{ replacement_form.area.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+                <div>
+                    <label for="{{ replacement_form.rack.id_for_label }}">Rack</label>
+                    {{ replacement_form.rack }}
+                    {% if replacement_form.rack.errors %}
+                        <div class="field-errors">{{ replacement_form.rack.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% if replacement_form.non_field_errors %}
+                <div class="field-errors" style="margin-top:0.65rem;">{{ replacement_form.non_field_errors|join:", " }}</div>
+            {% endif %}
+            <div class="form-actions" style="margin-top: 1rem;">
+                <a class="back-link" href="{% url 'device_detail' device.id %}">Cancel</a>
+                <button type="submit" class="btn btn-primary">Run Replacement</button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    {% if stage == "storage" %}
+    <div class="detail-card">
+        <h3 style="margin-top: 0;">Storage Mapping</h3>
+        <p class="notice" style="margin: 0 0 1rem;">
+            Set each row to <strong>Move to storage</strong> or <strong>Discard</strong>. Serial and model come from current source data.
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="stage" value="storage">
+            {{ formset.management_form }}
+            <div class="table-scroll">
+                <table class="decommission-table">
+                    <thead>
+                        <tr>
+                            <th>Source</th>
+                            <th>Source Type</th>
+                            <th>Serial</th>
+                            <th>Model</th>
+                            <th>Action</th>
+                            <th>Item Type</th>
+                            <th>Designation</th>
+                            <th>Inventory #</th>
+                            <th>Site</th>
+                            <th>Area</th>
+                            <th>Vendor</th>
+                            <th>Status</th>
+                            <th>Comment</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                        <tr>
+                            <td>
+                                {{ row.form.source_key }}
+                                <span class="row-source">{% if row.source %}{{ row.source.name }}{% else %}Unknown source{% endif %}</span>
+                                {% if row.form.non_field_errors %}
+                                    <div class="field-errors">{{ row.form.non_field_errors|join:", " }}</div>
+                                {% endif %}
+                            </td>
+                            <td>{% if row.source %}{{ row.source.source_type }}{% else %}—{% endif %}</td>
+                            <td>{% if row.source and row.source.serial_number %}{{ row.source.serial_number }}{% else %}—{% endif %}</td>
+                            <td>{% if row.source and row.source.model %}{{ row.source.model }}{% else %}—{% endif %}</td>
+                            <td>
+                                {{ row.form.action }}
+                                {% if row.form.action.errors %}
+                                    <div class="field-errors">{{ row.form.action.errors|join:", " }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ row.form.item_type }}
+                                {% if row.form.item_type.errors %}
+                                    <div class="field-errors">{{ row.form.item_type.errors|join:", " }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ row.form.designation }}
+                                {% if row.form.designation.errors %}
+                                    <div class="field-errors">{{ row.form.designation.errors|join:", " }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ row.form.inventory_number }}
+                                {% if row.form.inventory_number.errors %}
+                                    <div class="field-errors">{{ row.form.inventory_number.errors|join:", " }}</div>
+                                {% endif %}
+                            </td>
+                            <td>{{ device.site.name }}</td>
+                            <td>
+                                {{ row.form.area }}
+                                {% if row.form.area.errors %}
+                                    <div class="field-errors">{{ row.form.area.errors|join:", " }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ row.form.vendor }}
+                                {% if row.form.vendor.errors %}
+                                    <div class="field-errors">{{ row.form.vendor.errors|join:", " }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ row.form.status }}
+                                {% if row.form.status.errors %}
+                                    <div class="field-errors">{{ row.form.status.errors|join:", " }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ row.form.comment }}
+                                {% if row.form.comment.errors %}
+                                    <div class="field-errors">{{ row.form.comment.errors|join:", " }}</div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="13">No rows available for decommission processing.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="form-actions" style="margin-top: 1rem;">
+                <a class="back-link" href="{% url 'device_detail' device.id %}">Cancel</a>
+                <button type="submit" class="btn btn-primary">Complete Decommission</button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+</section>
+{% if stage == "replace" %}
+<script>
+(() => {
+    const areaSelect = document.getElementById("id_area");
+    const rackSelect = document.getElementById("id_rack");
+    if (!areaSelect || !rackSelect) {
+        return;
+    }
+
+    const initialRackValue = rackSelect.value;
+
+    function replaceRackOptions(results, selectedValue = "") {
+        rackSelect.innerHTML = "";
+        const emptyOption = document.createElement("option");
+        emptyOption.value = "";
+        emptyOption.textContent = "---------";
+        rackSelect.appendChild(emptyOption);
+
+        results.forEach((rack) => {
+            const option = document.createElement("option");
+            option.value = rack.id;
+            option.textContent = rack.name;
+            if (selectedValue && String(rack.id) === String(selectedValue)) {
+                option.selected = true;
+            }
+            rackSelect.appendChild(option);
+        });
+    }
+
+    async function syncRacks(selectedRackValue = "") {
+        const areaId = areaSelect.value;
+        if (!areaId) {
+            replaceRackOptions([], "");
+            rackSelect.disabled = true;
+            return;
+        }
+        rackSelect.disabled = true;
+        try {
+            const response = await fetch(`{% url 'racks_for_area' %}?area=${encodeURIComponent(areaId)}`, {
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+            });
+            if (!response.ok) {
+                throw new Error(`Request failed with status ${response.status}`);
+            }
+            const payload = await response.json();
+            const results = Array.isArray(payload.results) ? payload.results : [];
+            replaceRackOptions(results, selectedRackValue);
+        } catch (error) {
+            replaceRackOptions([], "");
+            console.error("Failed to load racks for area", error);
+        } finally {
+            rackSelect.disabled = false;
+        }
+    }
+
+    areaSelect.addEventListener("change", () => {
+        syncRacks("");
+    });
+
+    if (areaSelect.value) {
+        syncRacks(initialRackValue);
+    } else {
+        rackSelect.disabled = true;
+    }
+})();
+</script>
+{% endif %}
+{% endblock %}

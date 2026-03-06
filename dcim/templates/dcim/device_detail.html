@@ -64,6 +64,7 @@
                         </span>
                     </button>
                 </form>
+                <a href="{% url 'device_decommission' device.id %}" class="btn btn-danger">Decommission</a>
                 <a href="{% url 'device_list' %}" class="back-link">← Back to device list</a>
             </div>
         </div>

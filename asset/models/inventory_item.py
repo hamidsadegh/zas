@@ -15,6 +15,15 @@ class InventoryItem(models.Model):
         DEVICE = "device", _("Device")
         MODULE = "module", _("Module")
 
+    class Designation(models.TextChoices):
+        SWITCH = "Switch", _("Switch")
+        ACCESS_POINT = "Access Point", _("Access Point")
+        UPLINK_MODULE = "Uplink Module", _("Uplink Module")
+        QSFP_TRANSCEIVER = "QSFP Transceiver", _("QSFP Transceiver")
+        QSFP_TO_SFP10G_ADAPTER = "QSFP to SFP10G Adapter", _("QSFP to SFP10G Adapter")
+        SFP_PLUS_TRANSCEIVER = "SFP+ Transceiver", _("SFP+ Transceiver")
+        SFP_TRANSCEIVER = "SFP Transceiver", _("SFP Transceiver")
+
     class Status(models.TextChoices):
         IN_STOCK = "in_stock", _("In stock")
         RESERVED = "reserved", _("Reserved")
@@ -38,7 +47,9 @@ class InventoryItem(models.Model):
     )
     designation = models.CharField(
         max_length=150,
-        help_text=_("General designation such as Switch, Uplink Module, or SFP."),
+        choices=Designation.choices,
+        default=Designation.SWITCH,
+        help_text=_("Select the component designation."),
     )
     vendor = models.ForeignKey(
         Vendor,

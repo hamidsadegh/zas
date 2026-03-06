@@ -1,15 +1,19 @@
 import re
 import uuid
 
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.forms import formset_factory
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.db.models import Case, IntegerField, Q, Value, When
-from dcim.choices import InterfaceStatusChoices
+from dcim.choices import DeviceStatusChoices, InterfaceStatusChoices
+from dcim.forms.device_forms import DeviceDecommissionItemForm, DeviceReplacementForm
 from dcim.models import (
     Area,
     Device,
@@ -22,6 +26,7 @@ from dcim.models import (
 )
 from automation.engine.diff_engine import generate_diff, generate_visual_diff
 from accounts.services.settings_service import get_reachability_checks, get_system_settings
+from dcim.services.configuration_persistence_service import ConfigurationPersistenceService
 
 from openpyxl import Workbook
 
@@ -43,6 +48,340 @@ def _get_paginate_by(request, default=25):
         if per_page in PER_PAGE_OPTIONS:
             return per_page
     return default
+
+
+def _infer_inventory_designation(item_type, source_name, source_model):
+    from asset.models import InventoryItem
+
+    text = " ".join(
+        filter(
+            None,
+            [
+                source_name or "",
+                source_model or "",
+            ],
+        )
+    ).lower()
+
+    if "access point" in text or "ap " in text or text.startswith("ap-"):
+        return InventoryItem.Designation.ACCESS_POINT
+    if "qsfp" in text and "adapter" in text and "sfp" in text:
+        return InventoryItem.Designation.QSFP_TO_SFP10G_ADAPTER
+    if "sfp+" in text:
+        return InventoryItem.Designation.SFP_PLUS_TRANSCEIVER
+    if "qsfp" in text:
+        return InventoryItem.Designation.QSFP_TRANSCEIVER
+    if "sfp" in text:
+        return InventoryItem.Designation.SFP_TRANSCEIVER
+    if "uplink" in text:
+        return InventoryItem.Designation.UPLINK_MODULE
+    if item_type == "device":
+        return InventoryItem.Designation.SWITCH
+    return InventoryItem.Designation.UPLINK_MODULE
+
+
+def _decommission_source_items(device):
+    source_items = []
+    device_model = ""
+    if device.device_type and device.device_type.model:
+        device_model = device.device_type.model
+    elif device.name:
+        device_model = device.name
+
+    device_item_type = "device"
+    source_items.append(
+        {
+            "key": f"device:{device.pk}",
+            "source_type": "Device",
+            "name": device.name or "Device",
+            "serial_number": (device.serial_number or "").strip(),
+            "model": device_model,
+            "designation": _infer_inventory_designation(
+                device_item_type,
+                device.name or "",
+                device_model,
+            ),
+            "inventory_number": (device.inventory_number or "").strip(),
+            "vendor_id": device.device_type.vendor_id if device.device_type else None,
+            "item_type": device_item_type,
+        }
+    )
+
+    modules = sorted(device.modules.all(), key=lambda module: _natural_sort_key(module.name))
+    for module in modules:
+        model = (module.description or "").strip() or (module.name or "").strip()
+        source_items.append(
+            {
+                "key": f"module:{module.pk}",
+                "source_type": "Module",
+                "name": module.name or "Module",
+                "serial_number": (module.serial_number_display or "").strip(),
+                "model": model,
+                "designation": _infer_inventory_designation("module", module.name, model),
+                "inventory_number": "",
+                "vendor_id": module.vendor_id,
+                "item_type": "module",
+            }
+        )
+
+    return source_items
+
+
+def _decommission_initial_rows(device, source_items):
+    from asset.models import InventoryItem
+
+    rows = []
+    for source in source_items:
+        rows.append(
+            {
+                "source_key": source["key"],
+                "action": DeviceDecommissionItemForm.Action.STORE,
+                "item_type": source["item_type"],
+                "designation": source["designation"],
+                "inventory_number": source["inventory_number"],
+                "area": device.area_id,
+                "vendor": source["vendor_id"],
+                "status": InventoryItem.Status.IN_STOCK,
+                "comment": "",
+            }
+        )
+    return rows
+
+
+def _decommission_row_context(formset, source_lookup):
+    rows = []
+    for index, form in enumerate(formset.forms, start=1):
+        if form.is_bound:
+            source_key = form.data.get(form.add_prefix("source_key"), "")
+        else:
+            source_key = form.initial.get("source_key", "")
+        rows.append(
+            {
+                "index": index,
+                "form": form,
+                "source": source_lookup.get(source_key),
+            }
+        )
+    return rows
+
+
+def _attach_form_errors(form, error):
+    if hasattr(error, "message_dict"):
+        for field_name, messages_list in error.message_dict.items():
+            target_field = field_name if field_name in form.fields else None
+            for message in messages_list:
+                if target_field:
+                    form.add_error(target_field, message)
+                else:
+                    form.add_error(None, f"{field_name}: {message}")
+        return
+    if hasattr(error, "messages"):
+        for message in error.messages:
+            form.add_error(None, message)
+        return
+    form.add_error(None, str(error))
+
+
+def _process_decommission_storage(device, formset, source_lookup):
+    from asset.models import InventoryItem
+
+    has_errors = False
+    pending_items = []
+    seen_inventory_numbers = {}
+    seen_serial_numbers = {}
+
+    for row_index, form in enumerate(formset.forms, start=1):
+        cleaned_data = form.cleaned_data
+        action = cleaned_data.get("action")
+        source_key = cleaned_data.get("source_key")
+        source = source_lookup.get(source_key)
+
+        if not source:
+            form.add_error(None, "Invalid source row. Please reload the page.")
+            has_errors = True
+            continue
+
+        if action != DeviceDecommissionItemForm.Action.STORE:
+            continue
+
+        inventory_number = cleaned_data.get("inventory_number") or ""
+        inventory_number = inventory_number.strip() or None
+        serial_number = source.get("serial_number") or None
+        model = source.get("model") or ""
+
+        if not model:
+            form.add_error(
+                None,
+                "Model is empty for this source item. Use discard or fix source data.",
+            )
+            has_errors = True
+            continue
+
+        if inventory_number:
+            previous_row = seen_inventory_numbers.get(inventory_number)
+            if previous_row is not None:
+                form.add_error(
+                    "inventory_number",
+                    f"Duplicate inventory number in this request (row {previous_row}).",
+                )
+                has_errors = True
+                continue
+            seen_inventory_numbers[inventory_number] = row_index
+
+        if serial_number:
+            previous_row = seen_serial_numbers.get(serial_number)
+            if previous_row is not None:
+                form.add_error(
+                    None,
+                    f"Duplicate serial number in this request (row {previous_row}).",
+                )
+                has_errors = True
+                continue
+            seen_serial_numbers[serial_number] = row_index
+
+        item = InventoryItem(
+            item_type=cleaned_data["item_type"],
+            designation=cleaned_data["designation"],
+            inventory_number=inventory_number,
+            vendor=cleaned_data.get("vendor"),
+            model=model,
+            serial_number=serial_number,
+            site=device.site,
+            area=cleaned_data.get("area"),
+            comment=cleaned_data.get("comment", ""),
+            status=cleaned_data.get("status"),
+        )
+        pending_items.append((form, item))
+
+    if has_errors:
+        return False, 0
+
+    with transaction.atomic():
+        device.delete()
+        for form, item in pending_items:
+            try:
+                item.full_clean()
+            except ValidationError as exc:
+                _attach_form_errors(form, exc)
+                has_errors = True
+                transaction.set_rollback(True)
+                break
+            item.save()
+
+    if has_errors:
+        return False, 0
+
+    return True, len(pending_items)
+
+
+def _config_lines_for_push(config_text):
+    lines = []
+    for raw_line in (config_text or "").splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        lowered = line.lower()
+        if line.startswith("!"):
+            continue
+        if lowered.startswith("building configuration"):
+            continue
+        if lowered.startswith("current configuration"):
+            continue
+        if lowered.startswith("last configuration change"):
+            continue
+        if lowered in {"end", "exit", "write memory"}:
+            continue
+        if lowered.startswith("hostname "):
+            continue
+        if lowered.startswith("version "):
+            continue
+        lines.append(line)
+    return lines
+
+
+def _push_config_to_replacement_device(device, config_text):
+    from network.adapters.netmiko import NetmikoAdapter
+
+    commands = _config_lines_for_push(config_text)
+    if not commands:
+        return False, "No transferable configuration commands found on old device."
+
+    try:
+        with NetmikoAdapter(device, allow_autodetect=False) as ssh:
+            ssh.connection.send_config_set(commands)
+            if hasattr(ssh.connection, "save_config"):
+                try:
+                    ssh.connection.save_config()
+                except Exception:
+                    pass
+    except Exception as exc:
+        return False, str(exc)
+    return True, ""
+
+
+def _run_post_replacement_sync(device):
+    from network.services.sync_service import SyncService
+
+    service = SyncService(site=device.site)
+    return service.sync_device(device, include_config=False)
+
+
+def _process_device_replacement(old_device, form):
+    valid_statuses = {choice[0] for choice in DeviceStatusChoices.CHOICES}
+    replacement_status = (
+        old_device.status
+        if old_device.status in valid_statuses
+        else DeviceStatusChoices.STATUS_ACTIVE
+    )
+
+    replacement_device = Device(
+        name=form.cleaned_data["name"],
+        management_ip=form.cleaned_data["management_ip"],
+        site=old_device.site,
+        area=form.cleaned_data["area"],
+        rack=form.cleaned_data.get("rack"),
+        device_type=old_device.device_type,
+        role=old_device.role,
+        status=replacement_status,
+        source="manual",
+    )
+
+    try:
+        replacement_device.full_clean()
+    except ValidationError as exc:
+        _attach_form_errors(form, exc)
+        return False, None, "Replacement device validation failed."
+
+    replacement_device.save()
+    replacement_device.tags.set(old_device.tags.all())
+
+    latest_config = (
+        DeviceConfiguration.objects.filter(device=old_device, success=True)
+        .order_by("-collected_at")
+        .first()
+    )
+    config_text = latest_config.config_text if latest_config else ""
+
+    if config_text:
+        pushed, push_error = _push_config_to_replacement_device(replacement_device, config_text)
+        if not pushed:
+            replacement_device.delete()
+            return False, None, f"Config push failed: {push_error}"
+
+        ConfigurationPersistenceService.persist(
+            device=replacement_device,
+            config_text=config_text,
+            source="import",
+            success=True,
+        )
+
+    sync_result = _run_post_replacement_sync(replacement_device)
+    if not (sync_result.get("success") or sync_result.get("skipped")):
+        replacement_device.delete()
+        return False, None, f"Sync failed: {sync_result.get('error')}"
+
+    old_device.delete()
+    return True, replacement_device, ""
 
 
 def _build_inventory_rows(search_query):
@@ -416,6 +755,131 @@ class DeviceDetailView(LoginRequiredMixin, DetailView):
             .order_by("protocol", "local_interface__name", "neighbor_name", "-last_seen")
         )
         return context
+
+
+@login_required
+def device_decommission(request, pk):
+    device = get_object_or_404(
+        Device.objects.select_related(
+            "device_type",
+            "device_type__vendor",
+            "site",
+            "area",
+        ).prefetch_related("modules"),
+        pk=pk,
+    )
+
+    source_items = _decommission_source_items(device)
+    source_lookup = {item["key"]: item for item in source_items}
+    DecommissionFormSet = formset_factory(DeviceDecommissionItemForm, extra=0)
+
+    stage = "confirm"
+    formset = None
+    replacement_form = None
+
+    if request.method == "POST":
+        stage = request.POST.get("stage", "confirm")
+        if stage == "confirm":
+            decision = request.POST.get("decision", "")
+            if decision == "delete":
+                device_name = device.name
+                device.delete()
+                messages.success(
+                    request,
+                    f"Device '{device_name}' was deleted from production inventory.",
+                )
+                return redirect("device_list")
+            if decision == "storage":
+                stage = "storage"
+                formset = DecommissionFormSet(
+                    initial=_decommission_initial_rows(device, source_items),
+                    form_kwargs={"site": device.site},
+                )
+            elif decision == "replace":
+                stage = "replace"
+                replacement_form = DeviceReplacementForm(
+                    device=device,
+                    initial={
+                        "name": device.name,
+                        "management_ip": device.management_ip,
+                        "area": device.area_id,
+                        "rack": device.rack_id,
+                    },
+                )
+            else:
+                messages.error(
+                    request,
+                    "Please choose delete, move to storage, or replace.",
+                )
+        elif stage == "storage":
+            formset = DecommissionFormSet(
+                request.POST,
+                form_kwargs={"site": device.site},
+            )
+            if formset.total_form_count() != len(source_items):
+                messages.error(
+                    request,
+                    "The submitted rows do not match current modules. Please retry.",
+                )
+            elif formset.is_valid():
+                success, stored_count = _process_decommission_storage(
+                    device,
+                    formset,
+                    source_lookup,
+                )
+                if success:
+                    messages.success(
+                        request,
+                        f"Device decommissioned. Moved {stored_count} item(s) to storage.",
+                    )
+                    return redirect("device_list")
+        elif stage == "replace":
+            replacement_form = DeviceReplacementForm(request.POST, device=device)
+            if replacement_form.is_valid():
+                success, replacement_device, error_message = _process_device_replacement(
+                    device,
+                    replacement_form,
+                )
+                if success:
+                    messages.success(
+                        request,
+                        f"Device replaced successfully. New device: {replacement_device.name}.",
+                    )
+                    return redirect("device_detail", pk=replacement_device.pk)
+                if error_message:
+                    messages.error(request, error_message)
+        else:
+            stage = "confirm"
+
+    rows = []
+    if stage == "storage":
+        if formset is None:
+            formset = DecommissionFormSet(
+                initial=_decommission_initial_rows(device, source_items),
+                form_kwargs={"site": device.site},
+            )
+        rows = _decommission_row_context(formset, source_lookup)
+    elif stage == "replace" and replacement_form is None:
+        replacement_form = DeviceReplacementForm(
+            device=device,
+            initial={
+                "name": device.name,
+                "management_ip": device.management_ip,
+                "area": device.area_id,
+                "rack": device.rack_id,
+            },
+        )
+
+    context = {
+        "device": device,
+        "stage": stage,
+        "formset": formset,
+        "replacement_form": replacement_form,
+        "rows": rows,
+        "source_items_count": len(source_items),
+        "module_count": max(len(source_items) - 1, 0),
+    }
+    return render(request, "dcim/device_decommission.html", context)
 
 
 @login_required
