@@ -11,6 +11,7 @@
 .filters { display: flex; align-items: center; gap: 0.5rem; flex-wrap: nowrap; justify-content: flex-end; }
 .filters select { min-width: 120px; flex: 0 0 auto; }
 .filters input[type="text"] { min-width: 260px; flex: 1 1 260px; }
+.list-controls .export-link { white-space: nowrap; }
 .quick-filter-toggle {
     width: 2rem;
     height: 2rem;
@@ -111,6 +112,10 @@
                 {% endif %}
                 <button type="submit" class="hidden-submit" aria-hidden="true" tabindex="-1">Apply</button>
             </form>
+            <a
+                class="action-btn secondary export-link"
+                data-quick-filter-sync
+                href="{% url 'device_export' %}?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if sort_field %}sort={{ sort_field|urlencode }}&{% endif %}{% if interface_status_filter %}interface_status={{ interface_status_filter|urlencode }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}{% endif %}{% if site_filter %}&site={{ site_filter|urlencode }}{% endif %}{% if quick_filter_values.qf_device %}&qf_device={{ quick_filter_values.qf_device|urlencode }}{% endif %}{% if quick_filter_values.qf_ip %}&qf_ip={{ quick_filter_values.qf_ip|urlencode }}{% endif %}{% if quick_filter_values.qf_type %}&qf_type={{ quick_filter_values.qf_type|urlencode }}{% endif %}{% if quick_filter_values.qf_serial %}&qf_serial={{ quick_filter_values.qf_serial|urlencode }}{% endif %}{% if quick_filter_values.qf_location %}&qf_location={{ quick_filter_values.qf_location|urlencode }}{% endif %}{% if quick_filter_values.qf_rack %}&qf_rack={{ quick_filter_values.qf_rack|urlencode }}{% endif %}{% if quick_filter_values.qf_image %}&qf_image={{ quick_filter_values.qf_image|urlencode }}{% endif %}">Export</a>
             <button
                 id="device-quick-filter-toggle"
                 class="quick-filter-toggle"

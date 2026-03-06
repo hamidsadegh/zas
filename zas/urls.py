@@ -11,6 +11,7 @@ from accounts.views.system_setting_view import SystemSettingsView
 # -----------------------
 html_patterns = [
     path("devices/", device_views.DeviceListView.as_view(), name="device_list"),
+    path("devices/export/", device_views.device_export, name="device_export"),
     path("devices/<uuid:pk>/", device_views.DeviceDetailView.as_view(), name="device_detail"),
     path("inventory/", device_views.inventory_hub, name="inventory"),
     path("inventory/production/", device_views.inventory_list, name="inventory_production"),

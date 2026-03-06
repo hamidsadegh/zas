@@ -111,6 +111,7 @@ def _build_inventory_rows(search_query):
                     {
                         "device": device,
                         "device_name": device.name or "",
+                        "device_inventory_number": device.inventory_number or "",
                         "device_serial": device.serial_number or "",
                         "device_site_id": str(device.site.id) if device.site else "",
                         "device_site": device.site.name if device.site else "",
@@ -132,6 +133,7 @@ def _build_inventory_rows(search_query):
                     {
                         "device": device,
                         "device_name": device.name or "",
+                        "device_inventory_number": device.inventory_number or "",
                         "device_serial": device.serial_number or "",
                         "device_site_id": str(device.site.id) if device.site else "",
                         "device_site": device.site.name if device.site else "",
@@ -156,6 +158,9 @@ def _sort_inventory_rows(rows, sort_field):
         field = field[1:]
     sort_keys = {
         "device_name": lambda row: _natural_sort_key(row["device_name"]),
+        "device_inventory_number": lambda row: _natural_sort_key(
+            row["device_inventory_number"]
+        ),
         "device_serial": lambda row: str(row["device_serial"]).lower(),
         "device_site": lambda row: _natural_sort_key(row["device_site"]),
         "device_area": lambda row: _natural_sort_key(row["device_area"]),
@@ -752,6 +757,7 @@ def inventory_list(request):
     sort_field = request.GET.get("sort", "device_name")
     quick_filter_values = {
         "qf_device": request.GET.get("qf_device", "").strip(),
+        "qf_inventory_number": request.GET.get("qf_inventory_number", "").strip(),
         "qf_device_serial": request.GET.get("qf_device_serial", "").strip(),
         "qf_location": request.GET.get("qf_location", "").strip(),
         "qf_module": request.GET.get("qf_module", "").strip(),
@@ -787,6 +793,15 @@ def inventory_list(request):
 
     if quick_filter_values["qf_device"]:
         rows = [row for row in rows if _contains(row.get("device_name"), quick_filter_values["qf_device"])]
+    if quick_filter_values["qf_inventory_number"]:
+        rows = [
+            row
+            for row in rows
+            if _contains(
+                row.get("device_inventory_number"),
+                quick_filter_values["qf_inventory_number"],
+            )
+        ]
     if quick_filter_values["qf_device_serial"]:
         rows = [row for row in rows if _contains(row.get("device_serial"), quick_filter_values["qf_device_serial"])]
     if quick_filter_values["qf_location"]:
@@ -828,6 +843,7 @@ def inventory_export(request):
     tag_filter = request.GET.get("tag", "").strip()
     quick_filter_values = {
         "qf_device": request.GET.get("qf_device", "").strip(),
+        "qf_inventory_number": request.GET.get("qf_inventory_number", "").strip(),
         "qf_device_serial": request.GET.get("qf_device_serial", "").strip(),
         "qf_location": request.GET.get("qf_location", "").strip(),
         "qf_module": request.GET.get("qf_module", "").strip(),
@@ -860,6 +876,15 @@ def inventory_export(request):
 
     if quick_filter_values["qf_device"]:
         rows = [row for row in rows if _contains(row.get("device_name"), quick_filter_values["qf_device"])]
+    if quick_filter_values["qf_inventory_number"]:
+        rows = [
+            row
+            for row in rows
+            if _contains(
+                row.get("device_inventory_number"),
+                quick_filter_values["qf_inventory_number"],
+            )
+        ]
     if quick_filter_values["qf_device_serial"]:
         rows = [row for row in rows if _contains(row.get("device_serial"), quick_filter_values["qf_device_serial"])]
     if quick_filter_values["qf_location"]:
@@ -878,9 +903,9 @@ def inventory_export(request):
     ws.title = "Inventory"
     headers = [
         "Device",
+        "Inventory Number",
         "Device Serial",
         "Location",
-        "Inventory Number",
         "Module",
         "Module Serial",
         "Description",
@@ -896,9 +921,9 @@ def inventory_export(request):
         ws.append(
             [
                 row["device_name"],
+                row.get("device_inventory_number") or "",
                 row["device_serial"],
                 row.get("device_location") or "",
-                device.inventory_number or "",
                 row["module_name"],
                 module_serial,
                 row["module_description"],
@@ -909,6 +934,62 @@ def inventory_export(request):
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
     response["Content-Disposition"] = 'attachment; filename="inventory.xlsx"'
+    wb.save(response)
+    return response
+
+
+@login_required
+def device_export(request):
+    view = DeviceListView()
+    view.request = request
+    view.args = ()
+    view.kwargs = {}
+    devices = view.get_queryset()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Devices"
+    headers = [
+        "Device",
+        "IP",
+        "Ping",
+        "SSH",
+        "SNMP",
+        "Netconf",
+        "Status",
+        "Type",
+        "Serial",
+        "Location",
+        "Rack",
+        "Site",
+        "Image",
+    ]
+    ws.append(headers)
+
+    for device in devices:
+        runtime = getattr(device, "runtime", None)
+        ws.append(
+            [
+                device.name or "",
+                device.management_ip or "",
+                "Yes" if getattr(runtime, "reachable_ping", False) else "No",
+                "Yes" if getattr(runtime, "reachable_ssh", False) else "No",
+                "Yes" if getattr(runtime, "reachable_snmp", False) else "No",
+                "Yes" if getattr(runtime, "reachable_netconf", False) else "No",
+                device.status or "",
+                str(device.device_type) if device.device_type else "",
+                device.serial_number or "",
+                str(device.area) if device.area else "",
+                device.rack.name if device.rack else "",
+                device.site.name if device.site else "",
+                device.image_version or "",
+            ]
+        )
+
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = 'attachment; filename="devices.xlsx"'
     wb.save(response)
     return response
 
