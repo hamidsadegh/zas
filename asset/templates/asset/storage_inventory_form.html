@@ -84,7 +84,7 @@
         results.forEach((area) => {
             const option = document.createElement("option");
             option.value = area.id;
-            option.textContent = area.name;
+            option.textContent = area.full_name || area.name;
             if (selectedValue && selectedValue === String(area.id)) {
                 option.selected = true;
             }

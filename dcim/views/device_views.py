@@ -1520,7 +1520,21 @@ def areas_for_site(request):
             areas = Area.objects.filter(site_id=site_id).order_by("name")
         except (ValueError, TypeError):
             areas = Area.objects.none()
-    data = [{"id": area.id, "name": area.name} for area in areas]
+    data = []
+    for area in areas:
+        path_parts = [area.name]
+        parent = area.parent
+        while parent is not None:
+            path_parts.append(parent.name)
+            parent = parent.parent
+        full_name = " \u2192 ".join(path_parts[::-1])
+        data.append(
+            {
+                "id": area.id,
+                "name": area.name,
+                "full_name": full_name,
+            }
+        )
     return JsonResponse({"results": data})
 
 
