@@ -1,6 +1,6 @@
 {% extends "core/base.html" %}
 
-{% block title %}{% if form.instance.pk %}Edit Storage Component{% else %}Add Storage Component{% endif %}{% endblock %}
+{% block title %}{% if is_edit %}Edit Storage Component{% else %}Add Storage Component{% endif %}{% endblock %}
 
 {% block styles %}
 {% include "dcim/_layout_styles.html" %}
@@ -19,9 +19,9 @@
 {% block content %}
 <section class="form-shell">
     <div class="chip" style="margin-bottom: 0.7rem;">Storage Inventory</div>
-    <h1 style="margin-top:0;">{% if form.instance.pk %}Edit Storage Component{% else %}Add Storage Component{% endif %}</h1>
+    <h1 style="margin-top:0;">{% if is_edit %}Edit Storage Component{% else %}Add Storage Component{% endif %}</h1>
     <p class="muted" style="margin-top:0;">
-        {% if form.instance.pk %}
+        {% if is_edit %}
         Update the inventory record for a stored device or module.
         {% else %}
         Create a new inventory record for a device or module that is not currently in live production.
@@ -49,7 +49,7 @@
     </form>
     <div class="form-actions">
         <a href="{% url 'inventory_storage' %}" class="btn btn-secondary">Cancel</a>
-        {% if form.instance.pk %}
+        {% if is_edit %}
         <a href="{% url 'inventory_storage_delete' form.instance.pk %}" class="btn btn-danger">Delete</a>
         {% endif %}
         <button type="submit" class="btn btn-primary" form="storage-item-form">Save</button>

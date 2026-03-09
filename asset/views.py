@@ -642,6 +642,11 @@ class InventoryItemAddView(LoginRequiredMixin, CreateView):
     template_name = "asset/storage_inventory_form.html"
     success_url = reverse_lazy("inventory_storage")
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["is_edit"] = False
+        return context
+
     def form_valid(self, form):
         messages.success(self.request, "Storage inventory item created successfully.")
         return super().form_valid(form)
@@ -652,6 +657,11 @@ class InventoryItemUpdateView(LoginRequiredMixin, UpdateView):
     form_class = InventoryItemForm
     template_name = "asset/storage_inventory_form.html"
     success_url = reverse_lazy("inventory_storage")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["is_edit"] = True
+        return context
 
     def form_valid(self, form):
         messages.success(self.request, "Storage inventory item updated successfully.")
