@@ -406,10 +406,7 @@ class Device(models.Model):
             if device_name:
                 match |= Q(hostname__iexact=device_name)
             if match:
-                DiscoveryCandidate.objects.filter(site_id=site_id).filter(match).update(
-                    classified=False,
-                    accepted=None,
-                )
+                DiscoveryCandidate.objects.filter(site_id=site_id).filter(match).delete()
 
 
 class DeviceModule(models.Model):

@@ -2,6 +2,8 @@ from unittest.mock import patch
 
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
+from django.utils import timezone
+
 from asset.models import InventoryItem
 from dcim.models import (
     Area,
@@ -11,6 +13,7 @@ from dcim.models import (
     Organization,
     Site,
 )
+from network.models.discovery import DiscoveryCandidate
 
 class TestDeviceViews(TestCase):
     def setUp(self):
@@ -36,12 +39,25 @@ class TestDeviceViews(TestCase):
         self.assertContains(response, "Device01")
 
     def test_device_decommission_delete_permanently(self):
+        DiscoveryCandidate.objects.create(
+            site=self.device.site,
+            ip_address=self.device.management_ip,
+            hostname=self.device.name,
+            alive=True,
+            reachable_ssh=True,
+            reachable_ping=True,
+            last_seen=timezone.now(),
+            classified=True,
+            accepted=True,
+        )
+
         response = self.client.post(
             f"/devices/{self.device.id}/decommission/",
             {"stage": "confirm", "decision": "delete"},
         )
         self.assertEqual(response.status_code, 302)
         self.assertFalse(Device.objects.filter(id=self.device.id).exists())
+        self.assertEqual(DiscoveryCandidate.objects.count(), 0)
 
     def test_device_decommission_move_to_storage(self):
         module = DeviceModule.objects.create(
