@@ -167,7 +167,7 @@
                 <thead>
                     <tr>
                         <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'device_name' %}-device_name{% elif sort_field == '-device_name' %}device_name{% else %}device_name{% endif %}">Device</a></th>
-                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'device_inventory_number' %}-device_inventory_number{% elif sort_field == '-device_inventory_number' %}device_inventory_number{% else %}device_inventory_number{% endif %}">Inventory #</a></th>
+                        <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'module_inventory_number' %}-module_inventory_number{% elif sort_field == '-module_inventory_number' %}module_inventory_number{% else %}module_inventory_number{% endif %}">Inventory #</a></th>
                         <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'device_serial' %}-device_serial{% elif sort_field == '-device_serial' %}device_serial{% else %}device_serial{% endif %}">Device Serial</a></th>
                         <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'device_location' %}-device_location{% elif sort_field == '-device_location' %}device_location{% else %}device_location{% endif %}">Location</a></th>
                         <th><a href="?{% if search_query %}search={{ search_query|urlencode }}&{% endif %}{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}{% if site_filter %}site={{ site_filter }}&{% endif %}{% if paginate_by %}paginate_by={{ paginate_by }}&{% endif %}sort={% if sort_field == 'module_name' %}-module_name{% elif sort_field == '-module_name' %}module_name{% else %}module_name{% endif %}">Module</a></th>
@@ -190,7 +190,7 @@
                         <td>
                             <a class="table-link" href="{% url 'device_detail' row.device.id %}">{{ row.device_name }}</a>
                         </td>
-                        <td>{{ row.device_inventory_number|default:"-" }}</td>
+                        <td>{{ row.module_inventory_number|default:"-" }}</td>
                         <td>{{ row.device_serial|default:"-" }}</td>
                         <td>{{ row.device_location|default:"-" }}</td>
                         <td>{{ row.module_name|default:"-" }}</td>

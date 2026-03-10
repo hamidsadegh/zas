@@ -125,6 +125,7 @@ class DeviceTypeSerializer(serializers.ModelSerializer):
             "model",
             "platform",
             "description",
+            "eosl",
         ]
 
 
@@ -137,7 +138,17 @@ class DeviceModuleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DeviceModule
-        fields = ["id", "name", "description", "vendor", "vendor_name", "device", "device_name", "serial_number"]
+        fields = [
+            "id",
+            "name",
+            "inventory_number",
+            "description",
+            "vendor",
+            "vendor_name",
+            "device",
+            "device_name",
+            "serial_number",
+        ]
 
     def validate(self, attrs):
         module = self.instance or DeviceModule()

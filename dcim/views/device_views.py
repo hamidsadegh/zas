@@ -118,7 +118,7 @@ def _decommission_source_items(device):
                 "serial_number": (module.serial_number_display or "").strip(),
                 "model": model,
                 "designation": _infer_inventory_designation("module", module.name, model),
-                "inventory_number": "",
+                "inventory_number": (module.inventory_number or "").strip(),
                 "vendor_id": module.vendor_id,
                 "item_type": "module",
             }
@@ -426,6 +426,7 @@ def _build_inventory_rows(search_query):
                 None,
                 [
                     module.name or "",
+                    module.inventory_number or "",
                     module.serial_number or "",
                     module.description or "",
                 ],
@@ -450,7 +451,7 @@ def _build_inventory_rows(search_query):
                     {
                         "device": device,
                         "device_name": device.name or "",
-                        "device_inventory_number": device.inventory_number or "",
+                        "module_inventory_number": "",
                         "device_serial": device.serial_number or "",
                         "device_site_id": str(device.site.id) if device.site else "",
                         "device_site": device.site.name if device.site else "",
@@ -472,7 +473,7 @@ def _build_inventory_rows(search_query):
                     {
                         "device": device,
                         "device_name": device.name or "",
-                        "device_inventory_number": device.inventory_number or "",
+                        "module_inventory_number": module.inventory_number or "",
                         "device_serial": device.serial_number or "",
                         "device_site_id": str(device.site.id) if device.site else "",
                         "device_site": device.site.name if device.site else "",
@@ -497,8 +498,11 @@ def _sort_inventory_rows(rows, sort_field):
         field = field[1:]
     sort_keys = {
         "device_name": lambda row: _natural_sort_key(row["device_name"]),
+        "module_inventory_number": lambda row: _natural_sort_key(
+            row["module_inventory_number"]
+        ),
         "device_inventory_number": lambda row: _natural_sort_key(
-            row["device_inventory_number"]
+            row["module_inventory_number"]
         ),
         "device_serial": lambda row: str(row["device_serial"]).lower(),
         "device_site": lambda row: _natural_sort_key(row["device_site"]),
@@ -1262,7 +1266,7 @@ def inventory_list(request):
             row
             for row in rows
             if _contains(
-                row.get("device_inventory_number"),
+                row.get("module_inventory_number"),
                 quick_filter_values["qf_inventory_number"],
             )
         ]
@@ -1345,7 +1349,7 @@ def inventory_export(request):
             row
             for row in rows
             if _contains(
-                row.get("device_inventory_number"),
+                row.get("module_inventory_number"),
                 quick_filter_values["qf_inventory_number"],
             )
         ]
@@ -1367,7 +1371,7 @@ def inventory_export(request):
     ws.title = "Inventory"
     headers = [
         "Device",
-        "Inventory Number",
+        "Module Inventory Number",
         "Device Serial",
         "Location",
         "Module",
@@ -1377,7 +1381,6 @@ def inventory_export(request):
     ws.append(headers)
 
     for row in rows:
-        device = row["device"]
         module = row["module"]
         module_serial = ""
         if module:
@@ -1385,7 +1388,7 @@ def inventory_export(request):
         ws.append(
             [
                 row["device_name"],
-                row.get("device_inventory_number") or "",
+                row.get("module_inventory_number") or "",
                 row["device_serial"],
                 row.get("device_location") or "",
                 row["module_name"],

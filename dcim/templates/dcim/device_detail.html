@@ -86,6 +86,7 @@
                 <div class="info-item"><span>Device Type</span><span>{{ device.device_type|default:"—" }}</span></div>
                 <div class="info-item"><span>Role</span><span>{{ device.role|default:"—" }}</span></div>
                 <div class="info-item"><span>Image Version</span><span>{{ device.image_version|default:"—" }}</span></div>
+                <div class="info-item"><span>EOSL</span><span>{{ device.device_type.eosl|date:"Y-m-d"|default:"—" }}</span></div>
                 {% if stack_members %}
                 <div style="width: 100%; border-top: 1px solid var(--border); margin: 0.85rem 0;"></div>
                 <div class="info-item" style="flex-direction: column; align-items: flex-start; gap: 0.4rem; width: 100%;">

@@ -164,6 +164,12 @@ class DeviceType(models.Model):
         verbose_name=_('datasheet'),
         help_text=_('URL to the manufacturer\'s datasheet for this device type.'),
         )
+    eosl = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name=_("end of service life (EOSL)"),
+        help_text=_("Last date this device type is supported by the vendor."),
+    )
     clone_fields = (
         'vendor', 'platform', 'u_height', 'is_full_depth', 'airflow', 'weight',
         )
@@ -413,6 +419,7 @@ class DeviceModule(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name="modules")
     name = models.CharField(max_length=100)
+    inventory_number = models.CharField(max_length=100, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     vendor = models.ForeignKey(
         Vendor, on_delete=models.SET_NULL, blank=True, null=True, related_name="modules"
