@@ -235,23 +235,8 @@ class SyncService:
                 serial_value,
             )
 
-    def _reconcile_device_serial(self, device: Device, serial_value: str) -> None:
-        self._remove_storage_duplicates(serial_value)
-        DeviceModule.objects.filter(serial_number__iexact=serial_value).delete()
-        Device.objects.filter(serial_number__iexact=serial_value).exclude(pk=device.pk).update(
-            serial_number=None
-        )
-
     def _reconcile_module_serial(self, device: Device, name: str, serial_value: str) -> bool:
         self._remove_storage_duplicates(serial_value)
-        current_device_serial = normalize_serial_number(device.serial_number)
-        if current_device_serial and current_device_serial.upper() == serial_value.upper():
-            DeviceModule.objects.filter(serial_number__iexact=serial_value).delete()
-            return False
-
-        Device.objects.filter(serial_number__iexact=serial_value).exclude(pk=device.pk).update(
-            serial_number=None
-        )
         DeviceModule.objects.filter(serial_number__iexact=serial_value).exclude(
             Q(device=device) & Q(name=name)
         ).delete()
@@ -288,7 +273,6 @@ class SyncService:
         device.last_seen = now
 
         if serial:
-            self._reconcile_device_serial(device, serial)
             device.serial_number = serial
             update_fields.append("serial_number")
 

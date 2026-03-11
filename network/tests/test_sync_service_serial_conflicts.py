@@ -117,7 +117,7 @@ def test_sync_inventory_duplicate_with_storage_deletes_storage_item(serial_confl
 
 
 @pytest.mark.django_db
-def test_sync_version_keeps_newest_device_serial_and_removes_storage_item(
+def test_sync_version_does_not_reconcile_device_serial_against_storage_or_other_devices(
     serial_conflict_context,
 ):
     site = serial_conflict_context["site"]
@@ -157,5 +157,5 @@ def test_sync_version_keeps_newest_device_serial_and_removes_storage_item(
     old_device.refresh_from_db()
     new_device.refresh_from_db()
     assert new_device.serial_number == "DEV-300"
-    assert old_device.serial_number is None
-    assert not InventoryItem.objects.filter(serial_number="DEV-300").exists()
+    assert old_device.serial_number == "DEV-300"
+    assert InventoryItem.objects.filter(serial_number="DEV-300").exists()

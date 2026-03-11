@@ -30,7 +30,7 @@ def storage_validation_context(db):
 
 def _base_storage_item(*, site, area, serial_number):
     return InventoryItem(
-        designation="Spare Module",
+        designation=InventoryItem.Designation.UPLINK_MODULE,
         model="C9300-NM-8X",
         site=site,
         area=area,
@@ -39,7 +39,7 @@ def _base_storage_item(*, site, area, serial_number):
 
 
 @pytest.mark.django_db
-def test_storage_item_rejects_duplicate_serial_in_production_device(
+def test_storage_item_allows_duplicate_serial_with_device(
     storage_validation_context,
 ):
     site = storage_validation_context["site"]
@@ -55,10 +55,9 @@ def test_storage_item_rejects_duplicate_serial_in_production_device(
     )
 
     item = _base_storage_item(site=site, area=area, serial_number="SER-500")
-    with pytest.raises(ValidationError) as excinfo:
-        item.full_clean()
-
-    assert "Production device" in str(excinfo.value)
+    item.full_clean()
+    item.save()
+    assert InventoryItem.objects.filter(serial_number="SER-500").exists()
 
 
 @pytest.mark.django_db

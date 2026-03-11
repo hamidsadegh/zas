@@ -35,48 +35,14 @@ def validate_device_rack_area(device, rack, area):
 
 
 def validate_device_serial_uniqueness(device):
-    from asset.models import InventoryItem
-    from dcim.models import Device, DeviceModule
-
     serial = normalize_serial_number(getattr(device, "serial_number", None))
     device.serial_number = serial
-    if not serial:
-        return
-
-    serial_filter = {"serial_number__iexact": serial}
-
-    duplicate_device = Device.objects.filter(**serial_filter).exclude(pk=device.pk).first()
-    if duplicate_device:
-        raise ValidationError(
-            {"serial_number": f"Serial number already exists on device '{duplicate_device.name}'."}
-        )
-
-    duplicate_module = DeviceModule.objects.select_related("device").filter(**serial_filter).first()
-    if duplicate_module:
-        raise ValidationError(
-            {
-                "serial_number": (
-                    "Serial number already exists on production module "
-                    f"'{duplicate_module.name}' of device '{duplicate_module.device.name}'."
-                )
-            }
-        )
-
-    duplicate_storage = InventoryItem.objects.filter(**serial_filter).first()
-    if duplicate_storage:
-        raise ValidationError(
-            {
-                "serial_number": (
-                    "Serial number already exists in storage inventory "
-                    f"('{duplicate_storage.designation}')."
-                )
-            }
-        )
+    return
 
 
 def validate_device_module_serial_uniqueness(module):
     from asset.models import InventoryItem
-    from dcim.models import Device, DeviceModule
+    from dcim.models import DeviceModule
 
     serial = normalize_serial_number(getattr(module, "serial_number", None))
     module.serial_number = serial
@@ -99,12 +65,6 @@ def validate_device_module_serial_uniqueness(module):
             }
         )
 
-    duplicate_device = Device.objects.filter(**serial_filter).first()
-    if duplicate_device:
-        raise ValidationError(
-            {"serial_number": f"Serial number already exists on device '{duplicate_device.name}'."}
-        )
-
     duplicate_storage = InventoryItem.objects.filter(**serial_filter).first()
     if duplicate_storage:
         raise ValidationError(
@@ -119,7 +79,7 @@ def validate_device_module_serial_uniqueness(module):
 
 def validate_inventory_item_serial_uniqueness(item):
     from asset.models import InventoryItem
-    from dcim.models import Device, DeviceModule
+    from dcim.models import DeviceModule
 
     serial = normalize_serial_number(getattr(item, "serial_number", None))
     item.serial_number = serial
@@ -127,12 +87,6 @@ def validate_inventory_item_serial_uniqueness(item):
         return
 
     serial_filter = {"serial_number__iexact": serial}
-
-    duplicate_device = Device.objects.filter(**serial_filter).first()
-    if duplicate_device:
-        raise ValidationError(
-            {"serial_number": f"Serial number already exists in Production device '{duplicate_device.name}'."}
-        )
 
     duplicate_module = DeviceModule.objects.select_related("device").filter(**serial_filter).first()
     if duplicate_module:
