@@ -197,127 +197,148 @@
     </div>
 
     <div class="detail-card">
-        <div class="config-toolbar">
-            <h3 style="margin: 0;">Configuration</h3>
-            <div class="config-toolbar-actions">
-                <button type="button" class="cli-btn" id="open-cli-btn">Open CLI</button>
+        <details class="neighbor-group" style="margin-bottom:0; border:none; background:transparent; padding:0;">
+            <summary style="cursor:pointer; font-weight:600; color:var(--text); padding:0;">
+                <h3 style="margin: 0;">Configuration</h3>
+            </summary>
+            <div style="margin-top:0.9rem;">
+                <div class="config-toolbar" style="margin-bottom:0;">
+                    <div></div>
+                    <div class="config-toolbar-actions">
+                        <button type="button" class="cli-btn" id="open-cli-btn">Open CLI</button>
+                    </div>
+                </div>
+                {% if latest_config %}
+                    <p class="config-meta">
+                        Last configuration: {{ latest_config.collected_at|date:"Y-m-d H:i" }} ·
+                        {% if latest_config.success %}Success{% else %}Failed{% endif %}
+                    </p>
+                    <pre class="config-box" id="device-config">{{ latest_config_preview|escape }}</pre>
+                    <div class="config-actions">
+                        <a class="config-link" href="{% url 'device_configuration_history' device.id %}?focus={{ latest_config.id }}">View full configuration</a>
+                        <a class="config-link secondary" href="{% url 'device_configuration_history' device.id %}">History</a>
+                    </div>
+                {% else %}
+                    <p>No configurations recorded.</p>
+                {% endif %}
             </div>
-        </div>
-        {% if latest_config %}
-            <p class="config-meta">
-                Last configuration: {{ latest_config.collected_at|date:"Y-m-d H:i" }} ·
-                {% if latest_config.success %}Success{% else %}Failed{% endif %}
-            </p>
-            <pre class="config-box" id="device-config">{{ latest_config_preview|escape }}</pre>
-            <div class="config-actions">
-                <a class="config-link" href="{% url 'device_configuration_history' device.id %}?focus={{ latest_config.id }}">View full configuration</a>
-                <a class="config-link secondary" href="{% url 'device_configuration_history' device.id %}">History</a>
-            </div>
-        {% else %}
-            <p>No configurations recorded.</p>
-        {% endif %}
+        </details>
     </div>
 
     <div class="detail-card interfaces-card">
-        <div class="detail-actions" style="margin-bottom: 1.2rem;">
-            <h3 style="margin: 0;">Modules</h3>
-            {% if modules_count > preview_limit %}
-                <a class="config-link" href="{% url 'device_modules' device.id %}">View all ({{ modules_count }})</a>
-            {% endif %}
-        </div>
-        {% if modules_count > preview_limit %}
-            <p class="config-meta">Showing first {{ preview_limit }} of {{ modules_count }} modules.</p>
-        {% endif %}
-        {% with modules=modules_preview %}
-            {% if modules %}
-            <div class="table-scroll">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Serial Number</th>
-                            <th>Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for module in modules %}
-                        <tr>
-                            <td>{{ module.name }}</td>
-                            <td>{{ module.serial_number_display|default:"—" }}</td>
-                            <td>{{ module.description|default:"—" }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+        <details class="neighbor-group" style="margin-bottom:0; border:none; background:transparent; padding:0;">
+            <summary style="cursor:pointer; font-weight:600; color:var(--text); padding:0;">
+                <h3 style="margin: 0;">Modules</h3>
+            </summary>
+            <div style="margin-top:0.9rem;">
+                <div class="detail-actions" style="margin-bottom: 1.2rem;">
+                    <div></div>
+                    {% if modules_count > preview_limit %}
+                        <a class="config-link" href="{% url 'device_modules' device.id %}">View all ({{ modules_count }})</a>
+                    {% endif %}
+                </div>
+                {% if modules_count > preview_limit %}
+                    <p class="config-meta">Showing first {{ preview_limit }} of {{ modules_count }} modules.</p>
+                {% endif %}
+                {% with modules=modules_preview %}
+                    {% if modules %}
+                    <div class="table-scroll">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Serial Number</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for module in modules %}
+                                <tr>
+                                    <td>{{ module.name }}</td>
+                                    <td>{{ module.serial_number_display|default:"—" }}</td>
+                                    <td>{{ module.description|default:"—" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                        <p>No modules recorded for this device.</p>
+                    {% endif %}
+                {% endwith %}
             </div>
-            {% else %}
-                <p>No modules recorded for this device.</p>
-            {% endif %}
-        {% endwith %}
+        </details>
     </div>
 
     <div class="detail-card interfaces-card">
-        <div class="detail-actions" style="margin-bottom: 1.2rem;">
-            <h3 style="margin: 0;">Interfaces</h3>
-            {% if interfaces_count > preview_limit %}
-                <a class="config-link" href="{% url 'device_interfaces' device.id %}">View all ({{ interfaces_count }})</a>
-            {% endif %}
-        </div>
-        {% if interfaces_count > preview_limit %}
-            <p class="config-meta">Showing first {{ preview_limit }} of {{ interfaces_count }} interfaces.</p>
-        {% endif %}
-        {% if interfaces_preview %}
-        <div class="table-scroll">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>IP / VLAN</th>
-                        <th>Status</th>
-                        <th>Duplex</th>
-                        <th>Speed Mode</th>
-                        <th>Speed</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for interface in interfaces_preview %}
-                    <tr class="interface-row">
-                        <td>{{ interface.name }}</td>
-                        <td>{{ interface.description|default:"—" }}</td>
-                        <td>
-                            {% if interface.ip_address %}
-                                {{ interface.ip_address }}
-                            {% elif interface.vlan_raw %}
-                                {{ interface.vlan_raw }}
-                            {% elif interface.access_vlan %}
-                                VLAN {{ interface.access_vlan.vlan_id }}
-                            {% else %}
-                                —
-                            {% endif %}
-                        </td>
-                        <td>{{ interface.status|title }}</td>
-                        <td>{{ interface.duplex|default:"—" }}</td>
-                        <td>{{ interface.speed_mode|default:"—" }}</td>
-                        <td>
-                            {% if interface.speed != None %}
-                                {% if interface.speed > 1000 %}
-                                    {% widthratio interface.speed 1000 1 %}G
-                                {% else %}
-                                    {{ interface.speed }}
-                                {% endif %}
-                            {% else %}
-                                —
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-            <p>No interfaces found.</p>
-        {% endif %}
+        <details class="neighbor-group" style="margin-bottom:0; border:none; background:transparent; padding:0;">
+            <summary style="cursor:pointer; font-weight:600; color:var(--text); padding:0;">
+                <h3 style="margin: 0;">Interfaces</h3>
+            </summary>
+            <div style="margin-top:0.9rem;">
+                <div class="detail-actions" style="margin-bottom: 1.2rem;">
+                    <div></div>
+                    {% if interfaces_count > preview_limit %}
+                        <a class="config-link" href="{% url 'device_interfaces' device.id %}">View all ({{ interfaces_count }})</a>
+                    {% endif %}
+                </div>
+                {% if interfaces_count > preview_limit %}
+                    <p class="config-meta">Showing first {{ preview_limit }} of {{ interfaces_count }} interfaces.</p>
+                {% endif %}
+                {% if interfaces_preview %}
+                <div class="table-scroll">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>IP / VLAN</th>
+                                <th>Status</th>
+                                <th>Duplex</th>
+                                <th>Speed Mode</th>
+                                <th>Speed</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for interface in interfaces_preview %}
+                            <tr class="interface-row">
+                                <td>{{ interface.name }}</td>
+                                <td>{{ interface.description|default:"—" }}</td>
+                                <td>
+                                    {% if interface.ip_address %}
+                                        {{ interface.ip_address }}
+                                    {% elif interface.vlan_raw %}
+                                        {{ interface.vlan_raw }}
+                                    {% elif interface.access_vlan %}
+                                        VLAN {{ interface.access_vlan.vlan_id }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                                <td>{{ interface.status|title }}</td>
+                                <td>{{ interface.duplex|default:"—" }}</td>
+                                <td>{{ interface.speed_mode|default:"—" }}</td>
+                                <td>
+                                    {% if interface.speed != None %}
+                                        {% if interface.speed > 1000 %}
+                                            {% widthratio interface.speed 1000 1 %}G
+                                        {% else %}
+                                            {{ interface.speed }}
+                                        {% endif %}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                    <p>No interfaces found.</p>
+                {% endif %}
+            </div>
+        </details>
     </div>
 
     <div class="detail-card interfaces-card" id="neighbors" data-neighbors-endpoint="{% url 'topology-device-neighbors' device.id %}">
